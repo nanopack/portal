@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pagodabox/na-router/config"
 	"github.com/pagodabox/na-router/api"
+	"github.com/pagodabox/na-router/config"
 	"github.com/pagodabox/na-router/ipvsadm"
 )
 

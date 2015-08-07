@@ -11,10 +11,10 @@
 package api
 
 import (
-	"fmt"
-	"net/http"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 
 	"github.com/gorilla/pat"
 )
@@ -24,15 +24,16 @@ type (
 		router *pat.Router
 	}
 
-	routerResponse interface {}
-	response struct {
+	routerResponse interface{}
+	response       struct {
 		sucess bool
 	}
 )
+
 var (
 	defaultSuccess = &response{true}
-	defaultApi = &api{pat.New()}
-	pongResponse = []byte("pong")
+	defaultApi     = &api{pat.New()}
+	pongResponse   = []byte("pong")
 )
 
 func init() {
@@ -40,7 +41,7 @@ func init() {
 }
 
 // pong to a ping.
-func pong(res http.ResponseWriter, req *http.Request) (routerResponse, error){
+func pong(res http.ResponseWriter, req *http.Request) (routerResponse, error) {
 	return pongResponse, nil
 }
 
@@ -64,10 +65,10 @@ func Start(address string) error {
 // Traces all routes going through the api.
 func traceRequest(fn func(http.ResponseWriter, *http.Request) (routerResponse, error)) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		
+
 		// I need to do something to trace this request.
 		value, err := fn(res, req)
-		
+
 		var bytes []byte
 		if err == nil {
 			if value == nil {
@@ -75,7 +76,7 @@ func traceRequest(fn func(http.ResponseWriter, *http.Request) (routerResponse, e
 			}
 			bytes, err = json.Marshal(value)
 		}
-		
+
 		if err != nil {
 			res.Write([]byte(fmt.Sprintf("{\"error\":\"%v\"}", err)))
 			return

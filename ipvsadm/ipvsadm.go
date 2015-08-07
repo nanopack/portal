@@ -25,7 +25,7 @@ type (
 )
 
 func Check() error {
-	cmd := exec.Command("which","ipvsadm")
+	cmd := exec.Command("which", "ipvsadm")
 	if err := cmd.Run(); err != nil {
 		return errors.New("unable to find the ipvsadm command on the system")
 	}

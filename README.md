@@ -4,7 +4,7 @@ Nanobox-Router is a simple API that configures the linux virtual server load bal
 
 ## Memory Usage
 
-Currently na-router uses 900k of ram while idling
+Currently na-router uses 900k of ram while idling.
 
 
 ## Routes :

@@ -14,6 +14,6 @@ var (
 	ListenAddress string
 )
 
-func init () {
+func init() {
 	ListenAddress = "127.0.0.1:7705"
 }

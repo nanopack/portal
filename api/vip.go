@@ -11,8 +11,8 @@
 package api
 
 import (
-	"net/http"
 	"github.com/pagodabox/na-router/ipvsadm"
+	"net/http"
 )
 
 func init() {
@@ -32,7 +32,7 @@ func vipCreate(res http.ResponseWriter, req *http.Request) (routerResponse, erro
 	vip := ipvsadm.Vip{}
 	err := parseBody(req, &vip)
 	if err == nil {
-		err = ipvsadm.AddVip(vip);
+		err = ipvsadm.AddVip(vip)
 	}
 
 	return nil, err

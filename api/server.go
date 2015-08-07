@@ -11,8 +11,8 @@
 package api
 
 import (
-	"net/http"
 	"github.com/pagodabox/na-router/ipvsadm"
+	"net/http"
 )
 
 func init() {
@@ -33,7 +33,7 @@ func serverCreate(res http.ResponseWriter, req *http.Request) (routerResponse, e
 	server := ipvsadm.Server{}
 	err := parseBody(req, &server)
 	if err == nil {
-		err = ipvsadm.AddServer(server);
+		err = ipvsadm.AddServer(server)
 	}
 
 	return nil, err
