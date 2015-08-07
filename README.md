@@ -12,6 +12,7 @@ Nanobox-Router is a simple API that configures the linux virtual server load bal
 | **DELETE** /vips/:vip | remove an ip from the load balancer | nil | `{"sucess":"true"}` |
 | **GET** /vips/:vip/servers | list servers that are being load balanced for the :vip | nil | `{"servers": [{"server":"127.0.0.1:1234" ,"weight":1000}]}` |
 | **POST** /vips/:vip/servers | add a server to the load balancing group for :vip | `{"server":"127.0.0.1:1234" ,"weight":1000}` | `{"sucess":"true"}` |
+| **PUT** /vips/:vip/servers/:server | enable or disable a server without removing it from the pool | `{"enabled":true}` | `{"sucess":"true"}` |
 | **DELETE** /vips/:vip/servers/:server | remove :server from the load balancing group for :vip | nil | `{"sucess":"true"}` |
 
 ### Notes:
