@@ -33,16 +33,15 @@ type (
 var (
 	defaultSuccess = &response{true}
 	defaultApi     = &api{pat.New()}
-	pongResponse   = []byte("pong")
 )
 
 func init() {
-	defaultApi.router.Post("/ping", traceRequest(pong))
+	defaultApi.router.Get("/ping", traceRequest(pong))
 }
 
 // pong to a ping.
 func pong(res http.ResponseWriter, req *http.Request) (routerResponse, error) {
-	return pongResponse, nil
+	return "pong", nil
 }
 
 // read and parse the entire body
