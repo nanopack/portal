@@ -10,10 +10,17 @@
 //--------------------------------------------------------------------
 package config
 
+import (
+	"github.com/jcelliott/lumber"
+	"github.com/pagodabox/golang-hatchet"
+)
+
 var (
 	ListenAddress string
+	Log hatchet.Logger
 )
 
 func init() {
 	ListenAddress = "127.0.0.1:7750"
+	Log = lumber.NewConsoleLogger(lumber.INFO)
 }

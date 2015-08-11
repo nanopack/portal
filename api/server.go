@@ -11,16 +11,18 @@
 package api
 
 import (
+	"encoding/json"
 	"github.com/pagodabox/na-router/ipvsadm"
+	"github.com/pagodabox/na-router/config"
 	"net/http"
 )
 
 func init() {
-	defaultApi.router.Get("/servers", traceRequest(serverList))
 	defaultApi.router.Post("/servers", traceRequest(serverCreate))
 	defaultApi.router.Put("/servers/{server}", traceRequest(serverEnable))
 	defaultApi.router.Get("/servers/{server}", traceRequest(serverGet))
 	defaultApi.router.Delete("/servers/{server}", traceRequest(serverDelete))
+	defaultApi.router.Get("/servers", traceRequest(serverList))
 }
 
 type (
@@ -29,35 +31,42 @@ type (
 	}
 )
 
-func serverCreate(res http.ResponseWriter, req *http.Request) (routerResponse, error) {
+func (ss serversSlice) ToJson() ([]byte, error) {
+	return json.Marshal(ss)
+}
+
+func serverCreate(res http.ResponseWriter, req *http.Request) {
 	server := ipvsadm.Server{}
 	err := parseBody(req, &server)
 	if err == nil {
 		err = ipvsadm.AddServer(server)
 	}
-
-	return nil, err
+	respond(201, err, server, res)
 }
 
-func serverList(res http.ResponseWriter, req *http.Request) (routerResponse, error) {
+func serverList(res http.ResponseWriter, req *http.Request) {
 	servers, err := ipvsadm.ListServers()
-	return serversSlice{servers}, err
+	config.Log.Info("[NA-ROUTER] list servers %v %v", servers, err)
+	respond(200, err, serversSlice{servers}, res)
 }
 
-func serverGet(res http.ResponseWriter, req *http.Request) (routerResponse, error) {
-	server := ipvsadm.Server{req.URL.Query().Get(":server")}
-	err := ipvsadm.GetServer(&server)
-	return server, err
+func serverGet(res http.ResponseWriter, req *http.Request) {
+	// server := ipvsadm.Server{req.URL.Query().Get(":server"), "", 0}
+	// err := ipvsadm.GetServer(&server)
+	// config.Log.Info("[NA-ROUTER] get server %v %v", server, err)
+	// respond(200, err, server, res)
 }
 
-func serverEnable(res http.ResponseWriter, req *http.Request) (routerResponse, error) {
-	server := ipvsadm.Server{req.URL.Query().Get(":server")}
-	err := ipvsadm.EnableServer(server)
-	return nil, err
+func serverEnable(res http.ResponseWriter, req *http.Request) {
+	// server := ipvsadm.Server{req.URL.Query().Get(":server"), "", 0}
+	// err := ipvsadm.EnableServer(server)
+	// config.Log.Info("[NA-ROUTER] enable server %v %v", server, err)
+	// respond(200, err, nil, res)
 }
 
-func serverDelete(res http.ResponseWriter, req *http.Request) (routerResponse, error) {
-	server := ipvsadm.Server{req.URL.Query().Get(":server")}
-	err := ipvsadm.DeleteServer(server)
-	return nil, err
+func serverDelete(res http.ResponseWriter, req *http.Request) {
+	// server := ipvsadm.Server{req.URL.Query().Get(":server"), "", 0}
+	// err := ipvsadm.DeleteServer(server)
+	// config.Log.Info("[NA-ROUTER] delete server %v %v", server, err)
+	// respond(200, err, nil, res)
 }

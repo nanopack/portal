@@ -11,17 +11,11 @@
 package ipvsadm
 
 import (
+	"bufio"
+	"io"
 	"errors"
 	"os/exec"
-)
-
-type (
-	Server struct {
-		Id string
-	}
-	Vip struct {
-		Id string
-	}
+	"github.com/pagodabox/na-router/config"
 )
 
 func Check() error {
@@ -33,11 +27,17 @@ func Check() error {
 }
 
 func ListVips() ([]Vip, error) {
-	var vips = make([]Vip, 0)
-	return vips, nil
+	return parse(parseAll, "ipvsadm", "-ln")
 }
 
 func AddVip(vip Vip) error {
+	id := vip.getId()
+	config.Log.Info("[NS_ROUTER] `ipvsadm -A -t %v -s wrr`", id)
+	cmd := exec.Command("ipvsadm", "-A", "-t", id, "-s", "wrr")
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	config.Log.Info("what? %v",cmd)
 	return nil
 }
 
@@ -50,11 +50,22 @@ func DeleteVip(vip Vip) error {
 }
 
 func ListServers() ([]Server, error) {
-	var servers = make([]Server, 0)
-	return servers, nil
+	// var servers, err = parse(parseVip)
+	return nil, nil
 }
 
 func AddServer(server Server) error {
+	// vip := Vip{server.Vip, "", 0, nil}
+	// if err := GetVip(&vip); err != nil {
+	// 	return err
+	// }
+	// vipId := vip.getId()
+	// serverId := server.getId()
+	// cmd := exec.Command("ipvsadm", "-a", "-t", vipId, "-r", serverId, "-m", "-w", "0")
+	
+	// if err := cmd.Run(); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -68,4 +79,19 @@ func EnableServer(server Server) error {
 
 func DeleteServer(server Server) error {
 	return nil
+}
+
+func parse(fun func(*bufio.Scanner) ([]Vip, error) , args... string) ([]Vip, error) {
+	pipe, err := run(args)
+	if err != nil {
+		return nil, err
+	}
+	scanner := bufio.NewScanner(pipe)
+	scanner.Split(bufio.ScanWords)
+	return fun(scanner)
+}
+
+func run(args []string) (io.ReadCloser, error) {
+	cmd := exec.Command("ipvsadm", args...)
+	return cmd.StdoutPipe()
 }
