@@ -13,7 +13,6 @@ package ipvsadm
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"errors"
 	"strconv"
 	"strings"
@@ -93,7 +92,6 @@ func parseVips(scan *bufio.Scanner) ([]Vip, error) {
 	if currentVip != nil {
 		vips = append(vips, *currentVip)
 	}
-	fmt.Printf("result of parsing: %v\n",vips)
 	return vips, nil
 }
 

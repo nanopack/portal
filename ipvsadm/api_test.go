@@ -158,9 +158,9 @@ func TestApi(test *testing.T) {
 	assert(test, err == nil, "unable to get server: %v", err)
 	assert(test, len(servers) == 1, "wrong number of vips")
 
-	err = DeleteServer("127.0.0.1:1234","10.0.0.1:1234")
+	err = DeleteServer("127.0.0.1:1234", "10.0.0.1:1234")
 	assert(test, err == nil, "unable to delete server: %v", err)
-	err = DeleteServer("127.0.0.1:1234","10.0.0.1:1234")
+	err = DeleteServer("127.0.0.1:1234", "10.0.0.1:1234")
 	assert(test, err == NotFound, "should have got a not found: %v", err)
 
 	err = DeleteVip("127.0.0.1:1234")
