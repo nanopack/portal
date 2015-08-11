@@ -11,24 +11,24 @@
 package ipvsadm
 
 import (
-	"fmt"
-	"net"
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 )
 
 var (
-	Conflict = errors.New("object already exists")
-	NotFound = errors.New("object was not found")
-	DeleteFailed = errors.New("object was not deleted")
+	Conflict       = errors.New("object already exists")
+	NotFound       = errors.New("object was not found")
+	DeleteFailed   = errors.New("object was not deleted")
 	IpvsadmMissing = errors.New("unable to find the ipvsadm command on the system")
 
 	// these are to allow a pluggable backend for testing, ipvsadm is
 	// not needed to run the tests
-	backend = execute
+	backend    = execute
 	backendRun = run
 )
 
@@ -81,7 +81,7 @@ func GetVip(id string) (*Vip, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	for _, vip := range vips {
 		if vip.getId() == id {
 			return &vip, nil
@@ -93,7 +93,7 @@ func GetVip(id string) (*Vip, error) {
 func DeleteVip(id string) error {
 	_, err := GetVip(id)
 	if err == NotFound {
-		return NotFound	
+		return NotFound
 	} else if err != nil {
 		return err
 	}
@@ -114,6 +114,7 @@ func DeleteVip(id string) error {
 
 func ListServers(vid string) ([]Server, error) {
 	vip, err := GetVip(vid)
+	fmt.Printf("get Vip %v\n", vip)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +146,7 @@ func GetServer(vid, id string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+	fmt.Printf("checking servers %v\n", servers)
 	for _, server := range servers {
 		if server.getId() == id {
 			return &server, nil
@@ -158,7 +159,7 @@ func EnableServer(vid, id string, enable bool) error {
 	if _, err := GetServer(vid, id); err != nil {
 		return err
 	}
-	
+
 	var weight string
 	if enable {
 		weight = "100"
@@ -178,7 +179,7 @@ func DeleteServer(vid, id string) error {
 	if _, err := GetServer(vid, id); err != nil {
 		return err
 	}
-	
+
 	if err := backend("ipvsadm", "-d", "-t", vid, "-r", id); err != nil {
 		return err // I should return my own error here
 	}
@@ -204,7 +205,7 @@ func run(args []string) (io.ReadCloser, error) {
 	return pipe, err
 }
 
-func execute(exe string, args... string) error {
+func execute(exe string, args ...string) error {
 	cmd := exec.Command(exe, args...)
 	cmd.Stdout = os.Stdout
 	return cmd.Run()

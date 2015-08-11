@@ -31,7 +31,7 @@ TCP  212.204.230.98:443 wrr persistent 123
 )
 
 func TestParser(test *testing.T) {
-	all := []string{header,cmd}
+	all := []string{header, cmd}
 	reader := strings.NewReader(strings.Join(all, ""))
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanWords)

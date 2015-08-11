@@ -31,7 +31,7 @@ type (
 	}
 	createServerBody struct {
 		Host string `json:"host"`
-		Port int `json:"port"`
+		Port int    `json:"port"`
 	}
 	enableBody struct {
 		enabled bool
@@ -41,10 +41,10 @@ type (
 func (ss serversSlice) ToJson() ([]byte, error) {
 	return json.Marshal(ss)
 }
-func (eb *enableBody) FromJson(bytes []byte) ( error) {
+func (eb *enableBody) FromJson(bytes []byte) error {
 	return json.Unmarshal(bytes, eb)
 }
-func (cs *createServerBody) FromJson(bytes []byte) ( error) {
+func (cs *createServerBody) FromJson(bytes []byte) error {
 	return json.Unmarshal(bytes, cs)
 }
 

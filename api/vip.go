@@ -31,14 +31,14 @@ type (
 
 	createVipBody struct {
 		Host string `json:"host"`
-		Port int `json:"port"`
+		Port int    `json:"port"`
 	}
 )
 
 func (vs vipSlice) ToJson() ([]byte, error) {
 	return json.Marshal(vs)
 }
-func (cv *createVipBody) FromJson(bytes []byte) ( error) {
+func (cv *createVipBody) FromJson(bytes []byte) error {
 	return json.Unmarshal(bytes, cv)
 }
 
@@ -49,7 +49,7 @@ func vipCreate(res http.ResponseWriter, req *http.Request) {
 	if err == nil {
 		vip, err = ipvsadm.AddVip(opts.Host, opts.Port)
 	}
-	
+
 	config.Log.Info("[NA-ROUTER] add vip %v %v", vip, err)
 	respond(201, err, vip, res)
 }
