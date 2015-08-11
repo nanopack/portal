@@ -12,17 +12,16 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/pagodabox/na-router/config"
 	"github.com/pagodabox/na-router/ipvsadm"
 	"net/http"
 )
 
 func init() {
-	defaultApi.router.Post("vips/{vip}/servers", traceRequest(serverCreate))
-	defaultApi.router.Put("vips/{vip}/servers/{server}", traceRequest(serverEnable))
-	defaultApi.router.Get("vips/{vip}/servers/{server}", traceRequest(serverGet))
-	defaultApi.router.Delete("vips/{vip}/servers/{server}", traceRequest(serverDelete))
-	defaultApi.router.Get("vips/{vip}/servers", traceRequest(serverList))
+	defaultApi.router.Post("/vips/{vip}/servers/{server}", traceRequest(serverEnable))
+	defaultApi.router.Post("/vips/{vip}/servers", traceRequest(serverCreate))
+	defaultApi.router.Get("/vips/{vip}/servers/{server}", traceRequest(serverGet))
+	defaultApi.router.Delete("/vips/{vip}/servers/{server}", traceRequest(serverDelete))
+	defaultApi.router.Get("/vips/{vip}/servers", traceRequest(serverList))
 }
 
 type (
@@ -56,14 +55,12 @@ func serverCreate(res http.ResponseWriter, req *http.Request) {
 	if err == nil {
 		server, err = ipvsadm.AddServer(vid, opts.Host, opts.Port)
 	}
-	config.Log.Info("[NA-ROUTER] create server %v %v", server, err)
 	respond(201, err, server, res)
 }
 
 func serverList(res http.ResponseWriter, req *http.Request) {
 	vid := req.URL.Query().Get(":vip")
 	servers, err := ipvsadm.ListServers(vid)
-	config.Log.Info("[NA-ROUTER] list servers %v %v", servers, err)
 	respond(200, err, serversSlice{servers}, res)
 }
 
@@ -71,7 +68,6 @@ func serverGet(res http.ResponseWriter, req *http.Request) {
 	sid := req.URL.Query().Get(":server")
 	vid := req.URL.Query().Get(":vip")
 	server, err := ipvsadm.GetServer(vid, sid)
-	config.Log.Info("[NA-ROUTER] get server %v %v", server, err)
 	respond(200, err, server, res)
 }
 
@@ -83,7 +79,6 @@ func serverEnable(res http.ResponseWriter, req *http.Request) {
 	if err == nil {
 		err = ipvsadm.EnableServer(vid, sid, opts.enabled)
 	}
-	config.Log.Info("[NA-ROUTER] enable server %v %v", opts.enabled, err)
 	respond(200, err, nil, res)
 }
 
@@ -91,6 +86,5 @@ func serverDelete(res http.ResponseWriter, req *http.Request) {
 	sid := req.URL.Query().Get(":server")
 	vid := req.URL.Query().Get(":vip")
 	err := ipvsadm.DeleteServer(vid, sid)
-	config.Log.Info("[NA-ROUTER] delete server %v %v", sid, err)
 	respond(200, err, nil, res)
 }

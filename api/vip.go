@@ -12,7 +12,6 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/pagodabox/na-router/config"
 	"github.com/pagodabox/na-router/ipvsadm"
 	"net/http"
 )
@@ -50,26 +49,22 @@ func vipCreate(res http.ResponseWriter, req *http.Request) {
 		vip, err = ipvsadm.AddVip(opts.Host, opts.Port)
 	}
 
-	config.Log.Info("[NA-ROUTER] add vip %v %v", vip, err)
 	respond(201, err, vip, res)
 }
 
 func vipList(res http.ResponseWriter, req *http.Request) {
 	vips, err := ipvsadm.ListVips()
-	config.Log.Info("[NA-ROUTER] list vips %v %v", vips, err)
 	respond(200, err, vipSlice{vips}, res)
 }
 
 func vipGet(res http.ResponseWriter, req *http.Request) {
 	vid := req.URL.Query().Get(":vip")
 	vip, err := ipvsadm.GetVip(vid)
-	config.Log.Info("[NA-ROUTER] get vip %v %v", vip, err)
 	respond(200, err, vip, res)
 }
 
 func vipDelete(res http.ResponseWriter, req *http.Request) {
 	vid := req.URL.Query().Get(":vip")
 	err := ipvsadm.DeleteVip(vid)
-	config.Log.Info("[NA-ROUTER] delete vip %v %v", vid, err)
 	respond(200, err, nil, res)
 }

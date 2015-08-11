@@ -14,9 +14,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"runtime"
+	"strings"
 
 	"github.com/gorilla/pat"
 	"github.com/pagodabox/na-router/ipvsadm"
+	"github.com/pagodabox/na-router/config"
 )
 
 type (
@@ -80,18 +84,22 @@ func respond(code int, err error, body ipvsadm.ToJson, res http.ResponseWriter) 
 		default:
 			res.WriteHeader(500)
 		}
-		res.Write([]byte(fmt.Sprintf("{\"error\":\"%v\"}", err)))
+		res.Write([]byte(fmt.Sprintf("{\"error\":\"%v\"}\n", err)))
 		return
 	}
 	res.WriteHeader(code)
-	res.Write(bytes)
+	res.Write(append(bytes,byte(15)))
 }
 
 // Traces all routes going through the api.
-func traceRequest(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func traceRequest(fn http.HandlerFunc) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
-		// I need to do something to trace this request.
+		v := reflect.ValueOf(fn)
+		if rf := runtime.FuncForPC(v.Pointer()); rf != nil {
+			names := strings.Split(rf.Name(),"/")
+			config.Log.Info("[NA-ROUTER] %v %v %v", names[len(names) - 1 ], req.URL.Path, req.RemoteAddr)
+		}
 		fn(res, req)
 
 	}
