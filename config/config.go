@@ -17,7 +17,7 @@ import (
 
 var (
 	ListenAddress string
-	Log hatchet.Logger
+	Log           hatchet.Logger
 )
 
 func init() {

@@ -11,8 +11,8 @@
 package ipvsadm
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 )
 
 type (
@@ -23,21 +23,25 @@ type (
 		FromJson([]byte) error
 	}
 
+	ider interface {
+		getId() string
+	}
+
 	Server struct {
-		Host string `json:"host"`
-		Port int `json:"port"`
-		Forwarder string `json:"forwarder"`
-		Weight int `json:"weight"`
-		InactiveConnections int `json:"innactive_connections"`
-		ActiveConnections int `json:"active_connections"`
+		Host                string `json:"host"`
+		Port                int    `json:"port"`
+		Forwarder           string `json:"forwarder"`
+		Weight              int    `json:"weight"`
+		InactiveConnections int    `json:"innactive_connections"`
+		ActiveConnections   int    `json:"active_connections"`
 	}
 
 	Vip struct {
-		Host string `json:"host"`
-		Port int `json:"port"`
-		Schedular string `json:"schedular"`
-		Persistance int `json:"persistance"`
-		Servers []Server `json:"servers"`
+		Host        string   `json:"host"`
+		Port        int      `json:"port"`
+		Schedular   string   `json:"schedular"`
+		Persistance int      `json:"persistance"`
+		Servers     []Server `json:"servers"`
 	}
 )
 

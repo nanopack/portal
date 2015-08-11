@@ -12,8 +12,8 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/pagodabox/na-router/ipvsadm"
 	"github.com/pagodabox/na-router/config"
+	"github.com/pagodabox/na-router/ipvsadm"
 	"net/http"
 )
 
@@ -28,20 +28,30 @@ type (
 	vipSlice struct {
 		vips []ipvsadm.Vip
 	}
+
+	createVipBody struct {
+		Host string `json:"host"`
+		Port int `json:"port"`
+	}
 )
 
 func (vs vipSlice) ToJson() ([]byte, error) {
 	return json.Marshal(vs)
 }
+func (cv *createVipBody) FromJson(bytes []byte) ( error) {
+	return json.Unmarshal(bytes, cv)
+}
 
 func vipCreate(res http.ResponseWriter, req *http.Request) {
-	// vip := ipvsadm.Vip{}
-	// err := parseBody(req, &vip)
-	// if err == nil {
-	// 	err = ipvsadm.AddVip(vip)
-	// }
-	// config.Log.Info("[NA-ROUTER] add vip %v %v", vip, err)
-	// respond(201, err, vip, res)
+	var vip *ipvsadm.Vip
+	opts := createVipBody{}
+	err := parseBody(req, &opts)
+	if err == nil {
+		vip, err = ipvsadm.AddVip(opts.Host, opts.Port)
+	}
+	
+	config.Log.Info("[NA-ROUTER] add vip %v %v", vip, err)
+	respond(201, err, vip, res)
 }
 
 func vipList(res http.ResponseWriter, req *http.Request) {
@@ -51,15 +61,15 @@ func vipList(res http.ResponseWriter, req *http.Request) {
 }
 
 func vipGet(res http.ResponseWriter, req *http.Request) {
-	// vip := ipvsadm.Vip{req.URL.Query().Get(":vip"), "nil", 0, nil}
-	// err := ipvsadm.GetVip(&vip)
-	// config.Log.Info("[NA-ROUTER] get vip %v %v", vip, err)
-	// respond(200, err, vip, res)
+	vid := req.URL.Query().Get(":vip")
+	vip, err := ipvsadm.GetVip(vid)
+	config.Log.Info("[NA-ROUTER] get vip %v %v", vip, err)
+	respond(200, err, vip, res)
 }
 
 func vipDelete(res http.ResponseWriter, req *http.Request) {
-	// vip := ipvsadm.Vip{req.URL.Query().Get(":vip"), "nil", 0, nil}
-	// err := ipvsadm.DeleteVip(vip)
-	// config.Log.Info("[NA-ROUTER] delete vip %v %v", vip, err)
-	// respond(200, err, vip, res)
+	vid := req.URL.Query().Get(":vip")
+	err := ipvsadm.DeleteVip(vid)
+	config.Log.Info("[NA-ROUTER] delete vip %v %v", vid, err)
+	respond(200, err, nil, res)
 }

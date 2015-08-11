@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	if err := ipvsadm.Check(); err != nil {
+	if err := ipvsadm.Load(); err != nil {
 		fmt.Printf("ipvsadm can not be used: %v\n", err)
 		os.Exit(1)
 	}

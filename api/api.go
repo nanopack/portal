@@ -23,7 +23,7 @@ type (
 	api struct {
 		router *pat.Router
 	}
-	pong struct {}
+	pong struct{}
 )
 
 func (p pong) ToJson() ([]byte, error) {
