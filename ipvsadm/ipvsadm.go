@@ -146,7 +146,6 @@ func GetServer(vid, id string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("checking servers %v\n", servers)
 	for _, server := range servers {
 		if server.getId() == id {
 			return &server, nil

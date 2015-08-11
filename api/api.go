@@ -72,7 +72,14 @@ func respond(code int, err error, body ipvsadm.ToJson, res http.ResponseWriter) 
 	}
 
 	if err != nil {
-		res.WriteHeader(500)
+		switch err {
+		case ipvsadm.NotFound:
+			res.WriteHeader(404)
+		case ipvsadm.Conflict:
+			res.WriteHeader(409)
+		default:
+			res.WriteHeader(500)
+		}
 		res.Write([]byte(fmt.Sprintf("{\"error\":\"%v\"}", err)))
 		return
 	}
