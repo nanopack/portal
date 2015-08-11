@@ -114,7 +114,6 @@ func DeleteVip(id string) error {
 
 func ListServers(vid string) ([]Server, error) {
 	vip, err := GetVip(vid)
-	fmt.Printf("get Vip %v\n", vip)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +205,6 @@ func run(args []string) (io.ReadCloser, error) {
 
 func execute(exe string, args ...string) error {
 	cmd := exec.Command(exe, args...)
-	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }
 
