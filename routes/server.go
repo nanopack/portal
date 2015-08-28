@@ -12,7 +12,6 @@ package routes
 
 import (
 	"encoding/json"
-	"github.com/pagodabox/na-api"
 	"github.com/pagodabox/na-router/ipvsadm"
 	"net/http"
 )
