@@ -8,43 +8,24 @@
 // @end
 // Created :   7 August 2015 by Daniel Barney <daniel@nanobox.io>
 //--------------------------------------------------------------------
-package api
+package routes
 
 import (
 	"fmt"
+	"github.com/pagodabox/na-api"
+	"github.com/pagodabox/na-router/ipvsadm"
 	"io/ioutil"
 	"net/http"
-	"reflect"
-	"runtime"
-	"strings"
-
-	"github.com/gorilla/pat"
-	"github.com/pagodabox/na-router/config"
-	"github.com/pagodabox/na-router/ipvsadm"
 )
 
-type (
-	api struct {
-		router *pat.Router
-	}
-	pong struct{}
-)
-
-func (p pong) ToJson() ([]byte, error) {
-	return []byte("\"pong\""), nil
-}
-
-var (
-	defaultApi = &api{pat.New()}
-)
-
-func init() {
-	defaultApi.router.Get("/ping", traceRequest(pongRoute))
+func Init() {
+	api.Router.Get("/ping", api.TraceRequest(pongRoute))
 }
 
 // pong to a ping.
 func pongRoute(res http.ResponseWriter, req *http.Request) {
-	respond(200, nil, pong{}, res)
+	res.WriteHeader(200)
+	res.Write([]byte("\"pong\""))
 }
 
 // read and parse the entire body
@@ -57,11 +38,6 @@ func parseBody(req *http.Request, output ipvsadm.FromJson) error {
 	}
 
 	return err
-}
-
-// Start up the api and begin responding to requests. Blocking.
-func Start(address string) error {
-	return http.ListenAndServe(address, defaultApi.router)
 }
 
 // Send a response back to the client
@@ -89,18 +65,4 @@ func respond(code int, err error, body ipvsadm.ToJson, res http.ResponseWriter) 
 	}
 	res.WriteHeader(code)
 	res.Write(append(bytes, byte(15)))
-}
-
-// Traces all routes going through the api.
-func traceRequest(fn http.HandlerFunc) http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
-
-		v := reflect.ValueOf(fn)
-		if rf := runtime.FuncForPC(v.Pointer()); rf != nil {
-			names := strings.Split(rf.Name(), "/")
-			config.Log.Info("[NA-ROUTER] %v %v %v", names[len(names)-1], req.URL.Path, req.RemoteAddr)
-		}
-		fn(res, req)
-
-	}
 }

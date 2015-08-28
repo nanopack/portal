@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"os/exec"
 )
 

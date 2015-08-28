@@ -11,20 +11,40 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/pagodabox/na-router/api"
-	"github.com/pagodabox/na-router/config"
+	"github.com/jcelliott/lumber"
+	"github.com/pagodabox/na-api"
 	"github.com/pagodabox/na-router/ipvsadm"
+	"github.com/pagodabox/na-router/routes"
+	"github.com/pagodabox/nanobox-config"
+	"os"
+	"strings"
 )
 
 func main() {
+	configFile := ""
+	if len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "-") {
+		configFile = os.Args[1]
+	}
+
+	defaults := map[string]string{
+		"listenAddress": "127.0.0.1:1234",
+		"logLevel":      "INFO",
+	}
+
+	config.Load(defaults, configFile)
+	config := config.Config
+
+	api.Name = "UNKNOWN"
+	level := lumber.LvlInt(config["log_level"])
+	api.Logger = lumber.NewConsoleLogger(level)
+
 	if err := ipvsadm.Load(); err != nil {
-		fmt.Printf("ipvsadm can not be used: %v\n", err)
+		api.Logger.Fatal("ipvsadm can not be used: %v\n", err)
 		os.Exit(1)
 	}
-	if err := api.Start(config.ListenAddress); err != nil {
-		fmt.Printf("api exited abnormally: %v\n", err)
+
+	routes.Init()
+	if err := api.Start(config["listenAddress"]); err != nil {
+		api.Logger.Fatal("api exited abnormally: %v\n", err)
 	}
 }

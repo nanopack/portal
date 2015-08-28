@@ -8,19 +8,20 @@
 // @end
 // Created :   7 August 2015 by Daniel Barney <daniel@nanobox.io>
 //--------------------------------------------------------------------
-package api
+package routes
 
 import (
 	"encoding/json"
+	"github.com/pagodabox/na-api"
 	"github.com/pagodabox/na-router/ipvsadm"
 	"net/http"
 )
 
 func init() {
-	defaultApi.router.Post("/vips", traceRequest(vipCreate))
-	defaultApi.router.Get("/vips/{vip}", traceRequest(vipGet))
-	defaultApi.router.Delete("/vips/{vip}", traceRequest(vipDelete))
-	defaultApi.router.Get("/vips", traceRequest(vipList))
+	api.Router.Post("/vips", api.TraceRequest(vipCreate))
+	api.Router.Get("/vips/{vip}", api.TraceRequest(vipGet))
+	api.Router.Delete("/vips/{vip}", api.TraceRequest(vipDelete))
+	api.Router.Get("/vips", api.TraceRequest(vipList))
 }
 
 type (
