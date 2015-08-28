@@ -17,13 +17,6 @@ import (
 	"net/http"
 )
 
-func init() {
-	api.Router.Post("/vips", api.TraceRequest(vipCreate))
-	api.Router.Get("/vips/{vip}", api.TraceRequest(vipGet))
-	api.Router.Delete("/vips/{vip}", api.TraceRequest(vipDelete))
-	api.Router.Get("/vips", api.TraceRequest(vipList))
-}
-
 type (
 	vipSlice struct {
 		vips []ipvsadm.Vip

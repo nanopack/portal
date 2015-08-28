@@ -19,13 +19,16 @@ import (
 )
 
 func Init() {
-	api.Router.Get("/ping", api.TraceRequest(pongRoute))
-}
+	api.Router.Post("/vips", api.TraceRequest(vipCreate))
+	api.Router.Get("/vips/{vip}", api.TraceRequest(vipGet))
+	api.Router.Delete("/vips/{vip}", api.TraceRequest(vipDelete))
+	api.Router.Get("/vips", api.TraceRequest(vipList))
 
-// pong to a ping.
-func pongRoute(res http.ResponseWriter, req *http.Request) {
-	res.WriteHeader(200)
-	res.Write([]byte("\"pong\""))
+	api.Router.Post("/vips/{vip}/servers/{server}", api.TraceRequest(serverEnable))
+	api.Router.Post("/vips/{vip}/servers", api.TraceRequest(serverCreate))
+	api.Router.Get("/vips/{vip}/servers/{server}", api.TraceRequest(serverGet))
+	api.Router.Delete("/vips/{vip}/servers/{server}", api.TraceRequest(serverDelete))
+	api.Router.Get("/vips/{vip}/servers", api.TraceRequest(serverList))
 }
 
 // read and parse the entire body

@@ -17,14 +17,6 @@ import (
 	"net/http"
 )
 
-func init() {
-	api.Router.Post("/vips/{vip}/servers/{server}", api.TraceRequest(serverEnable))
-	api.Router.Post("/vips/{vip}/servers", api.TraceRequest(serverCreate))
-	api.Router.Get("/vips/{vip}/servers/{server}", api.TraceRequest(serverGet))
-	api.Router.Delete("/vips/{vip}/servers/{server}", api.TraceRequest(serverDelete))
-	api.Router.Get("/vips/{vip}/servers", api.TraceRequest(serverList))
-}
-
 type (
 	serversSlice struct {
 		servers []ipvsadm.Server
