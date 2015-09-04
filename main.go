@@ -11,11 +11,11 @@
 package main
 
 import (
+	"bitbucket.org/nanobox/na-api"
+	"bitbucket.org/nanobox/na-router/routes"
+	"bitbucket.org/nanobox/nanobox-config"
 	"github.com/jcelliott/lumber"
-	"github.com/pagodabox/na-api"
-	"github.com/pagodabox/na-router/ipvsadm"
-	"github.com/pagodabox/na-router/routes"
-	"github.com/pagodabox/nanobox-config"
+	"github.com/pagodabox/na-lvs"
 	"os"
 	"strings"
 )
@@ -38,7 +38,7 @@ func main() {
 	level := lumber.LvlInt(config["log_level"])
 	api.Logger = lumber.NewConsoleLogger(level)
 
-	if err := ipvsadm.Load(); err != nil {
+	if err := lvs.Load(); err != nil {
 		api.Logger.Fatal("ipvsadm can not be used: %v\n", err)
 		os.Exit(1)
 	}

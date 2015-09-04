@@ -12,13 +12,13 @@ package routes
 
 import (
 	"encoding/json"
-	"github.com/pagodabox/na-router/ipvsadm"
+	"github.com/pagodabox/na-lvs"
 	"net/http"
 )
 
 type (
 	vipSlice struct {
-		vips []ipvsadm.Vip
+		vips []lvs.Vip
 	}
 
 	createVipBody struct {
@@ -35,29 +35,29 @@ func (cv *createVipBody) FromJson(bytes []byte) error {
 }
 
 func vipCreate(res http.ResponseWriter, req *http.Request) {
-	var vip *ipvsadm.Vip
+	var vip *lvs.Vip
 	opts := createVipBody{}
 	err := parseBody(req, &opts)
 	if err == nil {
-		vip, err = ipvsadm.AddVip(opts.Host, opts.Port)
+		vip, err = lvs.AddVip(opts.Host, opts.Port)
 	}
 
 	respond(201, err, vip, res)
 }
 
 func vipList(res http.ResponseWriter, req *http.Request) {
-	vips, err := ipvsadm.ListVips()
+	vips, err := lvs.ListVips()
 	respond(200, err, vipSlice{vips}, res)
 }
 
 func vipGet(res http.ResponseWriter, req *http.Request) {
 	vid := req.URL.Query().Get(":vip")
-	vip, err := ipvsadm.GetVip(vid)
+	vip, err := lvs.GetVip(vid)
 	respond(200, err, vip, res)
 }
 
 func vipDelete(res http.ResponseWriter, req *http.Request) {
 	vid := req.URL.Query().Get(":vip")
-	err := ipvsadm.DeleteVip(vid)
+	err := lvs.DeleteVip(vid)
 	respond(200, err, nil, res)
 }

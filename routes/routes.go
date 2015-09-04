@@ -13,7 +13,7 @@ package routes
 import (
 	"fmt"
 	"github.com/pagodabox/na-api"
-	"github.com/pagodabox/na-router/ipvsadm"
+	"github.com/pagodabox/na-lvs"
 	"io/ioutil"
 	"net/http"
 )
@@ -32,7 +32,7 @@ func Init() {
 }
 
 // read and parse the entire body
-func parseBody(req *http.Request, output ipvsadm.FromJson) error {
+func parseBody(req *http.Request, output lvs.FromJson) error {
 	body, err := ioutil.ReadAll(req.Body)
 
 	if err == nil {
@@ -44,7 +44,7 @@ func parseBody(req *http.Request, output ipvsadm.FromJson) error {
 }
 
 // Send a response back to the client
-func respond(code int, err error, body ipvsadm.ToJson, res http.ResponseWriter) {
+func respond(code int, err error, body lvs.ToJson, res http.ResponseWriter) {
 	var bytes []byte
 	if err == nil {
 		if body == nil {
@@ -56,9 +56,9 @@ func respond(code int, err error, body ipvsadm.ToJson, res http.ResponseWriter) 
 
 	if err != nil {
 		switch err {
-		case ipvsadm.NotFound:
+		case lvs.NotFound:
 			res.WriteHeader(404)
-		case ipvsadm.Conflict:
+		case lvs.Conflict:
 			res.WriteHeader(409)
 		default:
 			res.WriteHeader(500)

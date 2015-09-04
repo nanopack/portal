@@ -12,13 +12,13 @@ package routes
 
 import (
 	"encoding/json"
-	"github.com/pagodabox/na-router/ipvsadm"
+	"github.com/pagodabox/na-lvs"
 	"net/http"
 )
 
 type (
 	serversSlice struct {
-		servers []ipvsadm.Server
+		servers []lvs.Server
 	}
 	createServerBody struct {
 		Host string `json:"host"`
@@ -40,26 +40,26 @@ func (cs *createServerBody) FromJson(bytes []byte) error {
 }
 
 func serverCreate(res http.ResponseWriter, req *http.Request) {
-	var server *ipvsadm.Server
+	var server *lvs.Server
 	vid := req.URL.Query().Get(":vip")
 	opts := createServerBody{}
 	err := parseBody(req, &opts)
 	if err == nil {
-		server, err = ipvsadm.AddServer(vid, opts.Host, opts.Port)
+		server, err = lvs.AddServer(vid, opts.Host, opts.Port)
 	}
 	respond(201, err, server, res)
 }
 
 func serverList(res http.ResponseWriter, req *http.Request) {
 	vid := req.URL.Query().Get(":vip")
-	servers, err := ipvsadm.ListServers(vid)
+	servers, err := lvs.ListServers(vid)
 	respond(200, err, serversSlice{servers}, res)
 }
 
 func serverGet(res http.ResponseWriter, req *http.Request) {
 	sid := req.URL.Query().Get(":server")
 	vid := req.URL.Query().Get(":vip")
-	server, err := ipvsadm.GetServer(vid, sid)
+	server, err := lvs.GetServer(vid, sid)
 	respond(200, err, server, res)
 }
 
@@ -69,7 +69,7 @@ func serverEnable(res http.ResponseWriter, req *http.Request) {
 	opts := enableBody{}
 	err := parseBody(req, &opts)
 	if err == nil {
-		err = ipvsadm.EnableServer(vid, sid, opts.enabled)
+		err = lvs.EnableServer(vid, sid, opts.enabled)
 	}
 	respond(200, err, nil, res)
 }
@@ -77,6 +77,6 @@ func serverEnable(res http.ResponseWriter, req *http.Request) {
 func serverDelete(res http.ResponseWriter, req *http.Request) {
 	sid := req.URL.Query().Get(":server")
 	vid := req.URL.Query().Get(":vip")
-	err := ipvsadm.DeleteServer(vid, sid)
+	err := lvs.DeleteServer(vid, sid)
 	respond(200, err, nil, res)
 }
