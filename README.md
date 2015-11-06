@@ -1,10 +1,13 @@
-# Nanobox-Router
+# Portal
 
-Nanobox-Router is a simple API that configures the linux virtual server load balancer (ipvs). It has a simple api that allows a remote server to configure ipvs.
+An api-driven, in-kernel layer 2/3 load balancer.
+
+### Status
+Incomplete/Experimental/Unstable
 
 ## Memory Usage
 
-Currently na-router uses 900k of ram while idling.
+Currently portal uses 900k of ram while idling.
 
 
 ## Routes :
