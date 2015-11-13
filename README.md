@@ -1,3 +1,6 @@
+[![portal logo](http://nano-assets.gopagoda.io/readme-headers/portal.png)](http://nanobox.io/open-source#portal)
+[![Build Status](https://travis-ci.org/nanopack/portal.svg)](https://travis-ci.org/nanopack/portal)
+
 # Portal
 
 An api-driven, in-kernel layer 2/3 load balancer.
@@ -26,3 +29,5 @@ Currently portal uses 900k of ram while idling.
 
 - Nothing is stored in an intermediary database, ipvsadm is considered the backend datastore for the api.
 - There is a copy of the rules that are generated after every update stored at `/somewhere/ipvsadm.rules` that is used to initialize ipvsadm on boot.
+
+[![portal logo](http://nano-assets.gopagoda.io/open-src/nanobox-open-src.png)](http://nanobox.io/open-source)
