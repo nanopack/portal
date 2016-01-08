@@ -12,8 +12,9 @@ package routes
 
 import (
 	"encoding/json"
-	"github.com/pagodabox/na-lvs"
 	"net/http"
+
+	lvs "github.com/nanobox-io/golang-lvs"
 )
 
 type (

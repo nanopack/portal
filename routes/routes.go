@@ -12,10 +12,11 @@ package routes
 
 import (
 	"fmt"
-	"github.com/pagodabox/na-api"
-	"github.com/pagodabox/na-lvs"
 	"io/ioutil"
 	"net/http"
+
+	lvs "github.com/nanobox-io/golang-lvs"
+	"github.com/nanobox-io/nanobox-api"
 )
 
 func Init() {
