@@ -11,47 +11,9 @@
 package main
 
 import (
-	"os"
-	"strings"
-
-	"github.com/jcelliott/lumber"
-	"github.com/nanobox-io/golang-lvs"
-	"github.com/nanobox-io/nanobox-api"
-	"github.com/nanobox-io/nanobox-config"
-
-	"github.com/nanopack/portal/routes"
+	"github.com/nanopack/portal/commands"
 )
 
 func main() {
-	// load saved database
-	// restore from saved database
-
-	// start api
-
-	configFile := ""
-	if len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "-") {
-		configFile = os.Args[1]
-	}
-
-	defaults := map[string]string{
-		"listenAddress": "127.0.0.1:1234",
-		"logLevel":      "INFO",
-	}
-
-	config.Load(defaults, configFile)
-	config := config.Config
-
-	api.Name = "UNKNOWN"
-	level := lumber.LvlInt(config["log_level"])
-	api.Logger = lumber.NewConsoleLogger(level)
-
-	if err := lvs.Load(); err != nil {
-		api.Logger.Fatal("ipvsadm can not be used: %v\n", err)
-		os.Exit(1)
-	}
-
-	routes.Init()
-	if err := api.Start(config["listenAddress"]); err != nil {
-		api.Logger.Fatal("api exited abnormally: %v\n", err)
-	}
+	commands.Portal.Execute()
 }

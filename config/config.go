@@ -1,6 +1,8 @@
 package config
 
-import ()
+import (
+	"github.com/jcelliott/lumber"
+)
 
 var (
 	ApiToken           string
@@ -11,6 +13,10 @@ var (
 	ApiKeyPassword     string
 	ConfigFile         string
 	DatabaseConnection string
+	Insecure           bool
+	LogLevel           string
+	LogFile            string
+	Log                lumber.Logger
 )
 
 func LoadConfigFile() {

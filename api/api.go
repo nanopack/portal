@@ -138,6 +138,7 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 		writeBody(err, rw, http.StatusInternalServerError)
 		return
 	}
+	// Parse body for extra info:
 	// Forwarder, Weight, UpperThreshold, LowerThreshold
 	err = database.SetServer(service, server)
 	if err != nil {

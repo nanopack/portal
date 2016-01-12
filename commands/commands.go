@@ -6,6 +6,7 @@ import (
 
 	"github.com/nanopack/portal/api"
 	"github.com/nanopack/portal/config"
+	"github.com/nanopack/portal/database"
 )
 
 var (
@@ -57,7 +58,25 @@ func init() {
 }
 
 func startServer() {
+	if config.LogFile == "" {
+		config.Log = lumber.NewConsoleLogger(lumber.LvlInt(config.LogLevel))
+	} else {
+		var err error
+		config.Log, err = lumber.NewFileLogger(config.LogFile, lumber.LvlInt(config.LogLevel), lumber.ROTATE, 5000, 9, 100)
+		if err != nil {
+			panic(err)
+		}
+	}
 	// initialize database
 	// load saved rules
+	err := database.SyncToLvs()
+	if err != nil {
+		panic(err)
+	}
 	// start api
+	err = api.StartApi()
+	if err != nil {
+		panic(err)
+	}
+	return
 }
