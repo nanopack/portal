@@ -11,9 +11,9 @@ import (
 	"github.com/nanopack/portal/config"
 )
 
-var (
+type (
 	ScribbleDatabase struct {
-		scribbleDb scribble.Driver
+		scribbleDb *scribble.Driver
 	}
 )
 
@@ -52,20 +52,25 @@ func (s ScribbleDatabase) GetServices() ([]lvs.Service, error) {
 func (s ScribbleDatabase) GetService(service lvs.Service) (lvs.Service, error) {
 	real_service := lvs.Service{}
 	err := s.scribbleDb.Read("services", key(service), &real_service)
-
+	if err != nil {
+		return real_service, err
+	}
 	return real_service, nil
 }
 
 func (s ScribbleDatabase) SetServices(services []lvs.Service) error {
-	self.scribbleDb.Delete("services", "")
+	s.scribbleDb.Delete("services", "")
 	for i := range services {
 		err := s.scribbleDb.Write("services", key(services[i]), services[i])
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (s ScribbleDatabase) SetService(service lvs.Service) error {
-	return s.scribbleDb.Write("services", key(services), services)
+	return s.scribbleDb.Write("services", key(service), service)
 }
 
 func (s ScribbleDatabase) DeleteService(service lvs.Service) error {

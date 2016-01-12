@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/coreos/go-iptables/iptables"
+	// "github.com/coreos/go-iptables/iptables"
 	"github.com/nanobox-io/golang-lvs"
 
 	"github.com/nanopack/portal/config"
@@ -23,13 +23,14 @@ type (
 )
 
 var (
-	Backend        *Backender
+	Backend        Backender
 	ipvsLock       *sync.RWMutex
-	NoServiceError = errors.New("No Service")
+	NoServiceError = errors.New("No Service Found")
+	NoServerError  = errors.New("No Server Found")
 )
 
 func init() {
-	ipvsLock = &sync.Mutex{}
+	ipvsLock = &sync.RWMutex{}
 	u, err := url.Parse(config.DatabaseConnection)
 	if err != nil {
 		return
@@ -74,7 +75,7 @@ func SetServer(service lvs.Service, server lvs.Server) error {
 	}
 	// save to backend
 	if Backend != nil {
-		err = Backend.SetService(s)
+		err = Backend.SetService(*s)
 		if err != nil {
 			return err
 		}
@@ -94,7 +95,7 @@ func DeleteServer(service lvs.Service, server lvs.Server) error {
 	s.RemoveServer(server)
 	// remove from backend
 	if Backend != nil {
-		err := Backend.SetService(s)
+		err := Backend.SetService(*s)
 		if err != nil {
 			return err
 		}
@@ -108,7 +109,7 @@ func DeleteServer(service lvs.Service, server lvs.Server) error {
 // }
 
 // SetServers
-func SetServers(service lvs.Service, servers []lvs.servers) error {
+func SetServers(service lvs.Service, servers []lvs.Server) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 	// add to lvs
