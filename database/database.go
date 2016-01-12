@@ -1,31 +1,51 @@
 package database
 
 import (
+	"errors"
+	"net/url"
 	"sync"
 
+	"github.com/coreos/go-iptables/iptables"
 	"github.com/nanobox-io/golang-lvs"
+
+	"github.com/nanopack/portal/config"
 )
 
 type (
-	Something interface {
+	Backender interface {
 		GetServices() ([]lvs.Service, error)
-		GetService() (lvs.Service, error)
+		GetService(lvs.Service) (lvs.Service, error)
 		SetServices([]lvs.Service) error
 		SetService(lvs.Service) error
 		DeleteService(lvs.Service) error
+		Init() error
 	}
 )
 
 var (
-	Backends    map[string]Something
-	Backend     Something
-	backendLock *sync.RWMutex
-	ipvsLock    *sync.RWMutex
+	Backend        *Backender
+	ipvsLock       *sync.RWMutex
+	NoServiceError = errors.New("No Service")
 )
 
 func init() {
-	backendLock = &sync.Mutex{}
 	ipvsLock = &sync.Mutex{}
+	u, err := url.Parse(config.DatabaseConnection)
+	if err != nil {
+		return
+	}
+	switch u.Scheme {
+	case "scribble":
+		Backend = &ScribbleDatabase{}
+	default:
+		Backend = nil
+	}
+	if Backend != nil {
+		err := Backend.Init()
+		if err != nil {
+			Backend = nil
+		}
+	}
 }
 
 // GetServer
@@ -44,18 +64,41 @@ func SetServer(service lvs.Service, server lvs.Server) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 	// add to lvs
+	s := lvs.DefaultIpvs.FindService(service)
+	if s == nil {
+		return NoServiceError
+	}
+	err := s.AddServer(server)
+	if err != nil {
+		return err
+	}
 	// save to backend
-	Backend.SetService(service)
+	if Backend != nil {
+		err = Backend.SetService(s)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 // DeleteServer
-func DeleteServer(service lvs.Service, host string, port int) error {
+func DeleteServer(service lvs.Service, server lvs.Server) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
-	// remove from backend
-	Backend.SetService(service)
 	// remove from lvs
+	s := lvs.DefaultIpvs.FindService(service)
+	if s == nil {
+		return nil
+	}
+	s.RemoveServer(server)
+	// remove from backend
+	if Backend != nil {
+		err := Backend.SetService(s)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -65,8 +108,39 @@ func DeleteServer(service lvs.Service, host string, port int) error {
 // }
 
 // SetServers
+func SetServers(service lvs.Service, servers []lvs.servers) error {
+	ipvsLock.Lock()
+	defer ipvsLock.Unlock()
+	// add to lvs
+	s := lvs.DefaultIpvs.FindService(service)
+	if s == nil {
+		return NoServiceError
+	}
+	// Add Servers
+AddServers:
+	for i := range servers {
+		for j := range s.Servers {
+			if servers[i].Host == s.Servers[j].Host && servers[i].Port == s.Servers[j].Port {
+				continue AddServers
+			}
+		}
+		s.AddServer(servers[i])
+	}
+	// Remove Servers
+RemoveServers:
+	for i := range s.Servers {
+		for j := range servers {
+			if s.Servers[i].Host == servers[j].Host && s.Servers[i].Port == servers[j].Port {
+				continue RemoveServers
+			}
+		}
+		s.RemoveServer(s.Servers[i])
+	}
+	return nil
+}
+
 // GetService
-func GetService(service lvs.Service) lvs.Service {
+func GetService(service lvs.Service) *lvs.Service {
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
 	return lvs.DefaultIpvs.FindService(service)
@@ -77,28 +151,74 @@ func SetService(service lvs.Service) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 	// add to lvs
+	err := lvs.DefaultIpvs.AddService(service)
+	if err != nil {
+		return err
+	}
 	// save to backend
-	Backend.SetService(service)
+	if Backend != nil {
+		err := Backend.SetService(service)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 // DeleteService
-func DeleteService(proto, host string, port int) error {
+func DeleteService(service lvs.Service) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
-	// remove from backend
-	Backend.DeleteService(service)
 	// remove from lvs
+	err := lvs.DefaultIpvs.RemoveService(service)
+	if err != nil {
+		return err
+	}
+	// remove from backend
+	if Backend != nil {
+		err := Backend.DeleteService(service)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 // GetServices
+func GetServices() []lvs.Service {
+	ipvsLock.RLock()
+	defer ipvsLock.RUnlock()
+	return lvs.DefaultIpvs.Services
+}
+
 // SetServices
+func SetServices(services []lvs.Service) error {
+	ipvsLock.Lock()
+	defer ipvsLock.Unlock()
+	lvs.DefaultIpvs.Restore(services)
+	if Backend != nil {
+		err := Backend.SetServices(services)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // SyncLvs
 func SyncToLvs() error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
+	var err error
+	var services []lvs.Service
+	if Backend != nil {
+		services, err = Backend.GetServices()
+		if err != nil {
+			return err
+		}
+	} else {
+		services = []lvs.Service{}
+	}
 	return lvs.Restore(services)
 }
 
@@ -106,7 +226,15 @@ func SyncToLvs() error {
 func SyncToPortal() error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
-	var err error
-	services, err = lvs.Save(services)
-	return err
+	err := lvs.Save()
+	if err != nil {
+		return err
+	}
+	if Backend != nil {
+		err := Backend.SetServices(lvs.DefaultIpvs.Services)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
