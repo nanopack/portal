@@ -41,20 +41,20 @@ func init() {
 
 	Portal.Flags().BoolVarP(&runServer, "server", "s", false, "Run in server mode")
 
-	// Portal.AddCommand()
-	// service-add
-	// service-remove
-	// service-show
-	// server-add
-	// server-remove
-	// server-show
-	// services-show
-	// services-set
-	// servers-show
-	// servers-set
-	// sync-lvs
-	// sync-portal
+	Portal.AddCommand(serviceAddCmd)
+	Portal.AddCommand(serviceRemoveCmd)
+	Portal.AddCommand(serviceShowCmd)
+	Portal.AddCommand(servicesShowCmd)
+	Portal.AddCommand(servicesSetCmd)
 
+	Portal.AddCommand(serverAddCmd)
+	Portal.AddCommand(serverRemoveCmd)
+	Portal.AddCommand(serverShowCmd)
+	Portal.AddCommand(serversShowCmd)
+	Portal.AddCommand(serversSetCmd)
+
+	Portal.AddCommand(syncLvsCmd)
+	Portal.AddCommand(syncPortalCmd)
 }
 
 func startServer() {
