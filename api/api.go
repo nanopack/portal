@@ -140,6 +140,8 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 	}
 	// Parse body for extra info:
 	// Forwarder, Weight, UpperThreshold, LowerThreshold
+	decoder := json.NewDecoder(req.Body)
+	decoder.Decode(&server)
 	err = database.SetServer(service, server)
 	if err != nil {
 		writeBody(err, rw, http.StatusInternalServerError)
@@ -196,6 +198,8 @@ func postServers(rw http.ResponseWriter, req *http.Request) {
 	servers := []lvs.Server{}
 	// Servers?
 	// - Host, Port, Forwarder, Weight, UpperThreshold, LowerThreshold
+	decoder := json.NewDecoder(req.Body)
+	decoder.Decode(&servers)
 	err = database.SetServers(service, servers)
 	if err != nil {
 		writeBody(err, rw, http.StatusInternalServerError)
@@ -231,6 +235,8 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 	// Scheduler, Persistance, Netmask
 	// Servers?
 	// - Host, Port, Forwarder, Weight, UpperThreshold, LowerThreshold
+	decoder := json.NewDecoder(req.Body)
+	decoder.Decode(&service)
 	err = database.SetService(service)
 	if err != nil {
 		writeBody(err, rw, http.StatusInternalServerError)
@@ -266,6 +272,10 @@ func getServices(rw http.ResponseWriter, req *http.Request) {
 func postServices(rw http.ResponseWriter, req *http.Request) {
 	// /services
 	services := []lvs.Service{}
+
+	decoder := json.NewDecoder(req.Body)
+	decoder.Decode(&services)
+
 	err := database.SetServices(services)
 	if err != nil {
 		writeBody(err, rw, http.StatusInternalServerError)
