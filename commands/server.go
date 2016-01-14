@@ -57,18 +57,18 @@ var (
 )
 
 func serverSimpleFlags(ccmd *cobra.Command, server *lvs.Server) {
-	ccmd.Flags().StringVarP(&server.Host, "host", "h", "",
+	ccmd.Flags().StringVarP(&server.Host, "server-host", "o", "",
 		"Host of down-stream server")
-	ccmd.Flags().IntVarP(&server.Port, "port", "p", 0,
+	ccmd.Flags().IntVarP(&server.Port, "server-port", "p", 0,
 		"Port of down-stream server")
 }
 
 func serverComplexFlags(ccmd *cobra.Command, server *lvs.Server) {
 	serverSimpleFlags(ccmd, server)
-	ccmd.Flags().StringVarP(&server.Forwarder, "forwarder", "f", "g", "Forwarder method [g i m]")
-	ccmd.Flags().IntVarP(&server.Weight, "weight", "w", 1, "weight of down-stream server")
-	ccmd.Flags().IntVarP(&server.UpperThreshold, "upper-threshold", "u", 0, "Upper threshold of down-stream server")
-	ccmd.Flags().IntVarP(&server.LowerThreshold, "lower-threshold", "l", 0, "Lower threshold of down-stream server")
+	ccmd.Flags().StringVarP(&server.Forwarder, "server-forwarder", "f", "g", "Forwarder method [g i m]")
+	ccmd.Flags().IntVarP(&server.Weight, "server-weight", "w", 1, "weight of down-stream server")
+	ccmd.Flags().IntVarP(&server.UpperThreshold, "server-upper-threshold", "u", 0, "Upper threshold of down-stream server")
+	ccmd.Flags().IntVarP(&server.LowerThreshold, "server-lower-threshold", "l", 0, "Lower threshold of down-stream server")
 }
 
 func serverAdd(ccmd *cobra.Command, args []string) {

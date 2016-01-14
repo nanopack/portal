@@ -57,19 +57,19 @@ var (
 )
 
 func serviceSimpleFlags(ccmd *cobra.Command, service *lvs.Service) {
-	ccmd.Flags().StringVarP(&service.Host, "host", "h", "",
+	ccmd.Flags().StringVarP(&service.Host, "service-host", "O", "",
 		"Host of down-stream service")
-	ccmd.Flags().IntVarP(&service.Port, "port", "p", 0,
+	ccmd.Flags().IntVarP(&service.Port, "service-port", "R", 0,
 		"Port of down-stream service")
-	ccmd.Flags().StringVarP(&service.Type, "type", "T", "tcp",
+	ccmd.Flags().StringVarP(&service.Type, "service-type", "T", "tcp",
 		"Type of service [tcp udp fwmark]")
 }
 
 func serviceComplexFlags(ccmd *cobra.Command, service *lvs.Service) {
 	serviceSimpleFlags(ccmd, service)
-	ccmd.Flags().StringVarP(&service.Scheduler, "scheduler", "s", "wlc", "Scheduler method [rr wrr lc wlc lblc lblcr dh sh sed nq]")
-	ccmd.Flags().IntVarP(&service.Persistance, "persistance", "e", 0, "keep connections persistent to the same down stream server")
-	ccmd.Flags().StringVarP(&service.Netmask, "netmask", "n", "", "Netmask to group by")
+	ccmd.Flags().StringVarP(&service.Scheduler, "service-scheduler", "s", "wlc", "Scheduler method [rr wrr lc wlc lblc lblcr dh sh sed nq]")
+	ccmd.Flags().IntVarP(&service.Persistance, "service-persistance", "e", 0, "keep connections persistent to the same down stream server")
+	ccmd.Flags().StringVarP(&service.Netmask, "service-netmask", "n", "", "Netmask to group by")
 }
 
 func serviceAdd(ccmd *cobra.Command, args []string) {
