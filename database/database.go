@@ -342,8 +342,8 @@ func SyncToPortal() error {
 		tab.NewChain("filter", "portal")
 		tab.ClearChain("filter", "portal")
 		tab.AppendUnique("filter", "portal", "-j", "RETURN")
-		for i := range services {
-			err := tab.Insert("filter", "portal", 0, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+		for i := range lvs.DefaultIpvs.Services {
+			err := tab.Insert("filter", "portal", 0, "-p", lvs.DefaultIpvs.Services[i].Type, "-d", lvs.DefaultIpvs.Services[i].Host, "--dport", fmt.Sprintf("%d", lvs.DefaultIpvs.Services[i].Port), "-j", "ACCEPT")
 			if err != nil {
 				tab.ClearChain("filter", "portal")
 				tab.DeleteChain("filter", "portal")
