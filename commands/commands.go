@@ -1,6 +1,11 @@
 package commands
 
 import (
+	"crypto/tls"
+	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/jcelliott/lumber"
 	"github.com/spf13/cobra"
 
@@ -79,4 +84,24 @@ func startServer() {
 		panic(err)
 	}
 	return
+}
+
+func rest(path string, method string, body io.Reader) (*http.Response, error) {
+	var client *http.Client
+	if config.Insecure {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client = &http.Client{Transport: tr}
+	} else {
+		client = http.DefaultClient
+	}
+
+	uri := fmt.Sprintf("https://%s:%s/%s", config.ApiHost, config.ApiPort, path)
+	req, err := http.NewRequest(method, uri, body)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
+	return client.Do(req)
 }

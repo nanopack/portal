@@ -1,6 +1,11 @@
 package commands
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+
 	"github.com/nanobox-io/golang-lvs"
 	"github.com/spf13/cobra"
 
@@ -71,22 +76,86 @@ func serviceAdd(ccmd *cobra.Command, args []string) {
 	service := lvs.Service{}
 	serviceComplexFlags(ccmd, &service)
 
+	jsonBytes, err := json.Marshal(service)
+	if err != nil {
+		panic(err)
+	}
+	path := fmt.Sprintf("services/%s/%s/%d", service.Type, service.Host, service.Port)
+	res, err := rest(path, "POST", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		panic(err)
+	}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(b))
 }
 
 func serviceRemove(ccmd *cobra.Command, args []string) {
 	service := lvs.Service{}
 	serviceSimpleFlags(ccmd, &service)
+
+	path := fmt.Sprintf("services/%s/%s/%d", service.Type, service.Host, service.Port)
+	res, err := rest(path, "DELETE", nil)
+	if err != nil {
+		panic(err)
+	}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(b))
 }
 
 func serviceShow(ccmd *cobra.Command, args []string) {
 	service := lvs.Service{}
 	serviceSimpleFlags(ccmd, &service)
+
+	path := fmt.Sprintf("services/%s/%s/%d", service.Type, service.Host, service.Port)
+	res, err := rest(path, "GET", nil)
+	if err != nil {
+		panic(err)
+	}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(b))
 }
 
 func servicesShow(ccmd *cobra.Command, args []string) {
-
+	res, err := rest("services", "GET", nil)
+	if err != nil {
+		panic(err)
+	}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(b))
 }
 
 func servicesSet(ccmd *cobra.Command, args []string) {
+	services := []lvs.Service{}
+	jsonString := ""
+	ccmd.Flags().StringVarP(&jsonString, "json", "j", "", "Json encoded data for services")
 
+	err := json.Unmarshal([]byte(jsonString), &services)
+	if err != nil {
+		panic(err)
+	}
+	jsonBytes, err := json.Marshal(services)
+	if err != nil {
+		panic(err)
+	}
+	res, err := rest("services", "POST", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		panic(err)
+	}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(b))
 }

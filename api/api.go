@@ -59,8 +59,8 @@ func routes() *pat.Router {
 	router.Delete("/services/{proto}/{service_ip}/{service_port}", handleRequest(deleteService))
 	router.Get("/services", handleRequest(getServices))
 	router.Post("/services", handleRequest(postServices))
-	router.Get("/sync", handleRequest(postServices))
-	router.Post("/sync", handleRequest(postServices))
+	router.Get("/sync", handleRequest(getSync))
+	router.Post("/sync", handleRequest(postSync))
 	return router
 }
 
