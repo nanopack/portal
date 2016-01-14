@@ -240,6 +240,9 @@ func SetServices(services []lvs.Service) error {
 	if Backend != nil {
 		err := Backend.SetServices(services)
 		if err != nil {
+			if tab != nil {
+				tab.RenameChain("filter", "portal-old", "portal")
+			}
 			return err
 		}
 	}
@@ -250,6 +253,9 @@ func SetServices(services []lvs.Service) error {
 		for i := range services {
 			err := tab.Insert("filter", "portal", 0, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
 			if err != nil {
+				tab.ClearChain("filter", "portal")
+				tab.DeleteChain("filter", "portal")
+				tab.RenameChain("filter", "portal-old", "portal")
 				return err
 			}
 		}
@@ -265,32 +271,90 @@ func SetServices(services []lvs.Service) error {
 func SyncToLvs() error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
+	if tab != nil {
+		tab.RenameChain("filter", "portal", "portal-old")
+	}
 	var err error
 	var services []lvs.Service
 	if Backend != nil {
 		services, err = Backend.GetServices()
 		if err != nil {
+			if tab != nil {
+				tab.RenameChain("filter", "portal-old", "portal")
+			}
 			return err
 		}
 	} else {
 		services = []lvs.Service{}
 	}
-	return lvs.Restore(services)
+	err = lvs.Restore(services)
+	if err != nil {
+		if tab != nil {
+			tab.RenameChain("filter", "portal-old", "portal")
+		}
+		return err
+	}
+	if tab != nil {
+		tab.NewChain("filter", "portal")
+		tab.ClearChain("filter", "portal")
+		tab.AppendUnique("filter", "portal", "-j", "RETURN")
+		for i := range services {
+			err := tab.Insert("filter", "portal", 0, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+			if err != nil {
+				tab.ClearChain("filter", "portal")
+				tab.DeleteChain("filter", "portal")
+				tab.RenameChain("filter", "portal-old", "portal")
+				return err
+			}
+		}
+		tab.AppendUnique("filter", "INPUT", "-j", "portal")
+		tab.Delete("filter", "INPUT", "-j", "portal-old")
+		tab.ClearChain("filter", "portal-old")
+		tab.DeleteChain("filter", "portal-old")
+	}
+	return nil
 }
 
 // SyncToPortal
 func SyncToPortal() error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
+	if tab != nil {
+		tab.RenameChain("filter", "portal", "portal-old")
+	}
 	err := lvs.Save()
 	if err != nil {
+		if tab != nil {
+			tab.RenameChain("filter", "portal-old", "portal")
+		}
 		return err
 	}
 	if Backend != nil {
 		err := Backend.SetServices(lvs.DefaultIpvs.Services)
 		if err != nil {
+			if tab != nil {
+				tab.RenameChain("filter", "portal-old", "portal")
+			}
 			return err
 		}
+	}
+	if tab != nil {
+		tab.NewChain("filter", "portal")
+		tab.ClearChain("filter", "portal")
+		tab.AppendUnique("filter", "portal", "-j", "RETURN")
+		for i := range services {
+			err := tab.Insert("filter", "portal", 0, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+			if err != nil {
+				tab.ClearChain("filter", "portal")
+				tab.DeleteChain("filter", "portal")
+				tab.RenameChain("filter", "portal-old", "portal")
+				return err
+			}
+		}
+		tab.AppendUnique("filter", "INPUT", "-j", "portal")
+		tab.Delete("filter", "INPUT", "-j", "portal-old")
+		tab.ClearChain("filter", "portal-old")
+		tab.DeleteChain("filter", "portal-old")
 	}
 	return nil
 }
