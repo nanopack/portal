@@ -2,10 +2,11 @@ package database
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"sync"
 
-	// "github.com/coreos/go-iptables/iptables"
+	"github.com/coreos/go-iptables/iptables"
 	"github.com/nanobox-io/golang-lvs"
 
 	"github.com/nanopack/portal/config"
@@ -27,11 +28,14 @@ var (
 	ipvsLock       *sync.RWMutex
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
+	tab            *iptables.IPTables
 )
 
 func init() {
 	ipvsLock = &sync.RWMutex{}
-	u, err := url.Parse(config.DatabaseConnection)
+	var err error
+	var u *url.URL
+	u, err = url.Parse(config.DatabaseConnection)
 	if err != nil {
 		return
 	}
@@ -42,9 +46,30 @@ func init() {
 		Backend = nil
 	}
 	if Backend != nil {
-		err := Backend.Init()
+		err = Backend.Init()
 		if err != nil {
 			Backend = nil
+		}
+	}
+	tab, err = iptables.New()
+	if err != nil {
+		tab = nil
+	}
+	if tab != nil {
+		tab.Delete("filter", "INPUT", "-j", "portal")
+		tab.ClearChain("filter", "portal")
+		tab.DeleteChain("filter", "portal")
+		err = tab.NewChain("filter", "portal")
+		if err != nil {
+			return
+		}
+		err = tab.AppendUnique("filter", "portal", "-j", "RETURN")
+		if err != nil {
+			return
+		}
+		err = tab.AppendUnique("filter", "INPUT", "-j", "portal")
+		if err != nil {
+			return
 		}
 	}
 }
@@ -163,6 +188,12 @@ func SetService(service lvs.Service) error {
 			return err
 		}
 	}
+	if tab != nil {
+		err := tab.Insert("filter", "portal", 0, "-p", service.Type, "-d", service.Host, "--dport", fmt.Sprintf("%d", service.Port), "-j", "ACCEPT")
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -182,6 +213,12 @@ func DeleteService(service lvs.Service) error {
 			return err
 		}
 	}
+	if tab != nil {
+		err := tab.Delete("filter", "portal", "-p", service.Type, "-d", service.Host, "--dport", fmt.Sprintf("%d", service.Port), "-j", "ACCEPT")
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -196,12 +233,30 @@ func GetServices() []lvs.Service {
 func SetServices(services []lvs.Service) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
+	if tab != nil {
+		tab.RenameChain("filter", "portal", "portal-old")
+	}
 	lvs.DefaultIpvs.Restore(services)
 	if Backend != nil {
 		err := Backend.SetServices(services)
 		if err != nil {
 			return err
 		}
+	}
+	if tab != nil {
+		tab.NewChain("filter", "portal")
+		tab.ClearChain("filter", "portal")
+		tab.AppendUnique("filter", "portal", "-j", "RETURN")
+		for i := range services {
+			err := tab.Insert("filter", "portal", 0, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+			if err != nil {
+				return err
+			}
+		}
+		tab.AppendUnique("filter", "INPUT", "-j", "portal")
+		tab.Delete("filter", "INPUT", "-j", "portal-old")
+		tab.ClearChain("filter", "portal-old")
+		tab.DeleteChain("filter", "portal-old")
 	}
 	return nil
 }
