@@ -12,22 +12,45 @@ Incomplete/Experimental/Unstable
 
 Currently portal uses 900k of ram while idling.
 
+## Data types:
+### Service:
+json: {"host": "127.0.0.1", "port": 1234, "type": "tcp", "scheduler": "wlc", "persistence": 300, "netmask": "255.255.255.0", "servers": []}
+
+Fields:
+- host: IP of the host the service is bound to.
+- port: Port that the service listens to.
+- type: Type of service. Either tcp or udp.
+- scheduler: How to pick downstream server. On of the following: rr, wrr, lc, wlc, lblc, lblcr, dh, sh, sed, nq
+- persistence: Timeout for keeping requests from the same client going to the same server
+- netmask: How to group clients with persistence to servers
+- servers: Array of server objects associated to the service
+
+### Server:
+json: {"host": "127.0.0.1", "port": 1234, "forwarder": "m", "weight": 1, "upper_threshold": 0, "lower_threshold": 0}
+
+Fields:
+- host: IP of the host the service is bound to.
+- port: Port that the service listens to.
+- forwarder: Method to use to forward traffic to this server. One of the following: g (gatewaying), i (ipip), m (masquerading)
+- weight: Weight to perfer this server. Set to 0 if no traffic should go to this server.
+- upper_threshold: Stop sending connections to this server when this number is reached. 0 is no limit.
+- lower_threshold: Restart sending connections when drains down to this number. 0 is not set.
 
 ## Routes :
 
 | Route | Description | payload | output |
 | --- | --- | --- | --- |
-| **GET** /vips | list vips that are currently being load balanced | nil | `{"vips": [{"ip":"127.0.0.1"}]}` |
-| **POST** /vips | create a new ip to be load balanced | `{"method":"rr" ,"ip":"127.0.0.1" ,"port":80}` | `{"sucess":"true"}` |
-| **DELETE** /vips/:vip | remove an ip from the load balancer | nil | `{"sucess":"true"}` |
-| **GET** /vips/:vip/servers | list servers that are being load balanced for the :vip | nil | `{"servers": [{"server":"127.0.0.1:1234" ,"weight":1000}]}` |
-| **POST** /vips/:vip/servers | add a server to the load balancing group for :vip | `{"server":"127.0.0.1:1234" ,"weight":1000}` | `{"sucess":"true"}` |
-| **PUT** /vips/:vip/servers/:server | enable or disable a server without removing it from the pool | `{"enabled":true}` | `{"sucess":"true"}` |
-| **DELETE** /vips/:vip/servers/:server | remove :server from the load balancing group for :vip | nil | `{"sucess":"true"}` |
-
-### Notes:
-
-- Nothing is stored in an intermediary database, ipvsadm is considered the backend datastore for the api.
-- There is a copy of the rules that are generated after every update stored at `/somewhere/ipvsadm.rules` that is used to initialize ipvsadm on boot.
+| **Get** /services/:type/:service_ip/:service_port/servers/:server_ip/:server_port | Get information about a server on a service | nil | json server object |
+| **Post** /services/:type/:service_ip/:service_port/servers/:server_ip/:server_port | Add new server to a service | service json string | nil or an error |
+| **Delete** /services/:type/:service_ip/:service_port/servers/:server_ip/:server_port | Delete a server from a service | nil | nil or an error |
+| **Get** /services/:type/:service_ip/:service_port/servers | List all servers on a service | nil | json array of server objects |
+| **Post** /services/:type/:service_ip/:service_port/servers | Reset the list of servers on a service | json array of server objects | nil or an error |
+| **Get** /services/:type/:service_ip/:service_port | Get information about a service | nil | json service object |
+| **Post** /services/:type/:service_ip/:service_port | Add a service | json service object | nil or an error |
+| **Delete** /services/:type/:service_ip/:service_port | Delete a service | nil | nil or an error |
+| **Get** /services | List all services | nil | json array of server objects |
+| **Post** /services | Reset the list of services | json array of server objects | nil or an error |
+| **Get** /sync | Sync portal with data in LVS | nil | nil or an error |
+| **Post** /sync | Sync LVS with data in portal | nil | nil or an error |
 
 [![portal logo](http://nano-assets.gopagoda.io/open-src/nanobox-open-src.png)](http://nanobox.io/open-source)
