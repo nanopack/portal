@@ -44,6 +44,13 @@ func init() {
 	Portal.PersistentFlags().StringVarP(&config.ConfigFile, "conf", "c", "",
 		"Configuration file to load")
 
+	Portal.Flags().StringVarP(&config.ApiKey, "api-key", "k", "", "SSL key for the api")
+	Portal.Flags().StringVarP(&config.ApiCert, "api-crt", "C", "", "SSL cert for the api")
+	Portal.Flags().StringVarP(&config.ApiKeyPassword, "api-key-password", "p", "", "Password for the SSL key")
+	Portal.Flags().StringVarP(&config.DatabaseConnection, "db-connection", "d", "scribble:///var/db/portal", "Database connection string")
+	Portal.Flags().StringVarP(&config.LogLevel, "log-level", "L", "INFO", "Log level to output")
+	Portal.Flags().StringVarP(&config.LogFile, "log-file", "l", "", "Log file to write to")
+
 	Portal.Flags().BoolVarP(&runServer, "server", "s", false, "Run in server mode")
 
 	Portal.AddCommand(serviceAddCmd)
@@ -63,6 +70,7 @@ func init() {
 }
 
 func startServer() {
+	config.LoadConfigFile()
 	if config.LogFile == "" {
 		config.Log = lumber.NewConsoleLogger(lumber.LvlInt(config.LogLevel))
 	} else {
