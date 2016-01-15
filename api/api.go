@@ -232,7 +232,7 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 		writeBody(err, rw, http.StatusInternalServerError)
 		return
 	}
-	// Scheduler, Persistance, Netmask
+	// Scheduler, Persistence, Netmask
 	// Servers?
 	// - Host, Port, Forwarder, Weight, UpperThreshold, LowerThreshold
 	decoder := json.NewDecoder(req.Body)

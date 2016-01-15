@@ -68,7 +68,7 @@ func serviceSimpleFlags(ccmd *cobra.Command, service *lvs.Service) {
 func serviceComplexFlags(ccmd *cobra.Command, service *lvs.Service) {
 	serviceSimpleFlags(ccmd, service)
 	ccmd.Flags().StringVarP(&service.Scheduler, "service-scheduler", "s", "wlc", "Scheduler method [rr wrr lc wlc lblc lblcr dh sh sed nq]")
-	ccmd.Flags().IntVarP(&service.Persistance, "service-persistance", "e", 0, "keep connections persistent to the same down stream server")
+	ccmd.Flags().IntVarP(&service.Persistence, "service-persistence", "e", 0, "keep connections persistent to the same down stream server")
 	ccmd.Flags().StringVarP(&service.Netmask, "service-netmask", "n", "", "Netmask to group by")
 }
 
