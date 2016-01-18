@@ -237,7 +237,20 @@ func SetServices(services []lvs.Service) error {
 	if tab != nil {
 		tab.RenameChain("filter", "portal", "portal-old")
 	}
-	lvs.DefaultIpvs.Restore(services)
+	err := lvs.DefaultIpvs.Clear()
+	if err != nil {
+		if tab != nil {
+			tab.RenameChain("filter", "portal-old", "portal")
+		}
+		return err
+	}
+	err = lvs.DefaultIpvs.Restore(services)
+	if err != nil {
+		if tab != nil {
+			tab.RenameChain("filter", "portal-old", "portal")
+		}
+		return err
+	}
 	if Backend != nil {
 		err := Backend.SetServices(services)
 		if err != nil {
