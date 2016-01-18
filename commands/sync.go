@@ -31,7 +31,7 @@ var (
 )
 
 func syncLvs(ccmd *cobra.Command, args []string) {
-	res, err := rest("services", "POST", nil)
+	res, err := rest("sync", "POST", nil)
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +43,7 @@ func syncLvs(ccmd *cobra.Command, args []string) {
 }
 
 func syncPortal(ccmd *cobra.Command, args []string) {
-	res, err := rest("services", "GET", nil)
+	res, err := rest("sync", "GET", nil)
 	if err != nil {
 		panic(err)
 	}
