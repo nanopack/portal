@@ -16,6 +16,8 @@ Currently portal uses 900k of ram while idling.
 ### Service:
 json: {"host": "127.0.0.1", "port": 1234, "type": "tcp", "scheduler": "wlc", "persistence": 300, "netmask": "255.255.255.0", "servers": []}
 
+json with a server: {"host":"127.0.0.1","port":8080,"type":"tcp","scheduler":"wlc","persistence":300,"netmask":"","servers":[{"host":"172.28.128.4","port":8081,"forwarder":"m","weight":1,"UpperThreshold":0,"LowerThreshold":0}]}
+
 Fields:
 - host: IP of the host the service is bound to.
 - port: Port that the service listens to.
@@ -35,6 +37,12 @@ Fields:
 - weight: Weight to perfer this server. Set to 0 if no traffic should go to this server.
 - upper_threshold: Stop sending connections to this server when this number is reached. 0 is no limit.
 - lower_threshold: Restart sending connections when drains down to this number. 0 is not set.
+
+### Error:
+json: {"error":"exit status 2: unexpected argument \n"}
+
+Fields:
+ - error: Error message
 
 ## Routes :
 
