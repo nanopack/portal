@@ -130,6 +130,16 @@ func getServer(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
+	err = service.Validate()
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
+	err = server.Validate()
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
 	real_server := database.GetServer(service, server)
 	if real_server != nil {
 		writeBody(rw, req, real_server, http.StatusOK)
@@ -147,6 +157,16 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	server, err := parseReqServer(req)
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
+	err = service.Validate()
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
+	err = server.Validate()
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -176,6 +196,16 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
+	err = service.Validate()
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
+	err = server.Validate()
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
 	err = database.DeleteServer(service, server)
 	if err != nil {
 		writeError(rw, req, err)
@@ -188,6 +218,11 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 func getServers(rw http.ResponseWriter, req *http.Request) {
 	// /services/{proto}/{service_ip}/{service_port}/servers
 	service, err := parseReqService(req)
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
+	err = service.Validate()
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -208,11 +243,23 @@ func postServers(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
+	err = service.Validate()
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
 	servers := []lvs.Server{}
 	// Servers?
 	// - Host, Port, Forwarder, Weight, UpperThreshold, LowerThreshold
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&servers)
+	for _, server := range servers {
+		err = server.Validate()
+		if err != nil {
+			writeError(rw, req, err)
+			return
+		}
+	}
 	err = database.SetServers(service, servers)
 	if err != nil {
 		writeError(rw, req, err)
@@ -225,6 +272,11 @@ func postServers(rw http.ResponseWriter, req *http.Request) {
 func getService(rw http.ResponseWriter, req *http.Request) {
 	// /services/{proto}/{service_ip}/{service_port}
 	service, err := parseReqService(req)
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
+	err = service.Validate()
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -245,11 +297,21 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
+	err = service.Validate()
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
 	// Scheduler, Persistence, Netmask
 	// Servers?
 	// - Host, Port, Forwarder, Weight, UpperThreshold, LowerThreshold
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&service)
+	err = service.Validate()
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
 	err = database.SetService(service)
 	if err != nil {
 		writeError(rw, req, err)
@@ -262,6 +324,11 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 func deleteService(rw http.ResponseWriter, req *http.Request) {
 	// /services/{proto}/{service_ip}/{service_port}
 	service, err := parseReqService(req)
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
+	err = service.Validate()
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -288,6 +355,14 @@ func postServices(rw http.ResponseWriter, req *http.Request) {
 
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&services)
+
+	for _, service := range services {
+		err := service.Validate()
+		if err != nil {
+			writeError(rw, req, err)
+			return
+		}
+	}
 
 	err := database.SetServices(services)
 	if err != nil {
