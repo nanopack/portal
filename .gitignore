@@ -18,7 +18,10 @@ _cgo_gotypes.go
 _cgo_export.*
 
 _testmain.go
+.vagrant
 
 *.exe
 *.test
 *.prof
+
+portal
