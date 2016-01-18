@@ -81,8 +81,12 @@ func startServer() {
 		}
 	}
 	// initialize database
+	err := database.Init()
+	if err != nil {
+		panic(err)
+	}
 	// load saved rules
-	err := database.SyncToLvs()
+	err = database.SyncToLvs()
 	if err != nil {
 		panic(err)
 	}

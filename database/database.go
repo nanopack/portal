@@ -31,13 +31,13 @@ var (
 	tab            *iptables.IPTables
 )
 
-func init() {
+func Init() error {
 	ipvsLock = &sync.RWMutex{}
 	var err error
 	var u *url.URL
 	u, err = url.Parse(config.DatabaseConnection)
 	if err != nil {
-		return
+		return err
 	}
 	switch u.Scheme {
 	case "scribble":
@@ -61,17 +61,18 @@ func init() {
 		tab.DeleteChain("filter", "portal")
 		err = tab.NewChain("filter", "portal")
 		if err != nil {
-			return
+			return err
 		}
 		err = tab.AppendUnique("filter", "portal", "-j", "RETURN")
 		if err != nil {
-			return
+			return err
 		}
 		err = tab.AppendUnique("filter", "INPUT", "-j", "portal")
 		if err != nil {
-			return
+			return err
 		}
 	}
+	return nil
 }
 
 // GetServer
@@ -189,7 +190,7 @@ func SetService(service lvs.Service) error {
 		}
 	}
 	if tab != nil {
-		err := tab.Insert("filter", "portal", 0, "-p", service.Type, "-d", service.Host, "--dport", fmt.Sprintf("%d", service.Port), "-j", "ACCEPT")
+		err := tab.Insert("filter", "portal", 1, "-p", service.Type, "-d", service.Host, "--dport", fmt.Sprintf("%d", service.Port), "-j", "ACCEPT")
 		if err != nil {
 			return err
 		}
@@ -251,7 +252,7 @@ func SetServices(services []lvs.Service) error {
 		tab.ClearChain("filter", "portal")
 		tab.AppendUnique("filter", "portal", "-j", "RETURN")
 		for i := range services {
-			err := tab.Insert("filter", "portal", 0, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+			err := tab.Insert("filter", "portal", 1, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
 			if err != nil {
 				tab.ClearChain("filter", "portal")
 				tab.DeleteChain("filter", "portal")
@@ -287,6 +288,13 @@ func SyncToLvs() error {
 	} else {
 		services = []lvs.Service{}
 	}
+	err = lvs.Clear()
+	if err != nil {
+		if tab != nil {
+			tab.RenameChain("filter", "portal-old", "portal")
+		}
+		return err
+	}
 	err = lvs.Restore(services)
 	if err != nil {
 		if tab != nil {
@@ -299,7 +307,7 @@ func SyncToLvs() error {
 		tab.ClearChain("filter", "portal")
 		tab.AppendUnique("filter", "portal", "-j", "RETURN")
 		for i := range services {
-			err := tab.Insert("filter", "portal", 0, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+			err := tab.Insert("filter", "portal", 1, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
 			if err != nil {
 				tab.ClearChain("filter", "portal")
 				tab.DeleteChain("filter", "portal")
@@ -343,7 +351,7 @@ func SyncToPortal() error {
 		tab.ClearChain("filter", "portal")
 		tab.AppendUnique("filter", "portal", "-j", "RETURN")
 		for i := range lvs.DefaultIpvs.Services {
-			err := tab.Insert("filter", "portal", 0, "-p", lvs.DefaultIpvs.Services[i].Type, "-d", lvs.DefaultIpvs.Services[i].Host, "--dport", fmt.Sprintf("%d", lvs.DefaultIpvs.Services[i].Port), "-j", "ACCEPT")
+			err := tab.Insert("filter", "portal", 1, "-p", lvs.DefaultIpvs.Services[i].Type, "-d", lvs.DefaultIpvs.Services[i].Host, "--dport", fmt.Sprintf("%d", lvs.DefaultIpvs.Services[i].Port), "-j", "ACCEPT")
 			if err != nil {
 				tab.ClearChain("filter", "portal")
 				tab.DeleteChain("filter", "portal")

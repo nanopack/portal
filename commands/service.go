@@ -54,9 +54,18 @@ var (
 
 		Run: servicesSet,
 	}
+	serviceJsonString string
+	service           lvs.Service
 )
 
-func serviceSimpleFlags(ccmd *cobra.Command, service *lvs.Service) {
+func init() {
+	serviceComplexFlags(serviceAddCmd)
+	serviceSimpleFlags(serviceRemoveCmd)
+	serviceSimpleFlags(serviceShowCmd)
+	servicesSetCmd.Flags().StringVarP(&serviceJsonString, "json", "j", "", "Json encoded data for services")
+}
+
+func serviceSimpleFlags(ccmd *cobra.Command) {
 	ccmd.Flags().StringVarP(&service.Host, "service-host", "O", "",
 		"Host of down-stream service")
 	ccmd.Flags().IntVarP(&service.Port, "service-port", "R", 0,
@@ -65,17 +74,14 @@ func serviceSimpleFlags(ccmd *cobra.Command, service *lvs.Service) {
 		"Type of service [tcp udp fwmark]")
 }
 
-func serviceComplexFlags(ccmd *cobra.Command, service *lvs.Service) {
-	serviceSimpleFlags(ccmd, service)
+func serviceComplexFlags(ccmd *cobra.Command) {
+	serviceSimpleFlags(ccmd)
 	ccmd.Flags().StringVarP(&service.Scheduler, "service-scheduler", "s", "wlc", "Scheduler method [rr wrr lc wlc lblc lblcr dh sh sed nq]")
 	ccmd.Flags().IntVarP(&service.Persistence, "service-persistence", "e", 0, "keep connections persistent to the same down stream server")
 	ccmd.Flags().StringVarP(&service.Netmask, "service-netmask", "n", "", "Netmask to group by")
 }
 
 func serviceAdd(ccmd *cobra.Command, args []string) {
-	service := lvs.Service{}
-	serviceComplexFlags(ccmd, &service)
-
 	jsonBytes, err := json.Marshal(service)
 	if err != nil {
 		panic(err)
@@ -93,9 +99,6 @@ func serviceAdd(ccmd *cobra.Command, args []string) {
 }
 
 func serviceRemove(ccmd *cobra.Command, args []string) {
-	service := lvs.Service{}
-	serviceSimpleFlags(ccmd, &service)
-
 	path := fmt.Sprintf("services/%s/%s/%d", service.Type, service.Host, service.Port)
 	res, err := rest(path, "DELETE", nil)
 	if err != nil {
@@ -109,9 +112,6 @@ func serviceRemove(ccmd *cobra.Command, args []string) {
 }
 
 func serviceShow(ccmd *cobra.Command, args []string) {
-	service := lvs.Service{}
-	serviceSimpleFlags(ccmd, &service)
-
 	path := fmt.Sprintf("services/%s/%s/%d", service.Type, service.Host, service.Port)
 	res, err := rest(path, "GET", nil)
 	if err != nil {
@@ -138,10 +138,8 @@ func servicesShow(ccmd *cobra.Command, args []string) {
 
 func servicesSet(ccmd *cobra.Command, args []string) {
 	services := []lvs.Service{}
-	jsonString := ""
-	ccmd.Flags().StringVarP(&jsonString, "json", "j", "", "Json encoded data for services")
 
-	err := json.Unmarshal([]byte(jsonString), &services)
+	err := json.Unmarshal([]byte(serviceJsonString), &services)
 	if err != nil {
 		panic(err)
 	}

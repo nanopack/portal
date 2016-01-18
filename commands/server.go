@@ -54,17 +54,36 @@ var (
 
 		Run: serversSet,
 	}
+	server           lvs.Server
+	serverJsonString string
 )
 
-func serverSimpleFlags(ccmd *cobra.Command, server *lvs.Server) {
+func init() {
+	serviceSimpleFlags(serverAddCmd)
+	serverComplexFlags(serverAddCmd)
+
+	serviceSimpleFlags(serverRemoveCmd)
+	serverSimpleFlags(serverRemoveCmd)
+
+	serviceSimpleFlags(serverShowCmd)
+	serverSimpleFlags(serverShowCmd)
+
+	serviceSimpleFlags(serversShowCmd)
+
+	serviceSimpleFlags(serversSetCmd)
+	serversSetCmd.Flags().StringVarP(&serverJsonString, "json", "j", "", "Json encoded data for servers")
+
+}
+
+func serverSimpleFlags(ccmd *cobra.Command) {
 	ccmd.Flags().StringVarP(&server.Host, "server-host", "o", "",
 		"Host of down-stream server")
 	ccmd.Flags().IntVarP(&server.Port, "server-port", "p", 0,
 		"Port of down-stream server")
 }
 
-func serverComplexFlags(ccmd *cobra.Command, server *lvs.Server) {
-	serverSimpleFlags(ccmd, server)
+func serverComplexFlags(ccmd *cobra.Command) {
+	serverSimpleFlags(ccmd)
 	ccmd.Flags().StringVarP(&server.Forwarder, "server-forwarder", "f", "g", "Forwarder method [g i m]")
 	ccmd.Flags().IntVarP(&server.Weight, "server-weight", "w", 1, "weight of down-stream server")
 	ccmd.Flags().IntVarP(&server.UpperThreshold, "server-upper-threshold", "u", 0, "Upper threshold of down-stream server")
@@ -72,11 +91,6 @@ func serverComplexFlags(ccmd *cobra.Command, server *lvs.Server) {
 }
 
 func serverAdd(ccmd *cobra.Command, args []string) {
-	service := lvs.Service{}
-	server := lvs.Server{}
-	serviceSimpleFlags(ccmd, &service)
-	serverComplexFlags(ccmd, &server)
-
 	jsonBytes, err := json.Marshal(server)
 	if err != nil {
 		panic(err)
@@ -95,11 +109,6 @@ func serverAdd(ccmd *cobra.Command, args []string) {
 }
 
 func serverRemove(ccmd *cobra.Command, args []string) {
-	service := lvs.Service{}
-	server := lvs.Server{}
-	serviceSimpleFlags(ccmd, &service)
-	serverSimpleFlags(ccmd, &server)
-
 	path := fmt.Sprintf("services/%s/%s/%d/servers/%s/%d", service.Type, service.Host, service.Port, server.Host, server.Port)
 	res, err := rest(path, "DELETE", nil)
 	if err != nil {
@@ -113,11 +122,6 @@ func serverRemove(ccmd *cobra.Command, args []string) {
 }
 
 func serverShow(ccmd *cobra.Command, args []string) {
-	service := lvs.Service{}
-	server := lvs.Server{}
-	serviceSimpleFlags(ccmd, &service)
-	serverSimpleFlags(ccmd, &server)
-
 	path := fmt.Sprintf("services/%s/%s/%d/servers/%s/%d", service.Type, service.Host, service.Port, server.Host, server.Port)
 	res, err := rest(path, "GET", nil)
 	if err != nil {
@@ -131,9 +135,6 @@ func serverShow(ccmd *cobra.Command, args []string) {
 }
 
 func serversShow(ccmd *cobra.Command, args []string) {
-	service := lvs.Service{}
-	serviceSimpleFlags(ccmd, &service)
-
 	path := fmt.Sprintf("services/%s/%s/%d/servers", service.Type, service.Host, service.Port)
 	res, err := rest(path, "GET", nil)
 	if err != nil {
@@ -147,13 +148,8 @@ func serversShow(ccmd *cobra.Command, args []string) {
 }
 
 func serversSet(ccmd *cobra.Command, args []string) {
-	service := lvs.Service{}
-	servers := []lvs.Server{}
-	jsonString := ""
-	serviceSimpleFlags(ccmd, &service)
-	ccmd.Flags().StringVarP(&jsonString, "json", "j", "", "Json encoded data for servers")
-
-	err := json.Unmarshal([]byte(jsonString), &servers)
+	var servers []lvs.Server
+	err := json.Unmarshal([]byte(serverJsonString), &servers)
 	if err != nil {
 		panic(err)
 	}
