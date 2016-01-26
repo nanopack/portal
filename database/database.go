@@ -37,7 +37,7 @@ func Init() error {
 	var u *url.URL
 	u, err = url.Parse(config.DatabaseConnection)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to parse db connection - %v", err)
 	}
 	switch u.Scheme {
 	case "scribble":
@@ -61,15 +61,15 @@ func Init() error {
 		tab.DeleteChain("filter", "portal")
 		err = tab.NewChain("filter", "portal")
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to create new chain - %v", err)
 		}
 		err = tab.AppendUnique("filter", "portal", "-j", "RETURN")
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to append to portal chain - %v", err)
 		}
 		err = tab.AppendUnique("filter", "INPUT", "-j", "portal")
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to append to INPUT chain - %v", err)
 		}
 	}
 	return nil

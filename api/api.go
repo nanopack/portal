@@ -50,6 +50,7 @@ func StartApi() error {
 	auth.Certificate = cert
 	auth.Header = "X-NANOBOX-TOKEN"
 
+	config.Log.Info("Api listening at %s:%s...", config.ApiHost, config.ApiPort)
 	return auth.ListenAndServeTLS(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), config.ApiToken, routes())
 }
 
@@ -82,7 +83,7 @@ func writeBody(rw http.ResponseWriter, req *http.Request, v interface{}, status 
 		return err
 	}
 
-	config.Log.Info("%s %d %s %s", req.RemoteAddr, status, req.Method, req.RequestURI)
+	config.Log.Trace("%s %d %s %s", req.RemoteAddr, status, req.Method, req.RequestURI)
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(status)

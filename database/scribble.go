@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/nanobox-io/golang-lvs"
 	"github.com/nanobox-io/golang-scribble"
@@ -39,6 +40,11 @@ func (s ScribbleDatabase) GetServices() ([]lvs.Service, error) {
 	services := make([]lvs.Service, 0)
 	values, err := s.scribbleDb.ReadAll("services")
 	if err != nil {
+		// don't return an error here if the stat fails
+		if strings.Contains(err.Error(), "no such file or directory") {
+			config.Log.Info("File 'services[.json]' could not be found, no services imported")
+			err = nil
+		}
 		return services, err
 	}
 	for i := range values {

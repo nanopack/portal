@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/jcelliott/lumber"
 	"github.com/spf13/cobra"
@@ -77,23 +78,27 @@ func startServer() {
 		var err error
 		config.Log, err = lumber.NewFileLogger(config.LogFile, lumber.LvlInt(config.LogLevel), lumber.ROTATE, 5000, 9, 100)
 		if err != nil {
-			panic(err)
+			config.Log.Fatal("%v", err)
+			os.Exit(1)
 		}
 	}
 	// initialize database
 	err := database.Init()
 	if err != nil {
-		panic(err)
+		config.Log.Fatal("%v", err)
+		os.Exit(1)
 	}
 	// load saved rules
 	err = database.SyncToLvs()
 	if err != nil {
-		panic(err)
+		config.Log.Fatal("%v", err)
+		os.Exit(1)
 	}
 	// start api
 	err = api.StartApi()
 	if err != nil {
-		panic(err)
+		config.Log.Fatal("%v", err)
+		os.Exit(1)
 	}
 	return
 }
