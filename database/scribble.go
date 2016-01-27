@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/nanobox-io/golang-lvs"
+	// "github.com/nanobox-io/golang-lvs"
 	"github.com/nanobox-io/golang-scribble"
 
 	"github.com/nanopack/portal/config"
@@ -18,8 +18,8 @@ type (
 	}
 )
 
-func key(service lvs.Service) string {
-	return fmt.Sprintf("%s-%s-%d", service.Type, service.Host, service.Port)
+func key(service Service) string {
+	return fmt.Sprintf("%s-%s-%d", service.Id, service.Ip, service.Port)
 }
 
 func (s *ScribbleDatabase) Init() error {
@@ -36,8 +36,8 @@ func (s *ScribbleDatabase) Init() error {
 	return nil
 }
 
-func (s ScribbleDatabase) GetServices() ([]lvs.Service, error) {
-	services := make([]lvs.Service, 0)
+func (s ScribbleDatabase) GetServices() ([]Service, error) {
+	services := make([]Service, 0)
 	values, err := s.scribbleDb.ReadAll("services")
 	if err != nil {
 		// don't return an error here if the stat fails
@@ -48,15 +48,15 @@ func (s ScribbleDatabase) GetServices() ([]lvs.Service, error) {
 		return services, err
 	}
 	for i := range values {
-		var service lvs.Service
+		var service Service
 		json.Unmarshal([]byte(values[i]), &service)
 		services = append(services, service)
 	}
 	return services, nil
 }
 
-func (s ScribbleDatabase) GetService(service lvs.Service) (lvs.Service, error) {
-	real_service := lvs.Service{}
+func (s ScribbleDatabase) GetService(service Service) (Service, error) {
+	real_service := Service{}
 	err := s.scribbleDb.Read("services", key(service), &real_service)
 	if err != nil {
 		return real_service, err
@@ -64,7 +64,7 @@ func (s ScribbleDatabase) GetService(service lvs.Service) (lvs.Service, error) {
 	return real_service, nil
 }
 
-func (s ScribbleDatabase) SetServices(services []lvs.Service) error {
+func (s ScribbleDatabase) SetServices(services []Service) error {
 	s.scribbleDb.Delete("services", "")
 	for i := range services {
 		err := s.scribbleDb.Write("services", key(services[i]), services[i])
@@ -75,10 +75,10 @@ func (s ScribbleDatabase) SetServices(services []lvs.Service) error {
 	return nil
 }
 
-func (s ScribbleDatabase) SetService(service lvs.Service) error {
+func (s ScribbleDatabase) SetService(service Service) error {
 	return s.scribbleDb.Write("services", key(service), service)
 }
 
-func (s ScribbleDatabase) DeleteService(service lvs.Service) error {
+func (s ScribbleDatabase) DeleteService(service Service) error {
 	return s.scribbleDb.Delete("services", key(service))
 }
