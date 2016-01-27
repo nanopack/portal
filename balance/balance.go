@@ -51,7 +51,6 @@ type (
 		DeleteService(service database.Service) error
 		GetServices() []lvs.Service
 		SetServices(services []database.Service) error
-
 	}
 )
 

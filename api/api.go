@@ -14,23 +14,24 @@ package api
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	// "strconv"
 
 	"github.com/gorilla/pat"
-	"github.com/nanobox-io/golang-lvs"
 	"github.com/nanobox-io/golang-nanoauth"
 
+	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/database"
-	"github.com/nanopack/portal/balance"
 )
 
 var (
-	auth nanoauth.Auth
-	lvsBalancer balance.Lvs
+	auth           nanoauth.Auth
+	Balancer       balance.Lvs // should init
+	NoServerError  = errors.New("No Server Found")
+	NoServiceError = errors.New("No Service Found")
 )
 
 type (
@@ -47,7 +48,7 @@ type (
 	// }
 
 	// // var svc []service
- // // [{"port":"32"}, {"port":"33"}]
+	// // [{"port":"32"}, {"port":"33"}]
 	// if err := json.Unmarshal(b, &svc); err != nil {
 	// 	return lvs.Service{}, err
 	// }
@@ -95,18 +96,18 @@ func routes() *pat.Router {
 	// router.Get("/sync", handleRequest(getSync))
 	// router.Post("/sync", handleRequest(postSync))
 
-  router.Delete("/services/{svc_id}/servers/{srv_id}", handleRequest(deleteServer))
-  router.Get("/services/{svc_id}/servers/{srv_id}", handleRequest(getServer))
-  // router.Post("/services/{svc_id}/servers", handleRequest(postServers))
-  router.Post("/services/{svc_id}/servers", handleRequest(postServer))
-  router.Get("/services/{svc_id}/servers", handleRequest(getServers))
-  router.Delete("/services/{svc_id}", handleRequest(deleteService))
-  router.Get("/services/{svc_id}", handleRequest(getService))
-  // router.Post("/services", handleRequest(postServices))
-  router.Post("/services", handleRequest(postService))
-  router.Get("/services", handleRequest(getServices))
-  router.Post("/sync", handleRequest(postSync))
-  router.Get("/sync", handleRequest(getSync))
+	router.Delete("/services/{svc_id}/servers/{srv_id}", handleRequest(deleteServer))
+	router.Get("/services/{svc_id}/servers/{srv_id}", handleRequest(getServer))
+	// router.Post("/services/{svc_id}/servers", handleRequest(postServers))
+	router.Post("/services/{svc_id}/servers", handleRequest(postServer))
+	router.Get("/services/{svc_id}/servers", handleRequest(getServers))
+	router.Delete("/services/{svc_id}", handleRequest(deleteService))
+	router.Get("/services/{svc_id}", handleRequest(getService))
+	// router.Post("/services", handleRequest(postServices))
+	router.Post("/services", handleRequest(postService))
+	router.Get("/services", handleRequest(getServices))
+	router.Post("/sync", handleRequest(postSync))
+	router.Get("/sync", handleRequest(getSync))
 	return router
 }
 
@@ -203,12 +204,12 @@ func getServer(rw http.ResponseWriter, req *http.Request) {
 	// 	writeError(rw, req, err)
 	// 	return
 	// }
-	real_server := lvsBalancer.GetServer(service, server)
+	real_server := Balancer.GetServer(service, server)
 	if real_server != nil {
 		writeBody(rw, req, real_server, http.StatusOK)
 		return
 	}
-	writeError(rw, req, lvsBalancer.NoServerError)
+	writeError(rw, req, NoServerError)
 }
 
 // Create a backend server
@@ -224,21 +225,22 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
-	err = service.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	err = server.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
+	// validate elsewhere
+	// err = service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	// err = server.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
 	// Parse body for extra info:
 	// Forwarder, Weight, UpperThreshold, LowerThreshold
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&server)
-	err = lvsBalancer.SetServer(service, server)
+	err = Balancer.SetServer(service, server)
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -259,17 +261,17 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
-	err = service.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	err = server.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	err = lvsBalancer.DeleteServer(service, server)
+	// err = service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	// err = server.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	err = Balancer.DeleteServer(service, server)
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -285,14 +287,14 @@ func getServers(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
-	err = service.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	real_service := lvsBalancer.GetService(service)
+	// err = service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	real_service := Balancer.GetService(service)
 	if real_service == nil {
-		writeError(rw, req, lvsBalancer.NoServiceError)
+		writeError(rw, req, NoServiceError)
 		return
 	}
 	writeBody(rw, req, real_service.Servers, http.StatusOK)
@@ -306,24 +308,24 @@ func postServers(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
-	err = service.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	servers := []lvs.Server{}
+	// err = service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	servers := []database.Server{}
 	// Servers?
 	// - Host, Port, Forwarder, Weight, UpperThreshold, LowerThreshold
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&servers)
-	for _, server := range servers {
-		err = server.Validate()
-		if err != nil {
-			writeError(rw, req, err)
-			return
-		}
-	}
-	err = lvsBalancer.SetServers(service, servers)
+	// for _, server := range servers {
+	// 	err = server.Validate()
+	// 	if err != nil {
+	// 		writeError(rw, req, err)
+	// 		return
+	// 	}
+	// }
+	err = Balancer.SetServers(service, servers)
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -339,14 +341,14 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
-	err = service.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	real_service := lvsBalancer.GetService(service)
+	// err = service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	real_service := Balancer.GetService(service)
 	if real_service == nil {
-		writeError(rw, req, lvsBalancer.NoServiceError)
+		writeError(rw, req, NoServiceError)
 		return
 	}
 	writeBody(rw, req, real_service, http.StatusOK)
@@ -355,24 +357,24 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 // Reset all services
 func postServices(rw http.ResponseWriter, req *http.Request) {
 	// /services
-	services := []lvs.Service{}
+	services := []database.Service{}
 
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&services)
 
-	for _, service := range services {
-		err := service.Validate()
-		if err != nil {
-			writeError(rw, req, err)
-			return
-		}
-	}
+	// for _, service := range services {
+	// err := service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	// }
 
-	err := lvsBalancer.SetServices(services)
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
+	// err := Balancer.SetServices(services)
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
 	writeBody(rw, req, nil, http.StatusOK)
 }
 
@@ -384,22 +386,23 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
-	err = service.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
+	// err = service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+
 	// Scheduler, Persistence, Netmask
 	// Servers?
 	// - Host, Port, Forwarder, Weight, UpperThreshold, LowerThreshold
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&service)
-	err = service.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	err = lvsBalancer.SetService(service)
+	// err = service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	err = Balancer.SetService(service)
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -415,12 +418,12 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 		writeError(rw, req, err)
 		return
 	}
-	err = service.Validate()
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	err = lvsBalancer.DeleteService(service)
+	// err = service.Validate()
+	// if err != nil {
+	// 	writeError(rw, req, err)
+	// 	return
+	// }
+	err = Balancer.DeleteService(service)
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -431,14 +434,14 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 // List all services
 func getServices(rw http.ResponseWriter, req *http.Request) {
 	// /services
-	services := lvsBalancer.GetServices()
+	services := Balancer.GetServices()
 	writeBody(rw, req, services, http.StatusOK)
 }
 
 // Sync portal's database from running system
 func getSync(rw http.ResponseWriter, req *http.Request) {
 	// /sync
-	err := lvsBalancer.SyncToPortal()
+	err := Balancer.SyncToPortal()
 	if err != nil {
 		writeError(rw, req, err)
 		return
@@ -449,7 +452,7 @@ func getSync(rw http.ResponseWriter, req *http.Request) {
 // Sync portal's database to running system
 func postSync(rw http.ResponseWriter, req *http.Request) {
 	// /sync
-	err := lvsBalancer.SyncToLvs()
+	err := Balancer.SyncToLvs()
 	if err != nil {
 		writeError(rw, req, err)
 		return

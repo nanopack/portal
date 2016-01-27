@@ -36,7 +36,6 @@ type (
 		// DeleteService(string) error
 		// Init() error
 
-		
 		// GetServer(service database.Service, server database.Server) *lvs.Server
 		// SetServer(service database.Service, server database.Server) error
 		// DeleteServer(service database.Service, server database.Server) error
@@ -58,22 +57,22 @@ type (
 
 	}
 	Server struct {
-		Id    string `json:"id,omitempty"`
-		Ip    string `json:"ip"`
-		Port  int `json:"port"`
+		Id   string `json:"id,omitempty"`
+		Ip   string `json:"ip"`
+		Port int    `json:"port"`
 	}
 	Service struct {
 		Id      string   `json:"id,omitempty"`
 		Ip      string   `json:"ip"`
-		Port    int   `json:"port"`
+		Port    int      `json:"port"`
 		Proto   string   `json:"proto"`
-		Servers []Server `json:"servers,omitempty"`  // will we need?
+		Servers []Server `json:"servers,omitempty"` // will we need?
 	}
 )
 
 var (
-	Backend  Backender
-	Tab      *iptables.IPTables
+	Backend Backender
+	Tab     *iptables.IPTables
 	// ipvsLock *sync.RWMutex
 )
 

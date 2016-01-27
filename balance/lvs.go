@@ -11,11 +11,11 @@ import (
 )
 
 var (
-	Backend        = database.Backend //&database.Backend
-	ipvsLock       = &sync.RWMutex{}
+	Backend  = database.Backend //&database.Backend
+	ipvsLock = &sync.RWMutex{}
 	// ipvsLock       *sync.RWMutex
 	// ipvsLock       = &database.IpvsLock
-	tab            = database.Tab //&database.Tab
+	tab = database.Tab //&database.Tab
 )
 
 type (
@@ -73,7 +73,7 @@ func (l *Lvs) SetServer(service database.Service, server database.Server) error 
 // DeleteServer
 func (l *Lvs) DeleteServer(service database.Service, server database.Server) error {
 	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
-	lvsServer := lvs.Server{Host: server.Ip, Port:server.Port}
+	lvsServer := lvs.Server{Host: server.Ip, Port: server.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()

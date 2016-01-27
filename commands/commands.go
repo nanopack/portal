@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/nanopack/portal/api"
+	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/database"
 )
@@ -31,6 +32,8 @@ var (
 			ccmd.HelpFunc()(ccmd, args)
 		},
 	}
+
+	Balancer balance.Lvs // should init
 )
 
 func init() {
@@ -89,7 +92,7 @@ func startServer() {
 		os.Exit(1)
 	}
 	// load saved rules
-	err = database.SyncToLvs()
+	err = Balancer.SyncToLvs()
 	if err != nil {
 		config.Log.Fatal("%v", err)
 		os.Exit(1)
