@@ -1,9 +1,8 @@
 package balance
 
 import (
-	"errors"
+	// "errors"
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/nanobox-io/golang-lvs"
@@ -16,8 +15,6 @@ var (
 	ipvsLock       = &sync.RWMutex{}
 	// ipvsLock       *sync.RWMutex
 	// ipvsLock       = &database.IpvsLock
-	NoServiceError = errors.New("No Service Found")
-	NoServerError  = errors.New("No Server Found")
 	tab            = database.Tab //&database.Tab
 )
 
@@ -31,25 +28,21 @@ type (
 // GetServer
 func (l *Lvs) GetServer(service database.Service, server database.Server) *lvs.Server {
 	// error would have been caught on json marshalling
-	p, _ := strconv.Atoi(service.Port)
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: p}
+	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
 	s := lvs.DefaultIpvs.FindService(lvsService)
 	if s == nil {
 		return nil
 	}
-	p, _ = strconv.Atoi(server.Port)
-	lvsServer := lvs.Server{Host: server.Ip, Port: p}
+	lvsServer := lvs.Server{Host: server.Ip, Port: server.Port}
 	return s.FindServer(lvsServer)
 }
 
 // SetServer
 func (l *Lvs) SetServer(service database.Service, server database.Server) error {
-	p, _ := strconv.Atoi(service.Port)
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: p}
-	p, _ = strconv.Atoi(server.Port)
-	lvsServer := lvs.Server{Host: server.Ip, Port: p}
+	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
+	lvsServer := lvs.Server{Host: server.Ip, Port: server.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -64,7 +57,12 @@ func (l *Lvs) SetServer(service database.Service, server database.Server) error 
 	}
 	// save to backend
 	if Backend != nil {
-		err = Backend.SetService(*s)
+		srvs := []database.Server{}
+		for _, srv := range s.Servers {
+			srvs = append(srvs, database.Server{Ip: srv.Host, Port: srv.Port})
+		}
+		svc := database.Service{Ip: s.Host, Port: s.Port, Proto: s.Type, Servers: srvs}
+		err = Backend.SetService(svc)
 		if err != nil {
 			return err
 		}
@@ -74,10 +72,8 @@ func (l *Lvs) SetServer(service database.Service, server database.Server) error 
 
 // DeleteServer
 func (l *Lvs) DeleteServer(service database.Service, server database.Server) error {
-	p, _ := strconv.Atoi(service.Port)
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: p}
-	p, _ = strconv.Atoi(server.Port)
-	lvsServer := lvs.Server{Host: server.Ip, Port: p}
+	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
+	lvsServer := lvs.Server{Host: server.Ip, Port:server.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -89,7 +85,9 @@ func (l *Lvs) DeleteServer(service database.Service, server database.Server) err
 	s.RemoveServer(lvsServer)
 	// remove from backend
 	if Backend != nil {
-		err := Backend.SetService(*s)
+		svc := database.Service{Ip: s.Host, Port: s.Port, Proto: s.Type}
+
+		err := Backend.SetService(svc)
 		if err != nil {
 			return err
 		}
@@ -104,12 +102,10 @@ func (l *Lvs) DeleteServer(service database.Service, server database.Server) err
 
 // SetServers
 func (l *Lvs) SetServers(service database.Service, servers []database.Server) error {
-	p, _ := strconv.Atoi(service.Port)
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: p}
+	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
 	lvsServers := []lvs.Server{}
 	for _, srv := range servers {
-		p, _ = strconv.Atoi(srv.Port)
-		lvsServers = append(lvsServers, lvs.Server{Host: srv.Ip, Port: p})
+		lvsServers = append(lvsServers, lvs.Server{Host: srv.Ip, Port: srv.Port})
 	}
 
 	ipvsLock.Lock()
@@ -145,8 +141,7 @@ RemoveServers:
 
 // GetService
 func (l *Lvs) GetService(service database.Service) *lvs.Service {
-	p, _ := strconv.Atoi(service.Port)
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: p}
+	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
 
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
@@ -155,8 +150,7 @@ func (l *Lvs) GetService(service database.Service) *lvs.Service {
 
 // SetService
 func (l *Lvs) SetService(service database.Service) error {
-	p, _ := strconv.Atoi(service.Port)
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: p}
+	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -167,7 +161,7 @@ func (l *Lvs) SetService(service database.Service) error {
 	}
 	// save to backend
 	if Backend != nil {
-		err := Backend.SetService(lvsService)
+		err := Backend.SetService(service)
 		if err != nil {
 			return err
 		}
@@ -183,8 +177,7 @@ func (l *Lvs) SetService(service database.Service) error {
 
 // DeleteService
 func (l *Lvs) DeleteService(service database.Service) error {
-	p, _ := strconv.Atoi(service.Port)
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: p}
+	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -195,7 +188,7 @@ func (l *Lvs) DeleteService(service database.Service) error {
 	}
 	// remove from backend
 	if Backend != nil {
-		err := Backend.DeleteService(lvsService)
+		err := Backend.DeleteService(service)
 		if err != nil {
 			return err
 		}
@@ -220,8 +213,7 @@ func (l *Lvs) GetServices() []lvs.Service {
 func (l *Lvs) SetServices(services []database.Service) error {
 	lvsServices := []lvs.Service{}
 	for _, svc := range services {
-		p, _ := strconv.Atoi(svc.Port)
-		lvsServices = append(lvsServices, lvs.Service{Type: svc.Proto, Host: svc.Ip, Port: p})
+		lvsServices = append(lvsServices, lvs.Service{Type: svc.Proto, Host: svc.Ip, Port: svc.Port})
 	}
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -243,7 +235,7 @@ func (l *Lvs) SetServices(services []database.Service) error {
 		return err
 	}
 	if Backend != nil {
-		err := Backend.SetServices(lvsServices)
+		err := Backend.SetServices(services)
 		if err != nil {
 			if tab != nil {
 				tab.RenameChain("filter", "portal-old", "portal")
@@ -280,7 +272,7 @@ func (l *Lvs) SyncToLvs() error {
 		tab.RenameChain("filter", "portal", "portal-old")
 	}
 	var err error
-	var services []lvs.Service
+	var services []database.Service
 	if Backend != nil {
 		services, err = Backend.GetServices()
 		if err != nil {
@@ -290,7 +282,7 @@ func (l *Lvs) SyncToLvs() error {
 			return err
 		}
 	} else {
-		services = []lvs.Service{}
+		services = []database.Service{}
 	}
 	err = lvs.Clear()
 	if err != nil {
@@ -299,7 +291,11 @@ func (l *Lvs) SyncToLvs() error {
 		}
 		return err
 	}
-	err = lvs.Restore(services)
+	lvsServices := []lvs.Service{}
+	for _, svc := range services {
+		lvsServices = append(lvsServices, lvs.Service{Host: svc.Ip, Port: svc.Port, Type: svc.Proto})
+	}
+	err = lvs.Restore(lvsServices)
 	if err != nil {
 		if tab != nil {
 			tab.RenameChain("filter", "portal-old", "portal")
@@ -311,7 +307,7 @@ func (l *Lvs) SyncToLvs() error {
 		tab.ClearChain("filter", "portal")
 		tab.AppendUnique("filter", "portal", "-j", "RETURN")
 		for i := range services {
-			err := tab.Insert("filter", "portal", 1, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+			err := tab.Insert("filter", "portal", 1, "-p", services[i].Proto, "-d", services[i].Ip, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
 			if err != nil {
 				tab.ClearChain("filter", "portal")
 				tab.DeleteChain("filter", "portal")
@@ -342,7 +338,11 @@ func (l *Lvs) SyncToPortal() error {
 		return err
 	}
 	if Backend != nil {
-		err := Backend.SetServices(lvs.DefaultIpvs.Services)
+		svcs := []database.Service{}
+		for _, svc := range lvs.DefaultIpvs.Services {
+			svcs = append(svcs, database.Service{Ip: svc.Host, Port: svc.Port, Proto: svc.Type})
+		}
+		err := Backend.SetServices(svcs)
 		if err != nil {
 			if tab != nil {
 				tab.RenameChain("filter", "portal-old", "portal")

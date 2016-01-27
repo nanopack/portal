@@ -19,7 +19,7 @@ type (
 )
 
 func key(service Service) string {
-	return fmt.Sprintf("%s-%s-%d", service.Id, service.Ip, service.Port)
+	return fmt.Sprintf("%s-%s-%d", service.Proto, service.Ip, service.Port)
 }
 
 func (s *ScribbleDatabase) Init() error {

@@ -60,12 +60,12 @@ type (
 	Server struct {
 		Id    string `json:"id,omitempty"`
 		Ip    string `json:"ip"`
-		Port  string `json:"port"`
+		Port  int `json:"port"`
 	}
 	Service struct {
 		Id      string   `json:"id,omitempty"`
 		Ip      string   `json:"ip"`
-		Port    string   `json:"port"`
+		Port    int   `json:"port"`
 		Proto   string   `json:"proto"`
 		Servers []Server `json:"servers,omitempty"`  // will we need?
 	}

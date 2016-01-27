@@ -1,6 +1,8 @@
 package balance
 
 import (
+	"errors"
+
 	"github.com/nanobox-io/golang-lvs"
 
 	"github.com/nanopack/portal/database"
@@ -51,4 +53,9 @@ type (
 		SetServices(services []database.Service) error
 
 	}
+)
+
+var (
+	NoServiceError = errors.New("No Service Found")
+	NoServerError  = errors.New("No Server Found")
 )
