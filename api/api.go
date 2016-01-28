@@ -258,7 +258,7 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 }
 
 // Reset all services
-	// /services
+// /services
 func putServices(rw http.ResponseWriter, req *http.Request) {
 	services := []database.Service{}
 
@@ -269,12 +269,21 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 		svc.GenId()
 	}
 
-	// was this me?
+	// apply services to balancer
 	err := Balancer.SetServices(services)
 	if err != nil {
 		writeError(rw, req, err)
 		return
 	}
+
+	// save to backend
+	if Backend != nil {
+		if err := Backend.SetServices(services); err != nil {
+			writeError(rw, req, err)
+			return
+		}
+	}
+
 	writeBody(rw, req, services, http.StatusOK)
 }
 
@@ -287,11 +296,22 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// apply to balancer
 	err = Balancer.SetService(service)
 	if err != nil {
 		writeError(rw, req, err)
 		return
 	}
+
+	// save to backend
+	if Backend != nil {
+		err := Backend.SetService(service)
+		if err != nil {
+			writeError(rw, req, err)
+			return
+		}
+	}
+
 	writeBody(rw, req, service, http.StatusOK)
 }
 
@@ -300,11 +320,23 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svc_id}
 	svc_id := req.URL.Query().Get(":svc_id")
 
+	// delete backend rule
 	err := Balancer.DeleteService(svc_id)
 	if err != nil {
 		writeError(rw, req, err)
 		return
 	}
+
+	// remove from backend
+	if Backend != nil {
+		// in backend, on error, roll back 'insert'
+		err := Backend.DeleteService(svc_id)
+		if err != nil {
+			writeError(rw, req, err)
+			return
+		}
+	}
+
 	// what to return here instead of nil?
 	writeBody(rw, req, nil, http.StatusOK)
 }

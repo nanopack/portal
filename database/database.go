@@ -14,16 +14,12 @@ type (
 	Backender interface {
 		Init() error
 		GetServices() ([]Service, error)
-		// arg could be service.Id (== "service.Type"+"-"+"service.Host"+"-"+"service.Port")
-		// GetService(id string) (Service, error)
-		GetService(service Service) (Service, error)
+		GetService(id string) (Service, error)
 		SetServices(services []Service) error
 		SetService(service Service) error
-		// DeleteService(id string) error
-		DeleteService(service Service) error
+		DeleteService(id string) error
 
 		// implement servers here?
-
 	}
 
 	Server struct {

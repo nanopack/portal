@@ -167,13 +167,7 @@ func (l *Lvs) SetService(service database.Service) error {
 	if err != nil {
 		return err
 	}
-	// save to backend
-	if Backend != nil {
-		err := Backend.SetService(service)
-		if err != nil {
-			return err
-		}
-	}
+
 	if tab != nil {
 		err := tab.Insert("filter", "portal", 1, "-p", lvsService.Type, "-d", lvsService.Host, "--dport", fmt.Sprintf("%d", lvsService.Port), "-j", "ACCEPT")
 		if err != nil {
@@ -195,13 +189,7 @@ func (l *Lvs) DeleteService(id string) error {
 	if err != nil {
 		return err
 	}
-	// remove from backend
-	if Backend != nil {
-		err := Backend.DeleteService(lToSvc(service))
-		if err != nil {
-			return err
-		}
-	}
+
 	if tab != nil {
 		err := tab.Delete("filter", "portal", "-p", lvsService.Type, "-d", lvsService.Host, "--dport", fmt.Sprintf("%d", lvsService.Port), "-j", "ACCEPT")
 		if err != nil {
@@ -247,15 +235,6 @@ func (l *Lvs) SetServices(services []database.Service) error {
 		}
 		return err
 	}
-	if Backend != nil {
-		err := Backend.SetServices(services)
-		if err != nil {
-			if tab != nil {
-				tab.RenameChain("filter", "portal-old", "portal")
-			}
-			return err
-		}
-	}
 	if tab != nil {
 		tab.NewChain("filter", "portal")
 		tab.ClearChain("filter", "portal")
@@ -279,24 +258,16 @@ func (l *Lvs) SetServices(services []database.Service) error {
 
 // SyncLvs
 func (l *Lvs) SyncToLvs() error {
+	// don't query backend
+	services := l.GetServices()
+
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 	if tab != nil {
 		tab.RenameChain("filter", "portal", "portal-old")
 	}
 	var err error
-	var services []database.Service
-	if Backend != nil {
-		services, err = Backend.GetServices()
-		if err != nil {
-			if tab != nil {
-				tab.RenameChain("filter", "portal-old", "portal")
-			}
-			return err
-		}
-	} else {
-		services = []database.Service{}
-	}
+
 	err = lvs.Clear()
 	if err != nil {
 		if tab != nil {
@@ -306,7 +277,7 @@ func (l *Lvs) SyncToLvs() error {
 	}
 	lvsServices := []lvs.Service{}
 	for _, svc := range services {
-		lvsServices = append(lvsServices, lvs.Service{Host: svc.Host, Port: svc.Port, Type: svc.Type})
+		lvsServices = append(lvsServices, svcToL(svc))
 	}
 	err = lvs.Restore(lvsServices)
 	if err != nil {

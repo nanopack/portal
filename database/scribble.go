@@ -18,7 +18,7 @@ type (
 )
 
 func key(service Service) string {
-	return fmt.Sprintf("%s-%s-%d", service.Type, service.Host, service.Port)
+	return fmt.Sprintf("%v-%v-%d", service.Type, strings.Replace(service.Host, ".", "_", -1), service.Port)
 }
 
 func (s *ScribbleDatabase) Init() error {
@@ -54,9 +54,9 @@ func (s ScribbleDatabase) GetServices() ([]Service, error) {
 	return services, nil
 }
 
-func (s ScribbleDatabase) GetService(service Service) (Service, error) {
+func (s ScribbleDatabase) GetService(id string) (Service, error) {
 	real_service := Service{}
-	err := s.scribbleDb.Read("services", key(service), &real_service)
+	err := s.scribbleDb.Read("services", id, &real_service)
 	if err != nil {
 		return real_service, err
 	}
@@ -78,6 +78,6 @@ func (s ScribbleDatabase) SetService(service Service) error {
 	return s.scribbleDb.Write("services", key(service), service)
 }
 
-func (s ScribbleDatabase) DeleteService(service Service) error {
-	return s.scribbleDb.Delete("services", key(service))
+func (s ScribbleDatabase) DeleteService(id string) error {
+	return s.scribbleDb.Delete("services", id)
 }
