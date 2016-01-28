@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strings"
 
-	// "github.com/nanobox-io/golang-lvs"
 	"github.com/nanobox-io/golang-scribble"
 
 	"github.com/nanopack/portal/config"
@@ -19,7 +18,7 @@ type (
 )
 
 func key(service Service) string {
-	return fmt.Sprintf("%s-%s-%d", service.Proto, service.Ip, service.Port)
+	return fmt.Sprintf("%s-%s-%d", service.Type, service.Host, service.Port)
 }
 
 func (s *ScribbleDatabase) Init() error {

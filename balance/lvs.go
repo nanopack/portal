@@ -1,8 +1,9 @@
 package balance
 
 import (
-	// "errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/nanobox-io/golang-lvs"
@@ -13,36 +14,42 @@ import (
 var (
 	Backend  = database.Backend //&database.Backend
 	ipvsLock = &sync.RWMutex{}
-	// ipvsLock       *sync.RWMutex
-	// ipvsLock       = &database.IpvsLock
-	tab = database.Tab //&database.Tab
+	tab      = database.Tab //&database.Tab
 )
 
 type (
 	Lvs struct {
 	}
+	lookupService struct {
+		Type string
+		Host string
+		Port int
+	}
+	lookupServer struct {
+		Host string
+		Port int
+	}
 )
 
-// databaseify the get-server
-// move to an lvs.GetServer
 // GetServer
-func (l *Lvs) GetServer(service database.Service, server database.Server) *lvs.Server {
-	// error would have been caught on json marshalling
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
+func (l *Lvs) GetServer(serviceId, serverId string) *database.Server {
+	// break up ids in order to create dummy lvs.Service
+	lvsService := parseSvc(serviceId)
+	lvsServer := parseSrv(serverId)
+
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
 	s := lvs.DefaultIpvs.FindService(lvsService)
 	if s == nil {
 		return nil
 	}
-	lvsServer := lvs.Server{Host: server.Ip, Port: server.Port}
-	return s.FindServer(lvsServer)
+	return lToSrvp(s.FindServer(lvsServer))
 }
 
 // SetServer
 func (l *Lvs) SetServer(service database.Service, server database.Server) error {
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
-	lvsServer := lvs.Server{Host: server.Ip, Port: server.Port}
+	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
+	lvsServer := lvs.Server{Host: server.Host, Port: server.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -59,9 +66,9 @@ func (l *Lvs) SetServer(service database.Service, server database.Server) error 
 	if Backend != nil {
 		srvs := []database.Server{}
 		for _, srv := range s.Servers {
-			srvs = append(srvs, database.Server{Ip: srv.Host, Port: srv.Port})
+			srvs = append(srvs, database.Server{Host: srv.Host, Port: srv.Port})
 		}
-		svc := database.Service{Ip: s.Host, Port: s.Port, Proto: s.Type, Servers: srvs}
+		svc := database.Service{Host: s.Host, Port: s.Port, Type: s.Type, Servers: srvs}
 		err = Backend.SetService(svc)
 		if err != nil {
 			return err
@@ -72,8 +79,8 @@ func (l *Lvs) SetServer(service database.Service, server database.Server) error 
 
 // DeleteServer
 func (l *Lvs) DeleteServer(service database.Service, server database.Server) error {
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
-	lvsServer := lvs.Server{Host: server.Ip, Port: server.Port}
+	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
+	lvsServer := lvs.Server{Host: server.Host, Port: server.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -85,7 +92,7 @@ func (l *Lvs) DeleteServer(service database.Service, server database.Server) err
 	s.RemoveServer(lvsServer)
 	// remove from backend
 	if Backend != nil {
-		svc := database.Service{Ip: s.Host, Port: s.Port, Proto: s.Type}
+		svc := database.Service{Host: s.Host, Port: s.Port, Type: s.Type}
 
 		err := Backend.SetService(svc)
 		if err != nil {
@@ -102,10 +109,10 @@ func (l *Lvs) DeleteServer(service database.Service, server database.Server) err
 
 // SetServers
 func (l *Lvs) SetServers(service database.Service, servers []database.Server) error {
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
+	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
 	lvsServers := []lvs.Server{}
 	for _, srv := range servers {
-		lvsServers = append(lvsServers, lvs.Server{Host: srv.Ip, Port: srv.Port})
+		lvsServers = append(lvsServers, lvs.Server{Host: srv.Host, Port: srv.Port})
 	}
 
 	ipvsLock.Lock()
@@ -140,17 +147,18 @@ RemoveServers:
 }
 
 // GetService
-func (l *Lvs) GetService(service database.Service) *lvs.Service {
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
+func (l *Lvs) GetService(id string) *database.Service {
+	service := parseSvc(id)
+	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
 
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
-	return lvs.DefaultIpvs.FindService(lvsService)
+	return lToSvcp(lvs.DefaultIpvs.FindService(lvsService))
 }
 
 // SetService
 func (l *Lvs) SetService(service database.Service) error {
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
+	lvsService := svcToL(service)
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -177,7 +185,7 @@ func (l *Lvs) SetService(service database.Service) error {
 
 // DeleteService
 func (l *Lvs) DeleteService(service database.Service) error {
-	lvsService := lvs.Service{Type: service.Proto, Host: service.Ip, Port: service.Port}
+	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -203,17 +211,21 @@ func (l *Lvs) DeleteService(service database.Service) error {
 }
 
 // GetServices
-func (l *Lvs) GetServices() []lvs.Service {
+func (l *Lvs) GetServices() []database.Service {
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
-	return lvs.DefaultIpvs.Services
+	svcs := []database.Service{}
+	for _, svc := range lvs.DefaultIpvs.Services {
+		svcs = append(svcs, lToSvc(svc))
+	}
+	return svcs
 }
 
 // SetServices
 func (l *Lvs) SetServices(services []database.Service) error {
 	lvsServices := []lvs.Service{}
 	for _, svc := range services {
-		lvsServices = append(lvsServices, lvs.Service{Type: svc.Proto, Host: svc.Ip, Port: svc.Port})
+		lvsServices = append(lvsServices, lvs.Service{Type: svc.Type, Host: svc.Host, Port: svc.Port})
 	}
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -293,7 +305,7 @@ func (l *Lvs) SyncToLvs() error {
 	}
 	lvsServices := []lvs.Service{}
 	for _, svc := range services {
-		lvsServices = append(lvsServices, lvs.Service{Host: svc.Ip, Port: svc.Port, Type: svc.Proto})
+		lvsServices = append(lvsServices, lvs.Service{Host: svc.Host, Port: svc.Port, Type: svc.Type})
 	}
 	err = lvs.Restore(lvsServices)
 	if err != nil {
@@ -307,7 +319,7 @@ func (l *Lvs) SyncToLvs() error {
 		tab.ClearChain("filter", "portal")
 		tab.AppendUnique("filter", "portal", "-j", "RETURN")
 		for i := range services {
-			err := tab.Insert("filter", "portal", 1, "-p", services[i].Proto, "-d", services[i].Ip, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+			err := tab.Insert("filter", "portal", 1, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
 			if err != nil {
 				tab.ClearChain("filter", "portal")
 				tab.DeleteChain("filter", "portal")
@@ -340,7 +352,7 @@ func (l *Lvs) SyncToPortal() error {
 	if Backend != nil {
 		svcs := []database.Service{}
 		for _, svc := range lvs.DefaultIpvs.Services {
-			svcs = append(svcs, database.Service{Ip: svc.Host, Port: svc.Port, Proto: svc.Type})
+			svcs = append(svcs, database.Service{Host: svc.Host, Port: svc.Port, Type: svc.Type})
 		}
 		err := Backend.SetServices(svcs)
 		if err != nil {
@@ -369,4 +381,67 @@ func (l *Lvs) SyncToPortal() error {
 		tab.DeleteChain("filter", "portal-old")
 	}
 	return nil
+}
+
+func parseSvc(serviceId string) lvs.Service {
+	s := strings.Replace(serviceId, "_", ".", -1)
+	svc := strings.Split(s, "-")
+	p, _ := strconv.Atoi(svc[2])
+	return lvs.Service{Type: svc[0], Host: svc[1], Port: p}
+}
+
+func parseSrv(serverId string) lvs.Server {
+	s := strings.Replace(serverId, "_", ".", -1)
+	svc := strings.Split(s, "-")
+	p, _ := strconv.Atoi(svc[1])
+	return lvs.Server{Host: svc[0], Port: p}
+}
+
+// conversion functions
+// takes a lvs.Server and converts it to a database.Server
+func lToSrv(server lvs.Server) database.Server {
+	srv := database.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
+	srv.GenId()
+	return srv
+}
+func lToSrvp(server *lvs.Server) *database.Server {
+	srv := &database.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
+	srv.GenId()
+	return srv
+}
+
+// takes a lvs.Service and converts it to a database.Service
+func lToSvc(server lvs.Service) database.Service {
+	srvs := []database.Server{}
+	for i, srv := range server.Servers {
+		srvs = append(srvs, lToSrv(srv))
+		srvs[i].GenId()
+	}
+	svc := database.Service{Host: server.Host, Port: server.Port, Type: server.Type, Scheduler: server.Scheduler, Persistence: server.Persistence, Netmask: server.Netmask, Servers: srvs}
+	svc.GenId()
+	return svc
+}
+func lToSvcp(server *lvs.Service) *database.Service {
+	srvs := []database.Server{}
+	for i, srv := range server.Servers {
+		srvs = append(srvs, lToSrv(srv))
+		srvs[i].GenId()
+	}
+	svc := &database.Service{Host: server.Host, Port: server.Port, Type: server.Type, Scheduler: server.Scheduler, Persistence: server.Persistence, Netmask: server.Netmask, Servers: srvs}
+	svc.GenId()
+	return svc
+}
+
+// takes a database.Server and converts it to an lvs.Server
+func srvToL(server database.Server) lvs.Server {
+	return lvs.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
+}
+
+// takes a database.Service and converts it to an lvs.Service
+func svcToL(server database.Service) lvs.Service {
+	srvs := []lvs.Server{}
+	for _, srv := range server.Servers {
+		srvs = append(srvs, srvToL(srv))
+	}
+	return lvs.Service{Host: server.Host, Port: server.Port, Type: server.Type, Scheduler: server.Scheduler, Persistence: server.Persistence, Netmask: server.Netmask, Servers: srvs}
 }
