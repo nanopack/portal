@@ -68,8 +68,8 @@ func routes() *pat.Router {
 	router.Get("/services/{svc_id}/servers", handleRequest(getServers))
 	router.Delete("/services/{svc_id}", handleRequest(deleteService))
 	router.Get("/services/{svc_id}", handleRequest(getService))
-	// router.Post("/services", handleRequest(postServices))
 	router.Post("/services", handleRequest(postService))
+	router.Put("/services", handleRequest(putServices))
 	router.Get("/services", handleRequest(getServices))
 	router.Post("/sync", handleRequest(postSync))
 	router.Get("/sync", handleRequest(getSync))
@@ -249,29 +249,33 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svc_id}
 	svc_id := req.URL.Query().Get(":svc_id")
 
-	real_service := Balancer.GetService(svc_id)
-	if real_service == nil {
+	service := Balancer.GetService(svc_id)
+	if service == nil {
 		writeError(rw, req, NoServiceError)
 		return
 	}
-	writeBody(rw, req, real_service, http.StatusOK)
+	writeBody(rw, req, service, http.StatusOK)
 }
 
 // Reset all services
-func postServices(rw http.ResponseWriter, req *http.Request) {
 	// /services
+func putServices(rw http.ResponseWriter, req *http.Request) {
 	services := []database.Service{}
 
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&services)
 
+	for _, svc := range services {
+		svc.GenId()
+	}
+
 	// was this me?
-	// err := Balancer.SetServices(services)
-	// if err != nil {
-	// 	writeError(rw, req, err)
-	// 	return
-	// }
-	writeBody(rw, req, nil, http.StatusOK)
+	err := Balancer.SetServices(services)
+	if err != nil {
+		writeError(rw, req, err)
+		return
+	}
+	writeBody(rw, req, services, http.StatusOK)
 }
 
 // Create a service
@@ -293,17 +297,15 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 
 // Delete a service
 func deleteService(rw http.ResponseWriter, req *http.Request) {
-	// /services/{proto}/{service_ip}/{service_port}
-	service, err := parseReqService(req)
+	// /services/{svc_id}
+	svc_id := req.URL.Query().Get(":svc_id")
+
+	err := Balancer.DeleteService(svc_id)
 	if err != nil {
 		writeError(rw, req, err)
 		return
 	}
-	err = Balancer.DeleteService(service)
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
+	// what to return here instead of nil?
 	writeBody(rw, req, nil, http.StatusOK)
 }
 

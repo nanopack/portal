@@ -184,7 +184,8 @@ func (l *Lvs) SetService(service database.Service) error {
 }
 
 // DeleteService
-func (l *Lvs) DeleteService(service database.Service) error {
+func (l *Lvs) DeleteService(id string) error {
+	service := parseSvc(id)
 	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
 
 	ipvsLock.Lock()
@@ -196,7 +197,7 @@ func (l *Lvs) DeleteService(service database.Service) error {
 	}
 	// remove from backend
 	if Backend != nil {
-		err := Backend.DeleteService(service)
+		err := Backend.DeleteService(lToSvc(service))
 		if err != nil {
 			return err
 		}
@@ -225,7 +226,7 @@ func (l *Lvs) GetServices() []database.Service {
 func (l *Lvs) SetServices(services []database.Service) error {
 	lvsServices := []lvs.Service{}
 	for _, svc := range services {
-		lvsServices = append(lvsServices, lvs.Service{Type: svc.Type, Host: svc.Host, Port: svc.Port})
+		lvsServices = append(lvsServices, svcToL(svc))
 	}
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
