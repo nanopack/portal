@@ -29,8 +29,8 @@ type (
 		Port           int    `json:"port"`
 		Forwarder      string `json:"forwarder"`
 		Weight         int    `json:"weight"`
-		UpperThreshold int    `json:upper_threshold`
-		LowerThreshold int    `json:lower_threshold`
+		UpperThreshold int    `json:"upper_threshold"`
+		LowerThreshold int    `json:"lower_threshold"`
 	}
 	Service struct {
 		// sanitize id
@@ -99,4 +99,8 @@ func Init() error {
 		}
 	}
 	return nil
+}
+
+func key(service Service) string {
+	return fmt.Sprintf("%v-%v-%d", service.Type, strings.Replace(service.Host, ".", "_", -1), service.Port)
 }

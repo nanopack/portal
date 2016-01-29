@@ -2,7 +2,6 @@ package database
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -16,10 +15,6 @@ type (
 		scribbleDb *scribble.Driver
 	}
 )
-
-func key(service Service) string {
-	return fmt.Sprintf("%v-%v-%d", service.Type, strings.Replace(service.Host, ".", "_", -1), service.Port)
-}
 
 func (s *ScribbleDatabase) Init() error {
 	u, err := url.Parse(config.DatabaseConnection)
