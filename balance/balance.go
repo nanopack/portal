@@ -46,7 +46,7 @@ func parseSvc(serviceId string) (*database.Service, error) {
 func parseSrv(serverId string) (*database.Server, error) {
 	s := strings.Replace(serverId, "_", ".", -1)
 	srv := strings.Split(s, "-")
-	if len(srv) != 3 {
+	if len(srv) != 2 {
 		return nil, NoServerError
 	}
 	p, _ := strconv.Atoi(srv[1])

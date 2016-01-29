@@ -16,10 +16,13 @@ type (
 		GetServices() ([]Service, error)
 		GetService(id string) (Service, error)
 		SetServices(services []Service) error
-		SetService(service Service) error
+		SetService(service *Service) error
 		DeleteService(id string) error
 
 		// implement servers here?
+		SetServers(svcId string, servers []Server) error
+		SetServer(svcId string, server *Server) error
+		DeleteServer(svcId, srvId string) error
 	}
 
 	Server struct {

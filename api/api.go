@@ -97,12 +97,15 @@ func writeBody(rw http.ResponseWriter, req *http.Request, v interface{}, status 
 	return nil
 }
 
-func writeError(rw http.ResponseWriter, req *http.Request, err error) error {
+func writeError(rw http.ResponseWriter, req *http.Request, err error, status int) error {
+	if status == 0 {
+		status = http.StatusInternalServerError
+	}
 	config.Log.Error("%s %s %s %s", req.RemoteAddr, req.Method, req.RequestURI, err.Error())
-	return writeBody(rw, req, apiError{ErrorString: err.Error()}, http.StatusInternalServerError)
+	return writeBody(rw, req, apiError{ErrorString: err.Error()}, status)
 }
 
-func parseReqService(req *http.Request) (database.Service, error) {
+func parseReqService(req *http.Request) (*database.Service, error) {
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		config.Log.Error(err.Error())
@@ -112,20 +115,23 @@ func parseReqService(req *http.Request) (database.Service, error) {
 	var svc database.Service
 
 	if err := json.Unmarshal(b, &svc); err != nil {
-		return database.Service{}, err
+		return nil, fmt.Errorf("Bad JSON syntax received in body")
 	}
 
 	svc.GenId()
+	if svc.Id == "--0" {
+		return nil, NoServiceError
+	}
 
 	for i, _ := range svc.Servers {
 		svc.Servers[i].GenId()
 	}
 
 	config.Log.Trace("SERVICE: %+v", svc)
-	return svc, nil
+	return &svc, nil
 }
 
-func parseReqServer(req *http.Request) (database.Server, error) {
+func parseReqServer(req *http.Request) (*database.Server, error) {
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		config.Log.Error(err.Error())
@@ -134,14 +140,14 @@ func parseReqServer(req *http.Request) (database.Server, error) {
 	var srv database.Server
 
 	if err := json.Unmarshal(b, &srv); err != nil {
-		return database.Server{}, err
+		return nil, err
 	}
 
 	srv.GenId()
 
 	config.Log.Trace("SERVER: %+v", srv)
 	config.Log.Trace("%+v", srv)
-	return srv, nil
+	return &srv, nil
 }
 
 // Get information about a backend server
@@ -153,12 +159,12 @@ func getServer(rw http.ResponseWriter, req *http.Request) {
 	// getting from balancer ensures rule actually exists,
 	// getting from backend ensures its written, which to use?
 	// if write only on successful existance, db is good
-	real_server, err := Balancer.GetServer(svc_id, srv_id)
-	if real_server != nil {
-		writeBody(rw, req, real_server, http.StatusOK)
+	server, err := Balancer.GetServer(svc_id, srv_id)
+	if err != nil {
+		writeError(rw, req, err, 404)
 		return
 	}
-	writeError(rw, req, err)
+	writeBody(rw, req, server, http.StatusOK)
 }
 
 // Create a backend server
@@ -166,42 +172,24 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svc_id}/servers
 	svc_id := req.URL.Query().Get(":svc_id")
 
-	// decide here where to get from
-	service, err := Balancer.GetService(svc_id)
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
 	server, err := parseReqServer(req)
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 400)
 		return
 	}
-	// Parse body for extra info:
-	// Forwarder, Weight, UpperThreshold, LowerThreshold
-	// decoder := json.NewDecoder(req.Body)
-	// decoder.Decode(&server)
 
 	// apply to balancer
-	err = Balancer.SetServer(*service, server)
+	err = Balancer.SetServer(svc_id, server)
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 500)
 		return
 	}
 
-	// save to backend, implement in backend.SetServer
+	// save to backend
 	if Backend != nil {
-		service.Servers = append(service.Servers, server)
-		// // seems to be setservers
-		// srvs := []database.Server{}
-		// for _, srv := range service.Servers {
-		// 	srvs = append(srvs, database.Server{Host: srv.Host, Port: srv.Port})
-		// }
-		// // svc := database.Service{Host: s.Host, Port: s.Port, Type: s.Type, Servers: srvs}
-		// service.Servers = srvs
-		err = Backend.SetService(*service)
+		err = Backend.SetServer(svc_id, server)
 		if err != nil {
-			writeError(rw, req, err)
+			writeError(rw, req, err, 500)
 			return
 		}
 	}
@@ -218,32 +206,14 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 
 	// delete rule from balancer
 	if err := Balancer.DeleteServer(svc_id, srv_id); err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 500)
 		return
 	}
 
 	// remove from backend
 	if Backend != nil {
-		// implement in backend.DeleteServer
-		service, err := Backend.GetService(svc_id)
-		if err != nil {
-			writeError(rw, req, err)
-			return
-		}
-		for _, srv := range service.Servers {
-			if srv.Id == srv_id {
-				// empty or a = append(a[:i], a[i+1:]...)
-				srv = database.Server{}
-			}
-		}
-		
-		// service.Servers = append(service.Servers, server)
-
-
-		// svc := database.Service{Host: s.Host, Port: s.Port, Type: s.Type}
-
-		if err = Backend.SetService(service); err != nil {
-			writeError(rw, req, err)
+		if err := Backend.DeleteServer(svc_id, srv_id); err != nil {
+			writeError(rw, req, err, 500)
 			return
 		}
 	}
@@ -255,45 +225,42 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 func getServers(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svc_id}/servers
 	svc_id := req.URL.Query().Get(":svc_id")
-	real_service, err := Balancer.GetService(svc_id)
+	service, err := Balancer.GetService(svc_id)
 	if err != nil {
-		writeError(rw, req, NoServerError)
+		writeError(rw, req, err, 404)
 		return
 	}
-	writeBody(rw, req, real_service.Servers, http.StatusOK)
+	writeBody(rw, req, service.Servers, http.StatusOK)
 }
 
 // Create a backend server
 func putServers(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svc_id}/servers
-	// service, err := parseReqService(req)
 	svc_id := req.URL.Query().Get(":svc_id")
-	fmt.Println("Getting Service")
-	service, err := Balancer.GetService(svc_id)
-	if err != nil {
-		writeError(rw, req, err)
-		return
-	}
-	fmt.Println("Got service ", service)
-	// // todo: will this decode into servers properly
-	// servers, err := parseReqServer(req)
-	// if err != nil {
-	// 	writeError(rw, req, err)
-	// 	return
-	// }
+
 	servers := []database.Server{}
-	// Servers?
-	// - Host, Port, Forwarder, Weight, UpperThreshold, LowerThreshold
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&servers)
+
 	for _, srv := range servers {
 		srv.GenId()
 	}
-	err = Balancer.SetServers(*service, servers)
+	// implement in balancer
+	err := Balancer.SetServers(svc_id, servers)
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 500)
 		return
 	}
+
+	// add to backend
+	if Backend != nil {
+		err = Backend.SetServers(svc_id, servers)
+		if err != nil {
+			writeError(rw, req, err, 500)
+			return
+		}
+	}
+
 	// return full service (database.x with id) rather than nil
 	writeBody(rw, req, nil, http.StatusOK)
 }
@@ -305,7 +272,7 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 
 	service, err := Balancer.GetService(svc_id)
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 404)
 		return
 	}
 	writeBody(rw, req, service, http.StatusOK)
@@ -314,27 +281,29 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 // Reset all services
 // /services
 func putServices(rw http.ResponseWriter, req *http.Request) {
-	fmt.Println("Adding Service")
 	services := []database.Service{}
-
 	decoder := json.NewDecoder(req.Body)
 	decoder.Decode(&services)
 
 	for _, svc := range services {
 		svc.GenId()
+		if svc.Id == "--0" {
+			writeError(rw, req, NoServiceError, 400)
+			return
+		}
 	}
 
 	// apply services to balancer
 	err := Balancer.SetServices(services)
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 500)
 		return
 	}
 
 	// save to backend
 	if Backend != nil {
 		if err := Backend.SetServices(services); err != nil {
-			writeError(rw, req, err)
+			writeError(rw, req, err, 500)
 			return
 		}
 	}
@@ -347,14 +316,14 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 	// /services
 	service, err := parseReqService(req)
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 400)
 		return
 	}
 
 	// apply to balancer
 	err = Balancer.SetService(service)
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 500)
 		return
 	}
 
@@ -362,7 +331,7 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 	if Backend != nil {
 		err := Backend.SetService(service)
 		if err != nil {
-			writeError(rw, req, err)
+			writeError(rw, req, err, 500)
 			return
 		}
 	}
@@ -378,7 +347,7 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 	// delete backend rule
 	err := Balancer.DeleteService(svc_id)
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 500)
 		return
 	}
 
@@ -387,7 +356,7 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 		// in backend, on error, roll back 'insert'
 		err := Backend.DeleteService(svc_id)
 		if err != nil {
-			writeError(rw, req, err)
+			writeError(rw, req, err, 500)
 			return
 		}
 	}
@@ -399,8 +368,7 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 // List all services
 func getServices(rw http.ResponseWriter, req *http.Request) {
 	// /services
-	services := Balancer.GetServices()
-	writeBody(rw, req, services, http.StatusOK)
+	writeBody(rw, req, Balancer.GetServices(), http.StatusOK)
 }
 
 // Sync portal's database from running system
@@ -408,7 +376,7 @@ func getSync(rw http.ResponseWriter, req *http.Request) {
 	// /sync
 	err := Balancer.SyncToPortal()
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 500)
 		return
 	}
 	writeBody(rw, req, nil, http.StatusOK)
@@ -419,7 +387,7 @@ func postSync(rw http.ResponseWriter, req *http.Request) {
 	// /sync
 	err := Balancer.SyncToLvs()
 	if err != nil {
-		writeError(rw, req, err)
+		writeError(rw, req, err, 500)
 		return
 	}
 	writeBody(rw, req, nil, http.StatusOK)

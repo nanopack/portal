@@ -57,18 +57,26 @@ func (l *Lvs) GetServer(svcId, srvId string) (*database.Server, error) {
 }
 
 // SetServer
-func (l *Lvs) SetServer(service database.Service, server database.Server) error {
-	lvsService := svcToL(service)
-	lvsServer := srvToL(server)
+func (l *Lvs) SetServer(svcId string, server *database.Server) error {
+	service, err := l.GetService(svcId)
+	if err != nil {
+		return err
+	}
+	lvsService := svcToL(*service)
+	lvsServer := srvToL(*server)
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
+
+	// seems redundant since api passes good service in. todo: Should api pass (string, Server)?
 	// add to lvs
 	s := lvs.DefaultIpvs.FindService(lvsService)
 	if s == nil {
 		return NoServiceError
 	}
-	err := s.AddServer(lvsServer)
+	//
+
+	err = s.AddServer(lvsServer)
 	if err != nil {
 		return err
 	}
@@ -80,13 +88,15 @@ func (l *Lvs) DeleteServer(svcId, srvId string) error {
 	var err error
 	service, err := parseSvc(svcId)
 	if err != nil {
-		return err
+		// if service not valic, 'delete' successful
+		return nil
 	}
 	lvsService := svcToL(*service)
 
 	server, err := parseSrv(srvId)
 	if err != nil {
-		return err
+		// if invalid servername, 'delete' successful
+		return nil
 	}
 	lvsServer := srvToL(*server)
 
@@ -97,14 +107,20 @@ func (l *Lvs) DeleteServer(svcId, srvId string) error {
 	if s == nil {
 		return nil
 	}
+	// hope this doesn't fail
 	s.RemoveServer(lvsServer)
 
 	return nil
 }
 
 // SetServers
-func (l *Lvs) SetServers(service database.Service, servers []database.Server) error {
-	lvsService := svcToL(service)
+func (l *Lvs) SetServers(svcId string, servers []database.Server) error {
+	service, err := l.GetService(svcId)
+	if err != nil {
+		return nil
+	}
+
+	lvsService := svcToL(*service)
 	lvsServers := []lvs.Server{}
 	for _, srv := range servers {
 		lvsServers = append(lvsServers, srvToL(srv))
@@ -161,8 +177,8 @@ func (l *Lvs) GetService(id string) (*database.Service, error) {
 }
 
 // SetService
-func (l *Lvs) SetService(service database.Service) error {
-	lvsService := svcToL(service)
+func (l *Lvs) SetService(service *database.Service) error {
+	lvsService := svcToL(*service)
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -185,13 +201,20 @@ func (l *Lvs) SetService(service database.Service) error {
 func (l *Lvs) DeleteService(id string) error {
 	service, err := parseSvc(id)
 	if err != nil {
-		return err
+		// if invalid service, 'delete' succesful
+		return nil
 	}
 
 	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
+	svc := lvs.DefaultIpvs.FindService(lvsService)
+	if svc == nil {
+		// if not exist, 'delete' successful
+		return nil
+	}
+
 	// remove from lvs
 	err = lvs.DefaultIpvs.RemoveService(lvsService)
 	if err != nil {
