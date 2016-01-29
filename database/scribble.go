@@ -118,3 +118,18 @@ func (s ScribbleDatabase) DeleteServer(svcId, srvId string) error {
 
 	return s.scribbleDb.Write("services", key(service), service)
 }
+
+func (s ScribbleDatabase) GetServer(svcId, srvId string) (*Server, error) {
+	service := Service{}
+	err := s.scribbleDb.Read("services", svcId, &service)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, srv := range service.Servers {
+		if srv.Id == "srvId" {
+			return &srv, nil
+		}
+	}
+	return nil, NoServerError
+}

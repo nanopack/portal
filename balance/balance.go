@@ -5,26 +5,24 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nanobox-io/golang-lvs"
-
 	"github.com/nanopack/portal/database"
 )
 
 type (
 	Balancer interface {
-		// need to update
-		GetServer(service database.Service, server database.Server) database.Server
-		SetServer(service database.Service, server database.Server) error
-		DeleteServer(service database.Service, server database.Server) error
-		SetServers(service database.Service, servers []database.Server) error
+		GetService(id string) (*database.Service, error)
+		SetService(service *database.Service) error
+		DeleteService(id string) error
+		GetServices() []*database.Service
+		SetServices(services []database.Service) error
+
+		GetServer(svcId, srvId string) (*database.Server, error)
+		SetServer(svcId string, server *database.Server) error
+		DeleteServer(svcId, srvId string) error
+		SetServers(svcId string, servers []database.Server) error
+
 		SyncToLvs() error // probably should just be Sync?
 		SyncToPortal() error
-		// GetServers(service database.Service) []lvs.servers
-		GetService(service database.Service) database.Service
-		SetService(service database.Service) error
-		DeleteService(service database.Service) error
-		GetServices() []lvs.Service
-		SetServices(services []database.Service) error
 	}
 )
 

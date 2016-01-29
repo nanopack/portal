@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -19,10 +20,10 @@ type (
 		SetService(service *Service) error
 		DeleteService(id string) error
 
-		// implement servers here?
 		SetServers(svcId string, servers []Server) error
 		SetServer(svcId string, server *Server) error
 		DeleteServer(svcId, srvId string) error
+		GetServer(svcId, srvId string) (*Server, error)
 	}
 
 	Server struct {
@@ -49,8 +50,10 @@ type (
 )
 
 var (
-	Backend Backender
-	Tab     *iptables.IPTables
+	Backend        Backender
+	Tab            *iptables.IPTables
+	NoServiceError = errors.New("No Service Found")
+	NoServerError  = errors.New("No Server Found")
 )
 
 func (s *Service) GenId() {
