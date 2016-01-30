@@ -55,7 +55,9 @@ func (s ScribbleDatabase) GetService(id string) (*Service, error) {
 	service := Service{}
 	err := s.scribbleDb.Read("services", id, &service)
 	if err != nil {
-		// more generic error? no service error?
+		if strings.Contains(err.Error(), "no such file or directory") {
+			err = NoServiceError
+		}
 		return nil, err
 	}
 	return &service, nil

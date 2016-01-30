@@ -48,9 +48,14 @@ func (l *Lvs) GetServer(svcId, srvId string) (*database.Server, error) {
 	defer ipvsLock.RUnlock()
 	s := lvs.DefaultIpvs.FindService(lvsService)
 	if s == nil {
+		return nil, NoServiceError
+	}
+
+	srv := s.FindServer(lvsServer)
+	if srv == nil {
 		return nil, NoServerError
 	}
-	return lToSrvp(s.FindServer(lvsServer)), nil
+	return lToSrvp(srv), nil
 }
 
 // SetServer
@@ -376,6 +381,7 @@ func lToSrv(server lvs.Server) database.Server {
 	srv.GenId()
 	return srv
 }
+
 func lToSrvp(server *lvs.Server) *database.Server {
 	srv := &database.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
 	srv.GenId()
