@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/coreos/go-iptables/iptables"
-
 	"github.com/nanopack/portal/config"
 )
 
@@ -51,7 +49,6 @@ type (
 
 var (
 	Backend        Backender
-	Tab            *iptables.IPTables
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
 )
@@ -81,27 +78,6 @@ func Init() error {
 		err = Backend.Init()
 		if err != nil {
 			Backend = nil
-		}
-	}
-	Tab, err = iptables.New()
-	if err != nil {
-		Tab = nil
-	}
-	if Tab != nil {
-		Tab.Delete("filter", "INPUT", "-j", "portal")
-		Tab.ClearChain("filter", "portal")
-		Tab.DeleteChain("filter", "portal")
-		err = Tab.NewChain("filter", "portal")
-		if err != nil {
-			return fmt.Errorf("Failed to create new chain - %v", err)
-		}
-		err = Tab.AppendUnique("filter", "portal", "-j", "RETURN")
-		if err != nil {
-			return fmt.Errorf("Failed to append to portal chain - %v", err)
-		}
-		err = Tab.AppendUnique("filter", "INPUT", "-j", "portal")
-		if err != nil {
-			return fmt.Errorf("Failed to append to INPUT chain - %v", err)
 		}
 	}
 	return nil

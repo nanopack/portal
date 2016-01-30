@@ -2,18 +2,21 @@ package balance
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/coreos/go-iptables/iptables"
 
 	"github.com/nanopack/portal/database"
 )
 
 type (
-	Balancer interface {
+	Balanceable interface {
 		GetService(id string) (*database.Service, error)
 		SetService(service *database.Service) error
 		DeleteService(id string) error
-		GetServices() []*database.Service
+		GetServices() []database.Service
 		SetServices(services []database.Service) error
 
 		GetServer(svcId, srvId string) (*database.Server, error)
@@ -21,15 +24,45 @@ type (
 		DeleteServer(svcId, srvId string) error
 		SetServers(svcId string, servers []database.Server) error
 
-		SyncToLvs() error // probably should just be Sync?
-		SyncToPortal() error
+		SyncToBalancer([]database.Service) error // probably could just be Sync?
+		SyncToPortal() error                     // is this even needed?
 	}
 )
 
 var (
+	Balancer       Balanceable
+	tab            *iptables.IPTables
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
 )
+
+func Init() error {
+	Balancer = &Lvs{}
+
+	var err error
+	tab, err = iptables.New()
+	if err != nil {
+		tab = nil
+	}
+	if tab != nil {
+		tab.Delete("filter", "INPUT", "-j", "portal")
+		tab.ClearChain("filter", "portal")
+		tab.DeleteChain("filter", "portal")
+		err = tab.NewChain("filter", "portal")
+		if err != nil {
+			return fmt.Errorf("Failed to create new chain - %v", err)
+		}
+		err = tab.AppendUnique("filter", "portal", "-j", "RETURN")
+		if err != nil {
+			return fmt.Errorf("Failed to append to portal chain - %v", err)
+		}
+		err = tab.AppendUnique("filter", "INPUT", "-j", "portal")
+		if err != nil {
+			return fmt.Errorf("Failed to append to INPUT chain - %v", err)
+		}
+	}
+	return nil
+}
 
 func parseSvc(serviceId string) (*database.Service, error) {
 	s := strings.Replace(serviceId, "_", ".", -1)

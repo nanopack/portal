@@ -2,8 +2,6 @@ package balance
 
 import (
 	"fmt"
-	// "strconv"
-	// "strings"
 	"sync"
 
 	"github.com/nanobox-io/golang-lvs"
@@ -14,7 +12,6 @@ import (
 var (
 	Backend  = database.Backend //&database.Backend
 	ipvsLock = &sync.RWMutex{}
-	tab      = database.Tab //&database.Tab
 )
 
 type (
@@ -232,12 +229,12 @@ func (l *Lvs) DeleteService(id string) error {
 
 // GetServices
 // doesn't need to be a pointer method because it doesn't modify original object
-func (l *Lvs) GetServices() []*database.Service {
+func (l *Lvs) GetServices() []database.Service {
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
-	svcs := []*database.Service{}
+	svcs := []database.Service{}
 	for _, svc := range lvs.DefaultIpvs.Services {
-		svcs = append(svcs, lToSvcp(&svc))
+		svcs = append(svcs, lToSvc(svc))
 	}
 	return svcs
 }
@@ -289,10 +286,7 @@ func (l *Lvs) SetServices(services []database.Service) error {
 }
 
 // SyncLvs
-func (l *Lvs) SyncToLvs() error {
-	// don't query backend
-	services := l.GetServices()
-
+func (l *Lvs) SyncToBalancer(services []database.Service) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 	if tab != nil {
@@ -305,18 +299,18 @@ func (l *Lvs) SyncToLvs() error {
 		if tab != nil {
 			tab.RenameChain("filter", "portal-old", "portal")
 		}
-		return err
+		return fmt.Errorf("Failed to lvs.Clear() - %v", err.Error())
 	}
-	lvsServices := []lvs.Service{}
+	var lvsServices []lvs.Service
 	for _, svc := range services {
-		lvsServices = append(lvsServices, svcToL(*svc))
+		lvsServices = append(lvsServices, svcToL(svc))
 	}
 	err = lvs.Restore(lvsServices)
 	if err != nil {
 		if tab != nil {
 			tab.RenameChain("filter", "portal-old", "portal")
 		}
-		return err
+		return fmt.Errorf("Failed to lvs.Restore() (Perhaps bad database entry?) - %v", err.Error())
 	}
 	if tab != nil {
 		tab.NewChain("filter", "portal")
@@ -328,7 +322,7 @@ func (l *Lvs) SyncToLvs() error {
 				tab.ClearChain("filter", "portal")
 				tab.DeleteChain("filter", "portal")
 				tab.RenameChain("filter", "portal-old", "portal")
-				return err
+				return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
 			}
 		}
 		tab.AppendUnique("filter", "INPUT", "-j", "portal")
@@ -341,6 +335,7 @@ func (l *Lvs) SyncToLvs() error {
 
 // SyncToPortal
 func (l *Lvs) SyncToPortal() error {
+	// why do we need to modify rules if we already updated backend with current rules?
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 	if tab != nil {
@@ -353,19 +348,7 @@ func (l *Lvs) SyncToPortal() error {
 		}
 		return err
 	}
-	if Backend != nil {
-		svcs := []database.Service{}
-		for _, svc := range lvs.DefaultIpvs.Services {
-			svcs = append(svcs, database.Service{Host: svc.Host, Port: svc.Port, Type: svc.Type})
-		}
-		err := Backend.SetServices(svcs)
-		if err != nil {
-			if tab != nil {
-				tab.RenameChain("filter", "portal-old", "portal")
-			}
-			return err
-		}
-	}
+
 	if tab != nil {
 		tab.NewChain("filter", "portal")
 		tab.ClearChain("filter", "portal")

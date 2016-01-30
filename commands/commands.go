@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/jcelliott/lumber"
 	"github.com/spf13/cobra"
@@ -32,8 +33,6 @@ var (
 			ccmd.HelpFunc()(ccmd, args)
 		},
 	}
-
-	Balancer balance.Lvs // should init
 )
 
 func init() {
@@ -81,26 +80,42 @@ func startServer() {
 		var err error
 		config.Log, err = lumber.NewFileLogger(config.LogFile, lumber.LvlInt(config.LogLevel), lumber.ROTATE, 5000, 9, 100)
 		if err != nil {
-			config.Log.Fatal("%v", err)
+			config.Log.Fatal("File logger init failed - %v", err)
 			os.Exit(1)
 		}
 	}
 	// initialize database
 	err := database.Init()
 	if err != nil {
-		config.Log.Fatal("%v", err)
+		config.Log.Fatal("Database init failed - %v", err)
+		os.Exit(1)
+	}
+	// initialize balancer
+	err = balance.Init()
+	if err != nil {
+		config.Log.Fatal("Balancer init failed - %v", err)
 		os.Exit(1)
 	}
 	// load saved rules
-	err = Balancer.SyncToLvs()
+	services, err := database.Backend.GetServices()
 	if err != nil {
-		config.Log.Fatal("%v", err)
+		// if error is not about a missing db, continue
+		if !strings.Contains(err.Error(), "not found") {
+			// todo: catching here requires backends to print custom error in GetServices
+			config.Log.Fatal("Get services from backend failed - %v", err)
+			os.Exit(1)
+		}
+	}
+	// apply saved rules
+	err = balance.Balancer.SyncToBalancer(services)
+	if err != nil {
+		config.Log.Fatal("Balancer sync failed - %v", err)
 		os.Exit(1)
 	}
 	// start api
 	err = api.StartApi()
 	if err != nil {
-		config.Log.Fatal("%v", err)
+		config.Log.Fatal("Api start failed - %v", err)
 		os.Exit(1)
 	}
 	return

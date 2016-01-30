@@ -2,6 +2,8 @@ package database
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -26,24 +28,25 @@ func (s *ScribbleDatabase) Init() error {
 	if err != nil {
 		return err
 	}
+
 	s.scribbleDb = db
 	return nil
 }
 
 func (s ScribbleDatabase) GetServices() ([]Service, error) {
-	services := make([]Service, 0)
+	var services []Service
 	values, err := s.scribbleDb.ReadAll("services")
 	if err != nil {
-		// don't return an error here if the stat fails
 		if strings.Contains(err.Error(), "no such file or directory") {
-			config.Log.Info("File 'services[.json]' could not be found, no services imported")
-			err = nil
+			err = errors.New("File 'services[.json]' was not found")
 		}
-		return services, err
+		return nil, err
 	}
 	for i := range values {
 		var service Service
-		json.Unmarshal([]byte(values[i]), &service)
+		if err = json.Unmarshal([]byte(values[i]), &service); err != nil {
+			return nil, fmt.Errorf("Bad JSON syntax received in body")
+		}
 		services = append(services, service)
 	}
 	return services, nil
@@ -60,9 +63,9 @@ func (s ScribbleDatabase) GetService(id string) (Service, error) {
 }
 
 func (s ScribbleDatabase) SetServices(services []Service) error {
-	s.scribbleDb.Delete("services", "")
+	// s.scribbleDb.Delete("services", "")
 	for i := range services {
-		err := s.scribbleDb.Write("services", key(services[i]), services[i])
+		err := s.scribbleDb.Write("services", services[i].Id, services[i])
 		if err != nil {
 			return err
 		}
@@ -71,7 +74,7 @@ func (s ScribbleDatabase) SetServices(services []Service) error {
 }
 
 func (s ScribbleDatabase) SetService(service *Service) error {
-	return s.scribbleDb.Write("services", key(*service), *service)
+	return s.scribbleDb.Write("services", service.Id, *service)
 }
 
 func (s ScribbleDatabase) DeleteService(id string) error {
@@ -85,7 +88,7 @@ func (s ScribbleDatabase) SetServer(svcId string, server *Server) error {
 	}
 	service.Servers = append(service.Servers, *server)
 
-	return s.scribbleDb.Write("services", key(service), service)
+	return s.scribbleDb.Write("services", service.Id, service)
 }
 
 func (s ScribbleDatabase) SetServers(svcId string, servers []Server) error {
@@ -97,7 +100,7 @@ func (s ScribbleDatabase) SetServers(svcId string, servers []Server) error {
 	// pretty simple, reset all servers
 	service.Servers = servers
 
-	return s.scribbleDb.Write("services", key(service), service)
+	return s.scribbleDb.Write("services", service.Id, service)
 }
 
 func (s ScribbleDatabase) DeleteServer(svcId, srvId string) error {
@@ -116,7 +119,7 @@ func (s ScribbleDatabase) DeleteServer(svcId, srvId string) error {
 		}
 	}
 
-	return s.scribbleDb.Write("services", key(service), service)
+	return s.scribbleDb.Write("services", service.Id, service)
 }
 
 func (s ScribbleDatabase) GetServer(svcId, srvId string) (*Server, error) {
