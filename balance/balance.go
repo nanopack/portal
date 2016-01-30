@@ -13,19 +13,19 @@ import (
 
 type (
 	Balanceable interface {
+		GetServices() []database.Service
 		GetService(id string) (*database.Service, error)
+		SetServices(services []database.Service) error
 		SetService(service *database.Service) error
 		DeleteService(id string) error
-		GetServices() []database.Service
-		SetServices(services []database.Service) error
 
-		GetServer(svcId, srvId string) (*database.Server, error)
+		SetServers(svcId string, servers []database.Server) error
 		SetServer(svcId string, server *database.Server) error
 		DeleteServer(svcId, srvId string) error
-		SetServers(svcId string, servers []database.Server) error
+		GetServer(svcId, srvId string) (*database.Server, error)
 
-		SyncToBalancer([]database.Service) error // probably could just be Sync?
-		SyncToPortal() error                     // is this even needed?
+		SyncToBalancer(services []database.Service) error // probably could just be Sync?
+		SyncToPortal() error                              // is this even needed?
 	}
 )
 
@@ -62,6 +62,50 @@ func Init() error {
 		}
 	}
 	return nil
+}
+
+func GetServices() []database.Service {
+	return Balancer.GetServices()
+}
+
+func GetService(id string) (*database.Service, error) {
+	return Balancer.GetService(id)
+}
+
+func SetServices(services []database.Service) error {
+	return Balancer.SetServices(services)
+}
+
+func SetService(service *database.Service) error {
+	return Balancer.SetService(service)
+}
+
+func DeleteService(id string) error {
+	return Balancer.DeleteService(id)
+}
+
+func SetServers(svcId string, servers []database.Server) error {
+	return Balancer.SetServers(svcId, servers)
+}
+
+func SetServer(svcId string, server *database.Server) error {
+	return Balancer.SetServer(svcId, server)
+}
+
+func DeleteServer(svcId, srvId string) error {
+	return Balancer.DeleteServer(svcId, srvId)
+}
+
+func GetServer(svcId, srvId string) (*database.Server, error) {
+	return Balancer.GetServer(svcId, srvId)
+}
+
+func SyncToBalancer(services []database.Service) error {
+	return Balancer.SyncToBalancer(services)
+}
+
+func SyncToPortal() error {
+	return Balancer.SyncToPortal()
 }
 
 func parseSvc(serviceId string) (*database.Service, error) {

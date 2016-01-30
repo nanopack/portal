@@ -100,8 +100,8 @@ func startServer() {
 	services, err := database.Backend.GetServices()
 	if err != nil {
 		// if error is not about a missing db, continue
-		if !strings.Contains(err.Error(), "not found") {
-			// todo: catching here requires backends to print custom error in GetServices
+		if !strings.Contains(err.Error(), "Found") {
+			// todo: this requires backends to return NoServiceError in GetServices
 			config.Log.Fatal("Get services from backend failed - %v", err)
 			os.Exit(1)
 		}

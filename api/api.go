@@ -93,7 +93,7 @@ func writeBody(rw http.ResponseWriter, req *http.Request, v interface{}, status 
 		errMsg = msg["error"]
 	}
 
-	config.Log.Trace("%s %d %s %s %s", req.RemoteAddr, status, req.Method, req.RequestURI, errMsg)
+	config.Log.Debug("%s %d %s %s %s", req.RemoteAddr, status, req.Method, req.RequestURI, errMsg)
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(status)
@@ -145,9 +145,11 @@ func parseReqServer(req *http.Request) (*database.Server, error) {
 	}
 
 	srv.GenId()
+	if srv.Id == "-0" {
+		return nil, NoServerError
+	}
 
 	config.Log.Trace("SERVER: %+v", srv)
-	config.Log.Trace("%+v", srv)
 	return &srv, nil
 }
 
@@ -160,7 +162,7 @@ func getServer(rw http.ResponseWriter, req *http.Request) {
 	// getting from balancer ensures rule actually exists,
 	// getting from backend ensures its written, which to use?
 	// if write only on successful existance, db is good
-	server, err := balance.Balancer.GetServer(svcId, srvId)
+	server, err := balance.GetServer(svcId, srvId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusNotFound)
 		return
@@ -180,7 +182,7 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// apply to balancer
-	err = balance.Balancer.SetServer(svcId, server)
+	err = balance.SetServer(svcId, server)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -188,7 +190,7 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 
 	// save to backend
 	if database.Backend != nil {
-		err = database.Backend.SetServer(svcId, server)
+		err = database.SetServer(svcId, server)
 		if err != nil {
 			writeError(rw, req, err, http.StatusInternalServerError)
 			return
@@ -206,14 +208,14 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 	srvId := req.URL.Query().Get(":srvId")
 
 	// delete rule from balancer
-	if err := balance.Balancer.DeleteServer(svcId, srvId); err != nil {
+	if err := balance.DeleteServer(svcId, srvId); err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
 	// remove from backend
 	if database.Backend != nil {
-		if err := database.Backend.DeleteServer(svcId, srvId); err != nil {
+		if err := database.DeleteServer(svcId, srvId); err != nil {
 			writeError(rw, req, err, http.StatusInternalServerError)
 			return
 		}
@@ -226,7 +228,7 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 func getServers(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svcId}/servers
 	svcId := req.URL.Query().Get(":svcId")
-	service, err := balance.Balancer.GetService(svcId)
+	service, err := balance.GetService(svcId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusNotFound)
 		return
@@ -247,7 +249,7 @@ func putServers(rw http.ResponseWriter, req *http.Request) {
 		srv.GenId()
 	}
 	// implement in balancer
-	err := balance.Balancer.SetServers(svcId, servers)
+	err := balance.SetServers(svcId, servers)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -255,15 +257,15 @@ func putServers(rw http.ResponseWriter, req *http.Request) {
 
 	// add to backend
 	if database.Backend != nil {
-		err = database.Backend.SetServers(svcId, servers)
+		err = database.SetServers(svcId, servers)
 		if err != nil {
 			writeError(rw, req, err, http.StatusInternalServerError)
 			return
 		}
 	}
 
-	// return full service (database.x with id) rather than nil
-	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
+	svc, _ := balance.GetService(svcId)
+	writeBody(rw, req, svc.Servers, http.StatusOK)
 }
 
 // Get information about a service
@@ -271,7 +273,7 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svcId}
 	svcId := req.URL.Query().Get(":svcId")
 
-	service, err := balance.Balancer.GetService(svcId)
+	service, err := balance.GetService(svcId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusNotFound)
 		return
@@ -295,7 +297,7 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// apply services to balancer
-	err := balance.Balancer.SetServices(services)
+	err := balance.SetServices(services)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -303,7 +305,7 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 
 	// save to backend
 	if database.Backend != nil {
-		if err := database.Backend.SetServices(services); err != nil {
+		if err := database.SetServices(services); err != nil {
 			writeError(rw, req, err, http.StatusInternalServerError)
 			return
 		}
@@ -322,7 +324,7 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// apply to balancer
-	err = balance.Balancer.SetService(service)
+	err = balance.SetService(service)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -330,7 +332,7 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 
 	// save to backend
 	if database.Backend != nil {
-		err := database.Backend.SetService(service)
+		err := database.SetService(service)
 		if err != nil {
 			writeError(rw, req, err, http.StatusInternalServerError)
 			return
@@ -346,7 +348,7 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 	svcId := req.URL.Query().Get(":svcId")
 
 	// delete backend rule
-	err := balance.Balancer.DeleteService(svcId)
+	err := balance.DeleteService(svcId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -355,7 +357,7 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 	// remove from backend
 	if database.Backend != nil {
 		// in backend, on error, roll back 'insert'
-		err := database.Backend.DeleteService(svcId)
+		err := database.DeleteService(svcId)
 		if err != nil {
 			writeError(rw, req, err, http.StatusInternalServerError)
 			return
@@ -369,7 +371,7 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 // List all services
 func getServices(rw http.ResponseWriter, req *http.Request) {
 	// /services
-	writeBody(rw, req, balance.Balancer.GetServices(), http.StatusOK)
+	writeBody(rw, req, balance.GetServices(), http.StatusOK)
 }
 
 // Sync portal's database from running system
@@ -378,9 +380,9 @@ func getSync(rw http.ResponseWriter, req *http.Request) {
 	// write to backend
 	if database.Backend != nil {
 		// get services from applied balancer rules
-		services := balance.Balancer.GetServices()
+		services := balance.GetServices()
 
-		err := database.Backend.SetServices(services)
+		err := database.SetServices(services)
 		if err != nil {
 			writeError(rw, req, err, http.StatusInternalServerError)
 			return
@@ -388,7 +390,7 @@ func getSync(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// apply (todo: already applied?) rules
-	err := balance.Balancer.SyncToPortal()
+	err := balance.SyncToPortal()
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -401,13 +403,13 @@ func getSync(rw http.ResponseWriter, req *http.Request) {
 func postSync(rw http.ResponseWriter, req *http.Request) {
 	// /sync
 	// get recorded services to sync to backend
-	services, err := database.Backend.GetServices()
+	services, err := database.GetServices()
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	err = balance.Balancer.SyncToBalancer(services)
+	err = balance.SyncToBalancer(services)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return

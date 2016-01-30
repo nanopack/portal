@@ -2,7 +2,6 @@ package database
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -38,7 +37,7 @@ func (s ScribbleDatabase) GetServices() ([]Service, error) {
 	values, err := s.scribbleDb.ReadAll("services")
 	if err != nil {
 		if strings.Contains(err.Error(), "no such file or directory") {
-			err = errors.New("File 'services[.json]' was not found")
+			err = NoServiceError
 		}
 		return nil, err
 	}
@@ -52,14 +51,14 @@ func (s ScribbleDatabase) GetServices() ([]Service, error) {
 	return services, nil
 }
 
-func (s ScribbleDatabase) GetService(id string) (Service, error) {
+func (s ScribbleDatabase) GetService(id string) (*Service, error) {
 	service := Service{}
 	err := s.scribbleDb.Read("services", id, &service)
 	if err != nil {
 		// more generic error? no service error?
-		return service, err
+		return nil, err
 	}
-	return service, nil
+	return &service, nil
 }
 
 func (s ScribbleDatabase) SetServices(services []Service) error {

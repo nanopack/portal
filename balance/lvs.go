@@ -65,7 +65,6 @@ func (l *Lvs) SetServer(svcId string, server *database.Server) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 
-	// seems redundant since api passes good service in. todo: Should api pass (string, Server)?
 	// add to lvs
 	s := lvs.DefaultIpvs.FindService(lvsService)
 	if s == nil {
@@ -164,7 +163,7 @@ func (l *Lvs) GetService(id string) (*database.Service, error) {
 
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
-	// why doesn't this always return nil on none found?
+
 	svc := lvs.DefaultIpvs.FindService(lvsService)
 	if svc == nil {
 		return nil, NoServiceError
