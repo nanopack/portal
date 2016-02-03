@@ -107,7 +107,7 @@ func startServer() {
 		}
 	}
 	// apply saved rules
-	err = balance.Balancer.SyncToBalancer(services)
+	err = balance.Balancer.SetServices(services)
 	if err != nil {
 		config.Log.Fatal("Balancer sync failed - %v", err)
 		os.Exit(1)

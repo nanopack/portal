@@ -24,8 +24,7 @@ type (
 		DeleteServer(svcId, srvId string) error
 		GetServer(svcId, srvId string) (*database.Server, error)
 
-		SyncToBalancer(services []database.Service) error // probably could just be Sync?
-		SyncToPortal() error                              // is this even needed?
+		Sync() error // is this even needed?
 	}
 )
 
@@ -100,12 +99,8 @@ func GetServer(svcId, srvId string) (*database.Server, error) {
 	return Balancer.GetServer(svcId, srvId)
 }
 
-func SyncToBalancer(services []database.Service) error {
-	return Balancer.SyncToBalancer(services)
-}
-
-func SyncToPortal() error {
-	return Balancer.SyncToPortal()
+func Sync() error {
+	return Balancer.Sync()
 }
 
 func parseSvc(serviceId string) (*database.Service, error) {

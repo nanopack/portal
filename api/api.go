@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/pat"
 	"github.com/nanobox-io/golang-nanoauth"
@@ -29,6 +30,7 @@ import (
 
 var (
 	auth           nanoauth.Auth
+	BadJson        = errors.New("Bad JSON syntax received in body")
 	NoServerError  = errors.New("No Server Found")
 	NoServiceError = errors.New("No Service Found")
 )
@@ -68,7 +70,7 @@ func routes() *pat.Router {
 	router.Post("/services/{svcId}/servers", postServer)
 	router.Get("/services/{svcId}/servers", getServers)
 	router.Delete("/services/{svcId}", deleteService)
-	router.Put("/services/{svcId}", postService)
+	router.Put("/services/{svcId}", putService)
 	router.Get("/services/{svcId}", getService)
 	router.Post("/services", postService)
 	router.Put("/services", putServices)
@@ -116,7 +118,7 @@ func parseReqService(req *http.Request) (*database.Service, error) {
 	var svc database.Service
 
 	if err := json.Unmarshal(b, &svc); err != nil {
-		return nil, fmt.Errorf("Bad JSON syntax received in body")
+		return nil, BadJson
 	}
 
 	svc.GenId()
@@ -124,7 +126,7 @@ func parseReqService(req *http.Request) (*database.Service, error) {
 		return nil, NoServiceError
 	}
 
-	for i, _ := range svc.Servers {
+	for i := range svc.Servers {
 		svc.Servers[i].GenId()
 	}
 
@@ -141,7 +143,7 @@ func parseReqServer(req *http.Request) (*database.Server, error) {
 	var srv database.Server
 
 	if err := json.Unmarshal(b, &srv); err != nil {
-		return nil, err
+		return nil, BadJson
 	}
 
 	srv.GenId()
@@ -243,10 +245,13 @@ func putServers(rw http.ResponseWriter, req *http.Request) {
 
 	servers := []database.Server{}
 	decoder := json.NewDecoder(req.Body)
-	decoder.Decode(&servers)
+	if err := decoder.Decode(&servers); err != nil {
+		writeError(rw, req, BadJson, http.StatusBadRequest)
+		return
+	}
 
-	for _, srv := range servers {
-		srv.GenId()
+	for i := range servers {
+		servers[i].GenId()
 	}
 	// implement in balancer
 	err := balance.SetServers(svcId, servers)
@@ -286,13 +291,23 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 func putServices(rw http.ResponseWriter, req *http.Request) {
 	services := []database.Service{}
 	decoder := json.NewDecoder(req.Body)
-	decoder.Decode(&services)
+	if err := decoder.Decode(&services); err != nil {
+		writeError(rw, req, BadJson, http.StatusBadRequest)
+		return
+	}
 
-	for _, svc := range services {
-		svc.GenId()
-		if svc.Id == "--0" {
+	for i := range services {
+		services[i].GenId()
+		if services[i].Id == "--0" {
 			writeError(rw, req, NoServiceError, http.StatusBadRequest)
 			return
+		}
+		for j := range services[i].Servers {
+			services[i].Servers[j].GenId()
+			if services[i].Servers[j].Id == "-0" {
+				writeError(rw, req, NoServerError, http.StatusBadRequest)
+				return
+			}
 		}
 	}
 
@@ -342,6 +357,54 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 	writeBody(rw, req, service, http.StatusOK)
 }
 
+// Replace a service (by replacing all services)
+func putService(rw http.ResponseWriter, req *http.Request) {
+	// /services/{svcId}
+	svcId := req.URL.Query().Get(":svcId")
+	// rough sanitization
+	if len(strings.Split(svcId, "-")) != 3 {
+		writeError(rw, req, NoServiceError, http.StatusBadRequest)
+		return
+	}
+
+	service, err := parseReqService(req)
+	if err != nil {
+		writeError(rw, req, err, http.StatusBadRequest)
+		return
+	}
+
+	services, err := database.GetServices()
+	if err != nil {
+		writeError(rw, req, err, http.StatusInternalServerError)
+		return
+	}
+
+	// update service by id
+	for i := range services {
+		if services[i].Id == svcId {
+			services[i] = *service
+			break
+		}
+	}
+
+	// apply services to balancer
+	err = balance.SetServices(services)
+	if err != nil {
+		writeError(rw, req, err, http.StatusInternalServerError)
+		return
+	}
+
+	// save to backend
+	if database.Backend != nil {
+		if err := database.SetServices(services); err != nil {
+			writeError(rw, req, err, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	writeBody(rw, req, service, http.StatusOK)
+}
+
 // Delete a service
 func deleteService(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svcId}
@@ -364,7 +427,6 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// what to return here instead of nil?
 	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
 }
 
@@ -374,10 +436,19 @@ func getServices(rw http.ResponseWriter, req *http.Request) {
 	writeBody(rw, req, balance.GetServices(), http.StatusOK)
 }
 
-// Sync portal's database from running system
+// Sync portal's database from running ipvsadm system
 func getSync(rw http.ResponseWriter, req *http.Request) {
 	// /sync
-	// write to backend
+	// should go first if keeping (todo: get rid of balance.Sync altogether and just keep write to backend)
+	// get (hopefully already applied?) rules from ipvsadm and register with lvs.DefaultIpvs.Services
+	// found: if ipvsadm binary is faked, no rules would be applied, thus making balance.Sync 'useful'(?)
+	err := balance.Sync()
+	if err != nil {
+		writeError(rw, req, err, http.StatusInternalServerError)
+		return
+	}
+
+	// write lvs.DefaultIpvs.Services to backend
 	if database.Backend != nil {
 		// get services from applied balancer rules
 		services := balance.GetServices()
@@ -387,13 +458,6 @@ func getSync(rw http.ResponseWriter, req *http.Request) {
 			writeError(rw, req, err, http.StatusInternalServerError)
 			return
 		}
-	}
-
-	// apply (todo: already applied?) rules
-	err := balance.SyncToPortal()
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
 	}
 
 	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
@@ -409,7 +473,7 @@ func postSync(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = balance.SyncToBalancer(services)
+	err = balance.SetServices(services)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return

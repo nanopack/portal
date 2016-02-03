@@ -54,6 +54,7 @@ func (s ScribbleDatabase) GetServices() ([]Service, error) {
 func (s ScribbleDatabase) GetService(id string) (*Service, error) {
 	service := Service{}
 	err := s.scribbleDb.Read("services", id, &service)
+	config.Log.Trace("Got service %v", service.Id)
 	if err != nil {
 		if strings.Contains(err.Error(), "no such file or directory") {
 			err = NoServiceError
@@ -64,7 +65,7 @@ func (s ScribbleDatabase) GetService(id string) (*Service, error) {
 }
 
 func (s ScribbleDatabase) SetServices(services []Service) error {
-	// s.scribbleDb.Delete("services", "")
+	s.scribbleDb.Delete("services", "")
 	for i := range services {
 		err := s.scribbleDb.Write("services", services[i].Id, services[i])
 		if err != nil {
@@ -79,7 +80,14 @@ func (s ScribbleDatabase) SetService(service *Service) error {
 }
 
 func (s ScribbleDatabase) DeleteService(id string) error {
-	return s.scribbleDb.Delete("services", id)
+	err := s.scribbleDb.Delete("services", id)
+	if err != nil {
+		if strings.Contains(err.Error(), "Unable to find") {
+			err = nil
+		}
+		return err
+	}
+	return nil
 }
 
 func (s ScribbleDatabase) SetServer(svcId string, server *Server) error {
@@ -106,17 +114,19 @@ func (s ScribbleDatabase) SetServers(svcId string, servers []Server) error {
 
 func (s ScribbleDatabase) DeleteServer(svcId, srvId string) error {
 	service, err := s.GetService(svcId)
+	config.Log.Trace("Deleting %v from %v", srvId, svcId)
 	if err != nil {
-		// // if read was successful, but found no
-		// if strings.Contains(err.Error(), "found") {
-		// 	return nil
-		// }
-		return nil
+		if strings.Contains(err.Error(), "Unable to find") {
+			err = nil
+		}
+		return err
 	}
-	for _, srv := range service.Servers {
+	config.Log.Trace("Servers: %+v", service.Servers)
+	for i, srv := range service.Servers {
+		config.Log.Trace("Checking if %v is %v", srv.Id, srvId)
 		if srv.Id == srvId {
-			// todo: empty or a = append(a[:i], a[i+1:]...)
-			srv = Server{}
+			config.Log.Trace("Making service empty: %v", service.Servers[i])
+			service.Servers = append(service.Servers[:i], service.Servers[i+1:]...)
 		}
 	}
 
