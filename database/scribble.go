@@ -138,9 +138,10 @@ func (s ScribbleDatabase) GetServer(svcId, srvId string) (*Server, error) {
 	}
 
 	for _, srv := range service.Servers {
-		if srv.Id == "srvId" {
+		if srv.Id == srvId {
 			return &srv, nil
 		}
 	}
+
 	return nil, NoServerError
 }
