@@ -33,7 +33,7 @@ var (
 
 func TestMain(m *testing.M) {
 	// clean test dir
-	os.RemoveAll("/var/db/portalTest")
+	os.RemoveAll("/tmp/portalTest")
 	os.RemoveAll("/tmp/ipvsadm.log")
 	os.RemoveAll("/tmp/iptables.log")
 
@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 	rtn := m.Run()
 
 	// clean test dir
-	os.RemoveAll("/var/db/portalTest")
+	os.RemoveAll("/tmp/portalTest")
 	// os.RemoveAll("/tmp/ipvsadm.log")
 	// os.RemoveAll("/tmp/iptables.log")
 
@@ -417,7 +417,7 @@ func rest(method, route, data string) ([]byte, error) {
 // manually configure and start internals
 func initialize() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	config.DatabaseConnection = "scribble:///var/db/portalTest"
+	config.DatabaseConnection = "scribble:///tmp/portalTest"
 	config.ApiHost = "127.0.0.1"
 	config.ApiPort = "8444"
 	config.ApiToken = ""
