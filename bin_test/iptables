@@ -1,0 +1,2 @@
+#!/bin/bash
+echo iptables $@ >> /tmp/iptables.log

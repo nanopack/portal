@@ -121,11 +121,8 @@ func (s ScribbleDatabase) DeleteServer(svcId, srvId string) error {
 		}
 		return err
 	}
-	config.Log.Trace("Servers: %+v", service.Servers)
 	for i, srv := range service.Servers {
-		config.Log.Trace("Checking if %v is %v", srv.Id, srvId)
 		if srv.Id == srvId {
-			config.Log.Trace("Making service empty: %v", service.Servers[i])
 			service.Servers = append(service.Servers[:i], service.Servers[i+1:]...)
 		}
 	}
