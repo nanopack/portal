@@ -1,4 +1,5 @@
 language: go
+sudo: required
 
 install: go get -t -v .
 # bin_test contains fake iptables/ipvsadm bins
