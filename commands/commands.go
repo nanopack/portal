@@ -37,7 +37,7 @@ var (
 
 func init() {
 	// Portal.PersistentFlags()
-	Portal.PersistentFlags().BoolVarP(&config.Insecure, "insecure", "i", false, "Disable tls key checking")
+	Portal.PersistentFlags().BoolVarP(&config.Insecure, "insecure", "i", true, "Disable tls key checking")
 	Portal.PersistentFlags().StringVarP(&config.ApiToken, "api-token", "t", "",
 		"Token for API Access")
 	Portal.PersistentFlags().StringVarP(&config.ApiHost, "api-host", "H", "127.0.0.1",
@@ -61,6 +61,7 @@ func init() {
 	Portal.AddCommand(serviceShowCmd)
 	Portal.AddCommand(servicesShowCmd)
 	Portal.AddCommand(servicesSetCmd)
+	Portal.AddCommand(serviceSetCmd)
 
 	Portal.AddCommand(serverAddCmd)
 	Portal.AddCommand(serverRemoveCmd)
@@ -139,4 +140,9 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 	}
 	req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
 	return client.Do(req)
+}
+
+func fail(format string, args ...interface{}) {
+	fmt.Printf(fmt.Sprintf("%v\n", format), args...)
+	os.Exit(1)
 }

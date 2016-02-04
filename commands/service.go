@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/nanobox-io/golang-lvs"
 	"github.com/spf13/cobra"
 
-	// "github.com/nanopack/portal/config"
+	"github.com/nanopack/portal/database"
 )
 
 // service-add
@@ -54,18 +53,31 @@ var (
 
 		Run: servicesSet,
 	}
+	serviceSetCmd = &cobra.Command{
+		Use:   "set-service",
+		Short: "Set service",
+		Long:  ``,
+
+		Run: serviceSet,
+	}
 	serviceJsonString string
-	service           lvs.Service
+	service           database.Service
 )
 
 func init() {
 	serviceComplexFlags(serviceAddCmd)
+	serviceComplexFlags(serviceSetCmd)
 	serviceSimpleFlags(serviceRemoveCmd)
 	serviceSimpleFlags(serviceShowCmd)
 	servicesSetCmd.Flags().StringVarP(&serviceJsonString, "json", "j", "", "Json encoded data for services")
+	serviceSetCmd.Flags().StringVarP(&serviceJsonString, "json", "j", "", "Json encoded data for services")
+	serviceAddCmd.Flags().StringVarP(&serviceJsonString, "json", "j", "", "Json encoded data for services")
 }
 
 func serviceSimpleFlags(ccmd *cobra.Command) {
+	ccmd.Flags().StringVarP(&service.Id, "service-id", "I", "",
+		"Id of down-stream service")
+
 	ccmd.Flags().StringVarP(&service.Host, "service-host", "O", "",
 		"Host of down-stream service")
 	ccmd.Flags().IntVarP(&service.Port, "service-port", "R", 0,
@@ -82,78 +94,124 @@ func serviceComplexFlags(ccmd *cobra.Command) {
 }
 
 func serviceAdd(ccmd *cobra.Command, args []string) {
+	if serviceJsonString != "" {
+		err := json.Unmarshal([]byte(serviceJsonString), &service)
+		if err != nil {
+			fail("Bad JSON syntax")
+		}
+	}
+
 	jsonBytes, err := json.Marshal(service)
 	if err != nil {
-		panic(err)
+		fail("Bad values for service")
 	}
-	path := fmt.Sprintf("services/%s/%s/%d", service.Type, service.Host, service.Port)
-	res, err := rest(path, "POST", bytes.NewBuffer(jsonBytes))
+	res, err := rest("services", "POST", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		panic(err)
+		fail("Could not contact portal - %v", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		fail("Could not read portal's response - %v", err)
 	}
-	fmt.Println(string(b))
+	fmt.Print(string(b))
 }
 
 func serviceRemove(ccmd *cobra.Command, args []string) {
-	path := fmt.Sprintf("services/%s/%s/%d", service.Type, service.Host, service.Port)
+	svcValidate(&service)
+
+	path := fmt.Sprintf("services/%s", service.Id)
 	res, err := rest(path, "DELETE", nil)
 	if err != nil {
-		panic(err)
+		fail("Could not contact portal - %v", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		fail("Could not read portal's response - %v", err)
 	}
-	fmt.Println(string(b))
+	fmt.Print(string(b))
 }
 
 func serviceShow(ccmd *cobra.Command, args []string) {
-	path := fmt.Sprintf("services/%s/%s/%d", service.Type, service.Host, service.Port)
+	svcValidate(&service)
+
+	path := fmt.Sprintf("services/%s", service.Id)
 	res, err := rest(path, "GET", nil)
 	if err != nil {
-		panic(err)
+		fail("Could not contact portal - %v", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		fail("Could not read portal's response - %v", err)
 	}
-	fmt.Println(string(b))
+	fmt.Print(string(b))
 }
 
 func servicesShow(ccmd *cobra.Command, args []string) {
 	res, err := rest("services", "GET", nil)
 	if err != nil {
-		panic(err)
+		fail("Could not contact portal - %v", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		fail("Could not read portal's response - %v", err)
 	}
-	fmt.Println(string(b))
+	fmt.Print(string(b))
 }
 
 func servicesSet(ccmd *cobra.Command, args []string) {
-	services := []lvs.Service{}
+	services := []database.Service{}
 
 	err := json.Unmarshal([]byte(serviceJsonString), &services)
 	if err != nil {
-		panic(err)
+		fail("Bad JSON syntax")
 	}
 	jsonBytes, err := json.Marshal(services)
 	if err != nil {
-		panic(err)
+		fail("Bad values for service")
 	}
-	res, err := rest("services", "POST", bytes.NewBuffer(jsonBytes))
+	res, err := rest("services", "PUT", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		panic(err)
+		fail("Could not contact portal - %v", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		fail("Could not read portal's response - %v", err)
 	}
-	fmt.Println(string(b))
+	fmt.Print(string(b))
+}
+
+func serviceSet(ccmd *cobra.Command, args []string) {
+	svcValidate(&service)
+	// set path here in case they set the id in their payload
+	path := fmt.Sprintf("services/%v", service.Id)
+
+	if serviceJsonString != "" {
+		err := json.Unmarshal([]byte(serviceJsonString), &service)
+		if err != nil {
+			fail("Bad JSON syntax")
+		}
+	}
+	jsonBytes, err := json.Marshal(service)
+	if err != nil {
+		fail("Bad values for service")
+	}
+
+	res, err := rest(path, "PUT", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		fail("Could not contact portal - %v", err)
+	}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fail("Could not read portal's response - %v", err)
+	}
+	fmt.Print(string(b))
+}
+
+func svcValidate(service *database.Service) {
+	if service.Id == "" {
+		service.GenId()
+		if service.Host == "" || int(service.Port) == 0 {
+			fail("Must enter host and port combo or id of service")
+		}
+	}
 }
