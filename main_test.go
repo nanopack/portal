@@ -17,6 +17,7 @@ import (
 	"github.com/nanopack/portal/api"
 	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/config"
+	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
 )
 
@@ -92,7 +93,7 @@ func TestPutServices(t *testing.T) {
 		t.Error(err)
 	}
 
-	var services []database.Service
+	var services []core.Service
 	json.Unmarshal(resp, &services)
 
 	if len(services) != 1 {
@@ -125,7 +126,7 @@ func TestPostService(t *testing.T) {
 		t.Error(err)
 	}
 
-	var service database.Service
+	var service core.Service
 	json.Unmarshal(resp, &service)
 
 	if service.Id != "tcp-192_168_0_15-80" {
@@ -151,7 +152,7 @@ func TestGetService(t *testing.T) {
 		t.Error(err)
 	}
 
-	var service database.Service
+	var service core.Service
 	json.Unmarshal(resp, &service)
 
 	if service.Host != "192.168.0.15" {
@@ -177,7 +178,7 @@ func TestPutService(t *testing.T) {
 		t.Error(err)
 	}
 
-	var service database.Service
+	var service core.Service
 	json.Unmarshal(resp, &service)
 
 	if service.Id != "tcp-192_168_0_16-443" {
@@ -250,7 +251,7 @@ func TestPutServers(t *testing.T) {
 		t.Error(err)
 	}
 
-	var servers []database.Server
+	var servers []core.Server
 	json.Unmarshal(resp, &servers)
 
 	if len(servers) != 2 {
@@ -279,7 +280,7 @@ func TestPostServer(t *testing.T) {
 		t.Error(err)
 	}
 
-	var server database.Server
+	var server core.Server
 	json.Unmarshal(resp, &server)
 
 	if server.Id != "127_0_0_13-8080" {
@@ -305,7 +306,7 @@ func TestGetServer(t *testing.T) {
 		t.Error(err)
 	}
 
-	var server database.Server
+	var server core.Server
 	json.Unmarshal(resp, &server)
 
 	if server.Host != "127.0.0.11" {

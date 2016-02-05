@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/nanopack/portal/database"
+	"github.com/nanopack/portal/core"
 )
 
 // server-add
@@ -53,7 +53,7 @@ var (
 
 		Run: serversSet,
 	}
-	server           database.Server
+	server           core.Server
 	serverJsonString string
 )
 
@@ -167,7 +167,7 @@ func serversShow(ccmd *cobra.Command, args []string) {
 func serversSet(ccmd *cobra.Command, args []string) {
 	svcValidate(&service)
 
-	var servers []database.Server
+	var servers []core.Server
 	err := json.Unmarshal([]byte(serverJsonString), &servers)
 	if err != nil {
 		fail("Bad JSON syntax")
@@ -188,7 +188,7 @@ func serversSet(ccmd *cobra.Command, args []string) {
 	fmt.Print(string(b))
 }
 
-func srvValidate(server *database.Server) {
+func srvValidate(server *core.Server) {
 	if server.Id == "" {
 		server.GenId()
 		if server.Host == "" || int(server.Port) == 0 {

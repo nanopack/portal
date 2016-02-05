@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/jcelliott/lumber"
 	"github.com/spf13/cobra"
@@ -98,17 +97,13 @@ func startServer() {
 		os.Exit(1)
 	}
 	// load saved rules
-	services, err := database.Backend.GetServices()
+	services, err := database.GetServices()
 	if err != nil {
-		// if error is not about a missing db, continue
-		if !strings.Contains(err.Error(), "Found") {
-			// todo: this requires backends to return NoServiceError in GetServices
-			config.Log.Fatal("Get services from backend failed - %v", err)
-			os.Exit(1)
-		}
+		config.Log.Fatal("Get services from backend failed - %v", err)
+		os.Exit(1)
 	}
 	// apply saved rules
-	err = balance.Balancer.SetServices(services)
+	err = balance.SetServices(services)
 	if err != nil {
 		config.Log.Fatal("Balancer sync failed - %v", err)
 		os.Exit(1)

@@ -4,60 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/nanopack/portal/config"
-)
-
-type (
-	Backender interface {
-		Init() error
-		GetServices() ([]Service, error)
-		GetService(id string) (*Service, error)
-		SetServices(services []Service) error
-		SetService(service *Service) error
-		DeleteService(id string) error
-
-		SetServers(svcId string, servers []Server) error
-		SetServer(svcId string, server *Server) error
-		DeleteServer(svcId, srvId string) error
-		GetServer(svcId, srvId string) (*Server, error)
-	}
-
-	Server struct {
-		Id             string `json:"id,omitempty"`
-		Host           string `json:"host"`
-		Port           int    `json:"port"`
-		Forwarder      string `json:"forwarder"`
-		Weight         int    `json:"weight"`
-		UpperThreshold int    `json:"upper_threshold"`
-		LowerThreshold int    `json:"lower_threshold"`
-	}
-	Service struct {
-		Id          string   `json:"id,omitempty"`
-		Host        string   `json:"host"`
-		Port        int      `json:"port"`
-		Type        string   `json:"type"`
-		Scheduler   string   `json:"scheduler"`
-		Persistence int      `json:"persistence"`
-		Netmask     string   `json:"netmask"`
-		Servers     []Server `json:"servers,omitempty"`
-	}
+	"github.com/nanopack/portal/core"
 )
 
 var (
-	Backend        Backender
+	Backend        core.Backender
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
 )
-
-func (s *Service) GenId() {
-	s.Id = fmt.Sprintf("%v-%v-%d", s.Type, strings.Replace(s.Host, ".", "_", -1), s.Port)
-}
-
-func (s *Server) GenId() {
-	s.Id = fmt.Sprintf("%v-%d", strings.Replace(s.Host, ".", "_", -1), s.Port)
-}
 
 func Init() error {
 	var err error
@@ -70,30 +26,28 @@ func Init() error {
 	case "scribble":
 		Backend = &ScribbleDatabase{}
 	default:
-		Backend = nil
+		Backend = &ScribbleDatabase{}
 	}
-	if Backend != nil {
-		err = Backend.Init()
-		if err != nil {
-			Backend = nil
-		}
+	err = Backend.Init()
+	if err != nil {
+		Backend = nil
 	}
 	return nil
 }
 
-func GetServices() ([]Service, error) {
+func GetServices() ([]core.Service, error) {
 	return Backend.GetServices()
 }
 
-func GetService(id string) (*Service, error) {
+func GetService(id string) (*core.Service, error) {
 	return Backend.GetService(id)
 }
 
-func SetServices(services []Service) error {
+func SetServices(services []core.Service) error {
 	return Backend.SetServices(services)
 }
 
-func SetService(service *Service) error {
+func SetService(service *core.Service) error {
 	return Backend.SetService(service)
 }
 
@@ -101,11 +55,11 @@ func DeleteService(id string) error {
 	return Backend.DeleteService(id)
 }
 
-func SetServers(svcId string, servers []Server) error {
+func SetServers(svcId string, servers []core.Server) error {
 	return Backend.SetServers(svcId, servers)
 }
 
-func SetServer(svcId string, server *Server) error {
+func SetServer(svcId string, server *core.Server) error {
 	return Backend.SetServer(svcId, server)
 }
 
@@ -113,6 +67,6 @@ func DeleteServer(svcId, srvId string) error {
 	return Backend.DeleteServer(svcId, srvId)
 }
 
-func GetServer(svcId, srvId string) (*Server, error) {
+func GetServer(svcId, srvId string) (*core.Server, error) {
 	return Backend.GetServer(svcId, srvId)
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/nanopack/portal/database"
+	"github.com/nanopack/portal/core"
 )
 
 // service-add
@@ -61,7 +61,7 @@ var (
 		Run: serviceSet,
 	}
 	serviceJsonString string
-	service           database.Service
+	service           core.Service
 )
 
 func init() {
@@ -159,7 +159,7 @@ func servicesShow(ccmd *cobra.Command, args []string) {
 }
 
 func servicesSet(ccmd *cobra.Command, args []string) {
-	services := []database.Service{}
+	services := []core.Service{}
 
 	err := json.Unmarshal([]byte(serviceJsonString), &services)
 	if err != nil {
@@ -207,7 +207,7 @@ func serviceSet(ccmd *cobra.Command, args []string) {
 	fmt.Print(string(b))
 }
 
-func svcValidate(service *database.Service) {
+func svcValidate(service *core.Service) {
 	if service.Id == "" {
 		service.GenId()
 		if service.Host == "" || int(service.Port) == 0 {

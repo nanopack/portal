@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/coreos/go-iptables/iptables"
 	"github.com/nanobox-io/golang-lvs"
 
-	"github.com/nanopack/portal/database"
+	"github.com/nanopack/portal/core"
 )
 
 var (
 	ipvsLock = &sync.RWMutex{}
+	tab      *iptables.IPTables
 )
 
 type (
@@ -27,30 +29,54 @@ type (
 	}
 )
 
+func (l *Lvs) Init() error {
+	var err error
+	tab, err = iptables.New()
+	if err != nil {
+		tab = nil
+	}
+	if tab != nil {
+		tab.Delete("filter", "INPUT", "-j", "portal")
+		tab.ClearChain("filter", "portal")
+		tab.DeleteChain("filter", "portal")
+		err = tab.NewChain("filter", "portal")
+		if err != nil {
+			return fmt.Errorf("Failed to create new chain - %v", err)
+		}
+		err = tab.AppendUnique("filter", "portal", "-j", "RETURN")
+		if err != nil {
+			return fmt.Errorf("Failed to append to portal chain - %v", err)
+		}
+		err = tab.AppendUnique("filter", "INPUT", "-j", "portal")
+		if err != nil {
+			return fmt.Errorf("Failed to append to INPUT chain - %v", err)
+		}
+	}
+	return nil
+}
+
 // GetServer
-func (l *Lvs) GetServer(svcId, srvId string) (*database.Server, error) {
+func (l *Lvs) GetServer(svcId, srvId string) (*core.Server, error) {
 	// break up ids in order to create dummy lvs.Service
 	var err error
 	service, err := parseSvc(svcId)
 	if err != nil {
 		return nil, err
 	}
-	lvsService := svcToL(*service)
 
 	server, err := parseSrv(srvId)
 	if err != nil {
 		return nil, err
 	}
-	lvsServer := srvToL(*server)
 
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
-	s := lvs.DefaultIpvs.FindService(lvsService)
+	s := lvs.DefaultIpvs.FindService(service.Type, service.Host, service.Port)
 	if s == nil {
 		return nil, NoServiceError
 	}
 
-	srv := s.FindServer(lvsServer)
+	srv := s.FindServer(server.Host, server.Port)
 	if srv == nil {
 		return nil, NoServerError
 	}
@@ -58,19 +84,18 @@ func (l *Lvs) GetServer(svcId, srvId string) (*database.Server, error) {
 }
 
 // SetServer
-func (l *Lvs) SetServer(svcId string, server *database.Server) error {
+func (l *Lvs) SetServer(svcId string, server *core.Server) error {
 	service, err := l.GetService(svcId)
 	if err != nil {
 		return err
 	}
-	lvsService := svcToL(*service)
 	lvsServer := srvToL(*server)
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 
 	// add to lvs
-	s := lvs.DefaultIpvs.FindService(lvsService)
+	s := lvs.DefaultIpvs.FindService(service.Type, service.Host, service.Port)
 	if s == nil {
 		return NoServiceError
 	}
@@ -90,36 +115,37 @@ func (l *Lvs) DeleteServer(svcId, srvId string) error {
 		// if service not valid, 'delete' successful
 		return nil
 	}
-	lvsService := svcToL(*service)
 
 	server, err := parseSrv(srvId)
 	if err != nil {
 		// if invalid servername, 'delete' successful
 		return nil
 	}
-	lvsServer := srvToL(*server)
 
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 	// remove from lvs
-	s := lvs.DefaultIpvs.FindService(lvsService)
+	s := lvs.DefaultIpvs.FindService(service.Type, service.Host, service.Port)
 	if s == nil {
 		return nil
 	}
-	// hope this doesn't fail
-	s.RemoveServer(lvsServer)
+
+	// if ipvsadm remove fails, should return error
+	err = s.RemoveServer(server.Host, server.Port)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // SetServers
-func (l *Lvs) SetServers(svcId string, servers []database.Server) error {
+func (l *Lvs) SetServers(svcId string, servers []core.Server) error {
 	service, err := l.GetService(svcId)
 	if err != nil {
 		return nil
 	}
 
-	lvsService := svcToL(*service)
 	lvsServers := []lvs.Server{}
 	for _, srv := range servers {
 		lvsServers = append(lvsServers, srvToL(srv))
@@ -128,13 +154,13 @@ func (l *Lvs) SetServers(svcId string, servers []database.Server) error {
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
 	// add to lvs
-	s := lvs.DefaultIpvs.FindService(lvsService)
+	s := lvs.DefaultIpvs.FindService(service.Type, service.Host, service.Port)
 	if s == nil {
 		return NoServiceError
 	}
 
 	for _, isrv := range s.Servers {
-		if err = s.RemoveServer(isrv); err != nil {
+		if err = s.RemoveServer(isrv.Host, isrv.Port); err != nil {
 			return fmt.Errorf("[ipvadm] Failed to remove server - %v:%v; %v", isrv.Host, isrv.Port, err.Error())
 		}
 	}
@@ -147,17 +173,16 @@ func (l *Lvs) SetServers(svcId string, servers []database.Server) error {
 }
 
 // GetService
-func (l *Lvs) GetService(id string) (*database.Service, error) {
+func (l *Lvs) GetService(id string) (*core.Service, error) {
 	service, err := parseSvc(id)
 	if err != nil {
 		return nil, err
 	}
-	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
 
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
 
-	svc := lvs.DefaultIpvs.FindService(lvsService)
+	svc := lvs.DefaultIpvs.FindService(service.Type, service.Host, service.Port)
 	if svc == nil {
 		return nil, NoServiceError
 	}
@@ -166,7 +191,7 @@ func (l *Lvs) GetService(id string) (*database.Service, error) {
 }
 
 // SetService
-func (l *Lvs) SetService(service *database.Service) error {
+func (l *Lvs) SetService(service *core.Service) error {
 	lvsService := svcToL(*service)
 
 	ipvsLock.Lock()
@@ -186,7 +211,7 @@ func (l *Lvs) SetService(service *database.Service) error {
 
 	// add servers, if any
 	if len(lvsService.Servers) != 0 {
-		s := lvs.DefaultIpvs.FindService(lvsService)
+		s := lvs.DefaultIpvs.FindService(service.Type, service.Host, service.Port)
 		if s == nil {
 			return fmt.Errorf("Balancer failed to set service")
 		}
@@ -208,24 +233,22 @@ func (l *Lvs) DeleteService(id string) error {
 		return nil
 	}
 
-	lvsService := lvs.Service{Type: service.Type, Host: service.Host, Port: service.Port}
-
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
-	svc := lvs.DefaultIpvs.FindService(lvsService)
+	svc := lvs.DefaultIpvs.FindService(service.Type, service.Host, service.Port)
 	if svc == nil {
 		// if not exist, 'delete' successful
 		return nil
 	}
 
 	// remove from lvs
-	err = lvs.DefaultIpvs.RemoveService(lvsService)
+	err = lvs.DefaultIpvs.RemoveService(service.Type, service.Host, service.Port)
 	if err != nil {
 		return err
 	}
 
 	if tab != nil {
-		err := tab.Delete("filter", "portal", "-p", lvsService.Type, "-d", lvsService.Host, "--dport", fmt.Sprintf("%d", lvsService.Port), "-j", "ACCEPT")
+		err := tab.Delete("filter", "portal", "-p", service.Type, "-d", service.Host, "--dport", fmt.Sprintf("%d", service.Port), "-j", "ACCEPT")
 		if err != nil {
 			return err
 		}
@@ -235,19 +258,19 @@ func (l *Lvs) DeleteService(id string) error {
 
 // GetServices
 // doesn't need to be a pointer method because it doesn't modify original object
-func (l *Lvs) GetServices() []database.Service {
+func (l *Lvs) GetServices() ([]core.Service, error) {
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
-	svcs := []database.Service{}
+	svcs := []core.Service{}
 	for _, svc := range lvs.DefaultIpvs.Services {
 		svcs = append(svcs, lToSvc(svc))
 	}
-	return svcs
+	return svcs, nil
 }
 
 // SetServices
-// used also to sync to database (`SetServices(database.GetServices())`)
-func (l *Lvs) SetServices(services []database.Service) error {
+// used also to sync to core (`SetServices(core.GetServices())`)
+func (l *Lvs) SetServices(services []core.Service) error {
 	var lvsServices []lvs.Service
 	for _, svc := range services {
 		lvsServices = append(lvsServices, svcToL(svc))
@@ -294,7 +317,8 @@ func (l *Lvs) SetServices(services []database.Service) error {
 
 // Sync - takes applies ipvsadm rules and save them to lvs.DefaultIpvs.Services
 // which should already have the same information
-func (l *Lvs) Sync() error {
+// func (l *Lvs) Sync() error {
+func Sync() error {
 	// why do we need to modify rules if we already updated backend with current rules?
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
@@ -334,48 +358,49 @@ func (l *Lvs) Sync() error {
 }
 
 // conversion functions
-// takes a lvs.Server and converts it to a database.Server
-func lToSrv(server lvs.Server) database.Server {
-	srv := database.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
+// takes a lvs.Server and converts it to a core.Server
+func lToSrv(server lvs.Server) core.Server {
+	srv := core.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
 	srv.GenId()
 	return srv
 }
 
-func lToSrvp(server *lvs.Server) *database.Server {
-	srv := &database.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
+func lToSrvp(server *lvs.Server) *core.Server {
+	srv := &core.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
 	srv.GenId()
 	return srv
 }
 
-// takes a lvs.Service and converts it to a database.Service
-func lToSvc(service lvs.Service) database.Service {
-	srvs := []database.Server{}
+// takes a lvs.Service and converts it to a core.Service
+func lToSvc(service lvs.Service) core.Service {
+	srvs := []core.Server{}
 	for i, srv := range service.Servers {
 		srvs = append(srvs, lToSrv(srv))
 		srvs[i].GenId()
 	}
-	svc := database.Service{Host: service.Host, Port: service.Port, Type: service.Type, Scheduler: service.Scheduler, Persistence: service.Persistence, Netmask: service.Netmask, Servers: srvs}
-	svc.GenId()
-	return svc
-}
-func lToSvcp(service *lvs.Service) *database.Service {
-	srvs := []database.Server{}
-	for i, srv := range service.Servers {
-		srvs = append(srvs, lToSrv(srv))
-		srvs[i].GenId()
-	}
-	svc := &database.Service{Host: service.Host, Port: service.Port, Type: service.Type, Scheduler: service.Scheduler, Persistence: service.Persistence, Netmask: service.Netmask, Servers: srvs}
+	svc := core.Service{Host: service.Host, Port: service.Port, Type: service.Type, Scheduler: service.Scheduler, Persistence: service.Persistence, Netmask: service.Netmask, Servers: srvs}
 	svc.GenId()
 	return svc
 }
 
-// takes a database.Server and converts it to an lvs.Server
-func srvToL(server database.Server) lvs.Server {
+func lToSvcp(service *lvs.Service) *core.Service {
+	srvs := []core.Server{}
+	for i, srv := range service.Servers {
+		srvs = append(srvs, lToSrv(srv))
+		srvs[i].GenId()
+	}
+	svc := &core.Service{Host: service.Host, Port: service.Port, Type: service.Type, Scheduler: service.Scheduler, Persistence: service.Persistence, Netmask: service.Netmask, Servers: srvs}
+	svc.GenId()
+	return svc
+}
+
+// takes a core.Server and converts it to an lvs.Server
+func srvToL(server core.Server) lvs.Server {
 	return lvs.Server{Host: server.Host, Port: server.Port, Forwarder: server.Forwarder, Weight: server.Weight, UpperThreshold: server.UpperThreshold, LowerThreshold: server.LowerThreshold}
 }
 
-// takes a database.Service and converts it to an lvs.Service
-func svcToL(server database.Service) lvs.Service {
+// takes a core.Service and converts it to an lvs.Service
+func svcToL(server core.Service) lvs.Service {
 	srvs := []lvs.Server{}
 	for _, srv := range server.Servers {
 		srvs = append(srvs, srvToL(srv))

@@ -9,6 +9,7 @@ import (
 	"github.com/nanobox-io/golang-scribble"
 
 	"github.com/nanopack/portal/config"
+	"github.com/nanopack/portal/core"
 )
 
 type (
@@ -32,17 +33,18 @@ func (s *ScribbleDatabase) Init() error {
 	return nil
 }
 
-func (s ScribbleDatabase) GetServices() ([]Service, error) {
-	var services []Service
+func (s ScribbleDatabase) GetServices() ([]core.Service, error) {
+	services := make([]core.Service, 0, 0)
 	values, err := s.scribbleDb.ReadAll("services")
 	if err != nil {
 		if strings.Contains(err.Error(), "no such file or directory") {
-			err = NoServiceError
+			// if error is about a missing db, return empty array
+			return services, nil
 		}
 		return nil, err
 	}
 	for i := range values {
-		var service Service
+		var service core.Service
 		if err = json.Unmarshal([]byte(values[i]), &service); err != nil {
 			return nil, fmt.Errorf("Bad JSON syntax received in body")
 		}
@@ -51,8 +53,8 @@ func (s ScribbleDatabase) GetServices() ([]Service, error) {
 	return services, nil
 }
 
-func (s ScribbleDatabase) GetService(id string) (*Service, error) {
-	service := Service{}
+func (s ScribbleDatabase) GetService(id string) (*core.Service, error) {
+	service := core.Service{}
 	err := s.scribbleDb.Read("services", id, &service)
 	config.Log.Trace("Got service %v", service.Id)
 	if err != nil {
@@ -64,7 +66,7 @@ func (s ScribbleDatabase) GetService(id string) (*Service, error) {
 	return &service, nil
 }
 
-func (s ScribbleDatabase) SetServices(services []Service) error {
+func (s ScribbleDatabase) SetServices(services []core.Service) error {
 	s.scribbleDb.Delete("services", "")
 	for i := range services {
 		err := s.scribbleDb.Write("services", services[i].Id, services[i])
@@ -75,7 +77,7 @@ func (s ScribbleDatabase) SetServices(services []Service) error {
 	return nil
 }
 
-func (s ScribbleDatabase) SetService(service *Service) error {
+func (s ScribbleDatabase) SetService(service *core.Service) error {
 	return s.scribbleDb.Write("services", service.Id, *service)
 }
 
@@ -90,7 +92,7 @@ func (s ScribbleDatabase) DeleteService(id string) error {
 	return nil
 }
 
-func (s ScribbleDatabase) SetServer(svcId string, server *Server) error {
+func (s ScribbleDatabase) SetServer(svcId string, server *core.Server) error {
 	service, err := s.GetService(svcId)
 	if err != nil {
 		return err
@@ -100,7 +102,7 @@ func (s ScribbleDatabase) SetServer(svcId string, server *Server) error {
 	return s.scribbleDb.Write("services", service.Id, service)
 }
 
-func (s ScribbleDatabase) SetServers(svcId string, servers []Server) error {
+func (s ScribbleDatabase) SetServers(svcId string, servers []core.Server) error {
 	service, err := s.GetService(svcId)
 	if err != nil {
 		return err
@@ -130,8 +132,8 @@ func (s ScribbleDatabase) DeleteServer(svcId, srvId string) error {
 	return s.scribbleDb.Write("services", service.Id, service)
 }
 
-func (s ScribbleDatabase) GetServer(svcId, srvId string) (*Server, error) {
-	service := Service{}
+func (s ScribbleDatabase) GetServer(svcId, srvId string) (*core.Server, error) {
+	service := core.Service{}
 	err := s.scribbleDb.Read("services", svcId, &service)
 	if err != nil {
 		return nil, err
