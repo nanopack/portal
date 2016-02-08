@@ -28,18 +28,30 @@ var (
 func TestMain(m *testing.M) {
 	ifIptables, err := exec.Command("iptables", "-S").CombinedOutput()
 	if err != nil {
-		fmt.Printf("FAIL - %s%v\n", ifIptables, err.Error())
+		fmt.Printf("Failed to run iptables - %s%v\n", ifIptables, err.Error())
 		skip = true
 	}
 	ifIpvsadm, err := exec.Command("ipvsadm", "--version").CombinedOutput()
 	if err != nil {
-		fmt.Printf("FAIL - %s%v\n", ifIpvsadm, err.Error())
+		fmt.Printf("Failed to run ipvsadm - %s%v\n", ifIpvsadm, err.Error())
 		skip = true
 	}
 
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 
 	if !skip {
+		// todo: find more friendly way to clear crufty rules only
+		err = exec.Command("iptables", "-F").Run()
+		if err != nil {
+			fmt.Printf("Failed to clear iptables - %v\n", err.Error())
+			os.Exit(1)
+		}
+		err = exec.Command("ipvsadm", "-C").Run()
+		if err != nil {
+			fmt.Printf("Failed to clear ipvsadm - %v\n", err.Error())
+			os.Exit(1)
+		}
+
 		Backend = &balance.Lvs{}
 		Backend.Init()
 	}
@@ -55,6 +67,7 @@ func TestSetService(t *testing.T) {
 	}
 	if err := Backend.SetService(&testService1); err != nil {
 		t.Errorf("Failed to SET service - %v", err)
+		t.FailNow()
 	}
 
 	// todo: read from ipvsadm
@@ -77,6 +90,7 @@ func TestSetServices(t *testing.T) {
 
 	if err := Backend.SetServices(services); err != nil {
 		t.Errorf("Failed to SET services - %v", err)
+		t.FailNow()
 	}
 
 	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json"); !os.IsNotExist(err) {
@@ -101,6 +115,7 @@ func TestGetServices(t *testing.T) {
 	services, err := Backend.GetServices()
 	if err != nil {
 		t.Errorf("Failed to GET services - %v", err)
+		t.FailNow()
 	}
 
 	if services[0].Id != testService2.Id {
@@ -115,6 +130,7 @@ func TestGetService(t *testing.T) {
 	service, err := Backend.GetService(testService2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %v", err)
+		t.FailNow()
 	}
 
 	if service.Id != testService2.Id {
@@ -144,6 +160,7 @@ func TestSetServer(t *testing.T) {
 	Backend.SetService(&testService1)
 	if err := Backend.SetServer(testService1.Id, &testServer1); err != nil {
 		t.Errorf("Failed to SET server - %v", err)
+		t.FailNow()
 	}
 
 	// todo: read from ipvsadm
@@ -168,6 +185,7 @@ func TestSetServers(t *testing.T) {
 	servers = append(servers, testServer2)
 	if err := Backend.SetServers(testService1.Id, servers); err != nil {
 		t.Errorf("Failed to SET servers - %v", err)
+		t.FailNow()
 	}
 
 	// todo: read from ipvsadm
@@ -177,7 +195,7 @@ func TestSetServers(t *testing.T) {
 	}
 
 	svc := testService1
-	svc.Servers = append(svc.Servers, testServer1)
+	svc.Servers = append(svc.Servers, testServer2)
 
 	if service.Servers[0].Host != svc.Servers[0].Host {
 		t.Errorf("Failed to clear old servers on PUT")
@@ -191,6 +209,7 @@ func TestGetServers(t *testing.T) {
 	service, err := Backend.GetService(testService1.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %v", err)
+		t.FailNow()
 	}
 
 	if service.Servers[0].Id != testServer2.Id {
@@ -205,6 +224,7 @@ func TestGetServer(t *testing.T) {
 	server, err := Backend.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET server - %v", err)
+		t.FailNow()
 	}
 
 	if server.Id != testServer2.Id {
@@ -225,6 +245,7 @@ func TestDeleteServer(t *testing.T) {
 	service, err := Backend.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
+		t.FailNow()
 	}
 
 	if service.Id != testService1.Id {

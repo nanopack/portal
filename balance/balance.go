@@ -55,10 +55,6 @@ func GetServer(svcId, srvId string) (*core.Server, error) {
 	return Balancer.GetServer(svcId, srvId)
 }
 
-// func Sync() error {
-// 	return Balancer.Sync()
-// }
-
 func parseSvc(serviceId string) (*core.Service, error) {
 	s := strings.Replace(serviceId, "_", ".", -1)
 	svc := strings.Split(s, "-")
