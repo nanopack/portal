@@ -1,19 +1,22 @@
-package database_test
+package balance_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/jcelliott/lumber"
 
+	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
-	"github.com/nanopack/portal/database"
 )
 
 var (
+	skip    = false // skip if iptables/ipvsadm not installed
 	Backend core.Backender
 
 	testService1 = core.Service{Id: "tcp-192_168_0_15-80", Host: "192.168.0.15", Port: 80, Type: "tcp", Scheduler: "wrr"}
@@ -23,44 +26,52 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	// clean test dir
-	os.RemoveAll("/tmp/scribbleTest")
+	ifIptables, err := exec.Command("iptables", "-S").CombinedOutput()
+	if err != nil {
+		fmt.Printf("FAIL - %s%v\n", ifIptables, err.Error())
+		skip = true
+	}
+	ifIpvsadm, err := exec.Command("ipvsadm", "--version").CombinedOutput()
+	if err != nil {
+		fmt.Printf("FAIL - %s%v\n", ifIpvsadm, err.Error())
+		skip = true
+	}
 
-	config.DatabaseConnection = "scribble:///tmp/scribbleTest"
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 
-	Backend = &database.ScribbleDatabase{}
-	Backend.Init()
+	if !skip {
+		Backend = &balance.Lvs{}
+		Backend.Init()
+	}
 
 	rtn := m.Run()
-
-	// clean test dir
-	os.RemoveAll("/tmp/scribbleTest")
 
 	os.Exit(rtn)
 }
 
 func TestSetService(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	if err := Backend.SetService(&testService1); err != nil {
 		t.Errorf("Failed to SET service - %v", err)
 	}
 
-	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json")
+	// todo: read from ipvsadm
+	service, err := Backend.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
 	}
 
-	jService, err := toJson(testService1)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if string(service) != string(jService) {
+	if service.Host != testService1.Host {
 		t.Errorf("Read service differs from written service")
 	}
 }
 
 func TestSetServices(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	services := []core.Service{}
 	services = append(services, testService2)
 
@@ -72,22 +83,21 @@ func TestSetServices(t *testing.T) {
 		t.Errorf("Failed to clear old services on PUT - %v", err)
 	}
 
-	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_16-80.json")
+	// todo: read from ipvsadm
+	service, err := Backend.GetService(testService2.Id)
 	if err != nil {
 		t.Error(err)
 	}
 
-	jService, err := toJson(testService2)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if string(service) != string(jService) {
+	if service.Host != testService2.Host {
 		t.Errorf("Read service differs from written service")
 	}
 }
 
 func TestGetServices(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	services, err := Backend.GetServices()
 	if err != nil {
 		t.Errorf("Failed to GET services - %v", err)
@@ -99,6 +109,9 @@ func TestGetServices(t *testing.T) {
 }
 
 func TestGetService(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	service, err := Backend.GetService(testService2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %v", err)
@@ -110,63 +123,71 @@ func TestGetService(t *testing.T) {
 }
 
 func TestDeleteService(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	if err := Backend.DeleteService(testService2.Id); err != nil {
 		t.Errorf("Failed to GET service - %v", err)
 	}
 
-	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_16-80.json"); !os.IsNotExist(err) {
-		t.Errorf("Failed to DELETE service - %v", err)
+	// todo: read from ipvsadm
+	_, err := Backend.GetService(testService2.Id)
+	if !strings.Contains(err.Error(), "No Service Found") {
+		t.Error(err)
 	}
 }
 
 func TestSetServer(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	Backend.SetService(&testService1)
 	if err := Backend.SetServer(testService1.Id, &testServer1); err != nil {
 		t.Errorf("Failed to SET server - %v", err)
 	}
 
-	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json")
+	// todo: read from ipvsadm
+	service, err := Backend.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
 	}
 
 	svc := testService1
 	svc.Servers = append(svc.Servers, testServer1)
-	jService, err := toJson(svc)
-	if err != nil {
-		t.Error(err)
-	}
 
-	if string(service) != string(jService) {
+	if service.Servers[0].Host != svc.Servers[0].Host {
 		t.Errorf("Read service differs from written service")
 	}
 }
 
 func TestSetServers(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	servers := []core.Server{}
 	servers = append(servers, testServer2)
 	if err := Backend.SetServers(testService1.Id, servers); err != nil {
 		t.Errorf("Failed to SET servers - %v", err)
 	}
 
-	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json")
+	// todo: read from ipvsadm
+	service, err := Backend.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
 	}
 
 	svc := testService1
 	svc.Servers = append(svc.Servers, testServer1)
-	jService, err := toJson(svc)
-	if err != nil {
-		t.Error(err)
-	}
 
-	if string(service) == string(jService) {
+	if service.Servers[0].Host != svc.Servers[0].Host {
 		t.Errorf("Failed to clear old servers on PUT")
 	}
 }
 
 func TestGetServers(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	service, err := Backend.GetService(testService1.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %v", err)
@@ -178,6 +199,9 @@ func TestGetServers(t *testing.T) {
 }
 
 func TestGetServer(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	server, err := Backend.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET server - %v", err)
@@ -189,22 +213,21 @@ func TestGetServer(t *testing.T) {
 }
 
 func TestDeleteServer(t *testing.T) {
+	if skip {
+		t.SkipNow()
+	}
 	err := Backend.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to DELETE server - %v", err)
 	}
 
-	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json")
+	// todo: read from ipvsadm
+	service, err := Backend.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
 	}
 
-	jService, err := toJson(testService1)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if string(service) != string(jService) {
+	if service.Id != testService1.Id {
 		t.Errorf("Read service differs from written service")
 	}
 }

@@ -77,8 +77,6 @@ func routes() *pat.Router {
 	router.Post("/services", postService)
 	router.Put("/services", putServices)
 	router.Get("/services", getServices)
-	router.Post("/sync", postSync)
-	router.Get("/sync", getSync)
 	return router
 }
 
@@ -518,48 +516,4 @@ func getServices(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	writeBody(rw, req, svcs, http.StatusOK)
-}
-
-// Sync portal's database from running ipvsadm system
-func getSync(rw http.ResponseWriter, req *http.Request) {
-	// /sync
-	// should go first if keeping (todo: get rid of balance.Sync altogether and just keep write to backend)
-	// get (hopefully already applied?) rules from ipvsadm and register with lvs.DefaultIpvs.Services
-	// found: if ipvsadm binary is faked, no rules would be applied, thus making balance.Sync 'useful'(?)
-	err := balance.Sync()
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	// write lvs.DefaultIpvs.Services to backend
-	// get services from applied balancer rules
-	services, _ := balance.GetServices()
-
-	err = database.SetServices(services)
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
-}
-
-// Sync portal's database to running system
-func postSync(rw http.ResponseWriter, req *http.Request) {
-	// /sync
-	// get recorded services to sync to backend
-	services, err := database.GetServices()
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	err = balance.SetServices(services)
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
 }

@@ -18,15 +18,6 @@ var (
 type (
 	Lvs struct {
 	}
-	lookupService struct {
-		Type string
-		Host string
-		Port int
-	}
-	lookupServer struct {
-		Host string
-		Port int
-	}
 )
 
 func (l *Lvs) Init() error {
@@ -161,12 +152,12 @@ func (l *Lvs) SetServers(svcId string, servers []core.Server) error {
 
 	for _, isrv := range s.Servers {
 		if err = s.RemoveServer(isrv.Host, isrv.Port); err != nil {
-			return fmt.Errorf("[ipvadm] Failed to remove server - %v:%v; %v", isrv.Host, isrv.Port, err.Error())
+			return fmt.Errorf("[ipvsadm] Failed to remove server - %v:%v; %v", isrv.Host, isrv.Port, err.Error())
 		}
 	}
 	for _, lsrv := range lvsServers {
 		if err = s.AddServer(lsrv); err != nil {
-			return fmt.Errorf("[ipvadm] Failed to add server - %v:%v; %v", lsrv.Host, lsrv.Port, err.Error())
+			return fmt.Errorf("[ipvsadm] Failed to add server - %v:%v; %v", lsrv.Host, lsrv.Port, err.Error())
 		}
 	}
 	return nil

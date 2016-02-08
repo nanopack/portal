@@ -58,7 +58,5 @@ Fields:
 | **Delete** /services/:type/:service_ip/:service_port | Delete a service | nil | nil or an error |
 | **Get** /services | List all services | nil | json array of server objects |
 | **Post** /services | Reset the list of services | json array of server objects | nil or an error |
-| **Get** /sync | Sync portal with data in LVS | nil | nil or an error |
-| **Post** /sync | Sync LVS with data in portal | nil | nil or an error |
 
 [![portal logo](http://nano-assets.gopagoda.io/open-src/nanobox-open-src.png)](http://nanobox.io/open-source)
