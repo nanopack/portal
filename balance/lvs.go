@@ -261,7 +261,7 @@ func (l *Lvs) DeleteService(id string) error {
 func (l *Lvs) GetServices() ([]core.Service, error) {
 	ipvsLock.RLock()
 	defer ipvsLock.RUnlock()
-	svcs := []core.Service{}
+	svcs := make([]core.Service, 0, 0)
 	for _, svc := range lvs.DefaultIpvs.Services {
 		svcs = append(svcs, lToSvc(svc))
 	}

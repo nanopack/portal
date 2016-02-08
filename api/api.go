@@ -164,10 +164,7 @@ func getServer(rw http.ResponseWriter, req *http.Request) {
 	svcId := req.URL.Query().Get(":svcId")
 	srvId := req.URL.Query().Get(":srvId")
 
-	// getting from balancer ensures rule actually exists,
-	// getting from backend ensures its written, which to use?
-	// if write only on successful existance, db is good
-	server, err := balance.GetServer(svcId, srvId)
+	server, err := database.GetServer(svcId, srvId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusNotFound)
 		return
@@ -202,6 +199,10 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 	// save to backend
 	err = database.SetServer(svcId, server)
 	if err != nil {
+		// undo balance action
+		if uerr := balance.DeleteServer(svcId, server.Id); uerr != nil {
+			err = uerr
+		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
@@ -216,14 +217,29 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 	svcId := req.URL.Query().Get(":svcId")
 	srvId := req.URL.Query().Get(":srvId")
 
+	// get server in case of failure
+	srv, err := database.GetServer(svcId, srvId)
+	if err != nil {
+		if strings.Contains(err.Error(), "No Server Found") {
+			writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
+			return
+		}
+		writeError(rw, req, err, http.StatusInternalServerError)
+		return
+	}
+
 	// delete rule from balancer
-	if err := balance.DeleteServer(svcId, srvId); err != nil {
+	if err = balance.DeleteServer(svcId, srvId); err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
 	// remove from backend
-	if err := database.DeleteServer(svcId, srvId); err != nil {
+	if err = database.DeleteServer(svcId, srvId); err != nil {
+		// undo balance action
+		if uerr := balance.SetServer(svcId, srv); uerr != nil {
+			err = uerr
+		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
@@ -235,11 +251,16 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 func getServers(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svcId}/servers
 	svcId := req.URL.Query().Get(":svcId")
-	service, err := balance.GetService(svcId)
+	service, err := database.GetService(svcId)
+	// service, err := balance.GetService(svcId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusNotFound)
 		return
 	}
+	if service.Servers == nil {
+		service.Servers = make([]core.Server, 0, 0)
+	}
+	// writeBody(rw, req, service, http.StatusOK)
 	writeBody(rw, req, service.Servers, http.StatusOK)
 }
 
@@ -258,8 +279,17 @@ func putServers(rw http.ResponseWriter, req *http.Request) {
 	for i := range servers {
 		servers[i].GenId()
 	}
+
+	// in case of failure
+	oldService, err := database.GetService(svcId)
+	if err != nil {
+		writeError(rw, req, err, http.StatusInternalServerError)
+		return
+	}
+	oldServers := oldService.Servers
+
 	// implement in balancer
-	err := balance.SetServers(svcId, servers)
+	err = balance.SetServers(svcId, servers)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -268,6 +298,10 @@ func putServers(rw http.ResponseWriter, req *http.Request) {
 	// add to backend
 	err = database.SetServers(svcId, servers)
 	if err != nil {
+		// undo balance action
+		if uerr := balance.SetServers(svcId, oldServers); uerr != nil {
+			err = uerr
+		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
@@ -281,7 +315,7 @@ func getService(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svcId}
 	svcId := req.URL.Query().Get(":svcId")
 
-	service, err := balance.GetService(svcId)
+	service, err := database.GetService(svcId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusNotFound)
 		return
@@ -314,15 +348,27 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	// in case of failure
+	oldServices, err := database.GetServices()
+	if err != nil {
+		writeError(rw, req, err, http.StatusInternalServerError)
+		return
+	}
+
 	// apply services to balancer
-	err := balance.SetServices(services)
+	err = balance.SetServices(services)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
 	// save to backend
-	if err := database.SetServices(services); err != nil {
+	err = database.SetServices(services)
+	if err != nil {
+		// undo balance action
+		if uerr := balance.SetServices(oldServices); uerr != nil {
+			err = uerr
+		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
@@ -345,6 +391,13 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// in case of failure
+	oldServices, err := database.GetServices()
+	if err != nil {
+		writeError(rw, req, err, http.StatusInternalServerError)
+		return
+	}
+
 	// apply to balancer
 	err = balance.SetService(service)
 	if err != nil {
@@ -355,6 +408,10 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 	// save to backend
 	err = database.SetService(service)
 	if err != nil {
+		// undo balance action
+		if uerr := balance.SetServices(oldServices); uerr != nil {
+			err = uerr
+		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
@@ -384,6 +441,9 @@ func putService(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// in case of failure
+	oldServices := services
+
 	// update service by id
 	for i := range services {
 		if services[i].Id == svcId {
@@ -401,6 +461,10 @@ func putService(rw http.ResponseWriter, req *http.Request) {
 
 	// save to backend
 	if err := database.SetServices(services); err != nil {
+		// undo balance action
+		if uerr := balance.SetServices(oldServices); uerr != nil {
+			err = uerr
+		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
@@ -413,17 +477,31 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svcId}
 	svcId := req.URL.Query().Get(":svcId")
 
+	// in case of failure
+	oldService, err := database.GetService(svcId)
+	if err != nil {
+		if strings.Contains(err.Error(), "No Service Found") {
+			writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
+			return
+		}
+		writeError(rw, req, err, http.StatusInternalServerError)
+		return
+	}
+
 	// delete backend rule
-	err := balance.DeleteService(svcId)
+	err = balance.DeleteService(svcId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
 	// remove from backend
-	// in backend, on error, roll back 'insert'
 	err = database.DeleteService(svcId)
 	if err != nil {
+		// undo balance action
+		if uerr := balance.SetService(oldService); uerr != nil {
+			err = uerr
+		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
