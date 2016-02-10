@@ -478,12 +478,10 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 	// in case of failure
 	oldService, err := database.GetService(svcId)
 	if err != nil {
-		if strings.Contains(err.Error(), "No Service Found") {
-			writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
+		if !strings.Contains(err.Error(), "No Service Found") {
+			writeError(rw, req, err, http.StatusInternalServerError)
 			return
 		}
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
 	}
 
 	// delete backend rule
@@ -497,8 +495,10 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 	err = database.DeleteService(svcId)
 	if err != nil {
 		// undo balance action
-		if uerr := balance.SetService(oldService); uerr != nil {
-			err = uerr
+		if oldService != nil {
+			if uerr := balance.SetService(oldService); uerr != nil {
+				err = uerr
+			}
 		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return

@@ -26,41 +26,15 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	ifIptables, err := exec.Command("iptables", "-S").CombinedOutput()
-	if err != nil {
-		fmt.Printf("Failed to run iptables - %s%v\n", ifIptables, err.Error())
-		skip = true
-	}
-	ifIpvsadm, err := exec.Command("ipvsadm", "--version").CombinedOutput()
-	if err != nil {
-		fmt.Printf("Failed to run ipvsadm - %s%v\n", ifIpvsadm, err.Error())
-		skip = true
-	}
+	// initialize backend if ipvsadm/iptables found
+	initialize()
 
-	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
-
-	if !skip {
-		// todo: find more friendly way to clear crufty rules only
-		err = exec.Command("iptables", "-F").Run()
-		if err != nil {
-			fmt.Printf("Failed to clear iptables - %v\n", err.Error())
-			os.Exit(1)
-		}
-		err = exec.Command("ipvsadm", "-C").Run()
-		if err != nil {
-			fmt.Printf("Failed to clear ipvsadm - %v\n", err.Error())
-			os.Exit(1)
-		}
-
-		Backend = &balance.Lvs{}
-		Backend.Init()
-	}
-
-	rtn := m.Run()
-
-	os.Exit(rtn)
+	os.Exit(m.Run())
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// SERVICES
+////////////////////////////////////////////////////////////////////////////////
 func TestSetService(t *testing.T) {
 	if skip {
 		t.SkipNow()
@@ -153,6 +127,9 @@ func TestDeleteService(t *testing.T) {
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// SERVERS
+////////////////////////////////////////////////////////////////////////////////
 func TestSetServer(t *testing.T) {
 	if skip {
 		t.SkipNow()
@@ -253,10 +230,45 @@ func TestDeleteServer(t *testing.T) {
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// PRIVS
+////////////////////////////////////////////////////////////////////////////////
 func toJson(v interface{}) ([]byte, error) {
 	jsonified, err := json.MarshalIndent(v, "", "\t")
 	if err != nil {
 		return nil, err
 	}
 	return jsonified, nil
+}
+
+func initialize() {
+	ifIptables, err := exec.Command("iptables", "-S").CombinedOutput()
+	if err != nil {
+		fmt.Printf("Failed to run iptables - %s%v\n", ifIptables, err.Error())
+		skip = true
+	}
+	ifIpvsadm, err := exec.Command("ipvsadm", "--version").CombinedOutput()
+	if err != nil {
+		fmt.Printf("Failed to run ipvsadm - %s%v\n", ifIpvsadm, err.Error())
+		skip = true
+	}
+
+	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
+
+	if !skip {
+		// todo: find more friendly way to clear crufty rules only
+		err = exec.Command("iptables", "-F").Run()
+		if err != nil {
+			fmt.Printf("Failed to clear iptables - %v\n", err.Error())
+			os.Exit(1)
+		}
+		err = exec.Command("ipvsadm", "-C").Run()
+		if err != nil {
+			fmt.Printf("Failed to clear ipvsadm - %v\n", err.Error())
+			os.Exit(1)
+		}
+
+		Backend = &balance.Lvs{}
+		Backend.Init()
+	}
 }

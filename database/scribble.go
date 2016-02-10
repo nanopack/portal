@@ -56,7 +56,6 @@ func (s ScribbleDatabase) GetServices() ([]core.Service, error) {
 func (s ScribbleDatabase) GetService(id string) (*core.Service, error) {
 	service := core.Service{}
 	err := s.scribbleDb.Read("services", id, &service)
-	config.Log.Trace("Got service %v", service.Id)
 	if err != nil {
 		if strings.Contains(err.Error(), "no such file or directory") {
 			err = NoServiceError
@@ -97,6 +96,12 @@ func (s ScribbleDatabase) SetServer(svcId string, server *core.Server) error {
 	if err != nil {
 		return err
 	}
+	for _, srv := range service.Servers {
+		if srv.Id == server.Id {
+			// if server already exists, don't duplicate it
+			return nil
+		}
+	}
 	service.Servers = append(service.Servers, *server)
 
 	return s.scribbleDb.Write("services", service.Id, service)
@@ -116,16 +121,18 @@ func (s ScribbleDatabase) SetServers(svcId string, servers []core.Server) error 
 
 func (s ScribbleDatabase) DeleteServer(svcId, srvId string) error {
 	service, err := s.GetService(svcId)
-	config.Log.Trace("Deleting %v from %v", srvId, svcId)
 	if err != nil {
 		if strings.Contains(err.Error(), "Unable to find") {
 			err = nil
 		}
 		return err
 	}
+	config.Log.Trace("Deleting %v from %v", srvId, svcId)
+checkRemove:
 	for i, srv := range service.Servers {
 		if srv.Id == srvId {
 			service.Servers = append(service.Servers[:i], service.Servers[i+1:]...)
+			goto checkRemove // prevents 'slice bounds out of range' panic
 		}
 	}
 

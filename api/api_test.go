@@ -35,8 +35,6 @@ var (
 func TestMain(m *testing.M) {
 	// clean test dir
 	os.RemoveAll("/tmp/portalTest")
-	os.RemoveAll("/tmp/ipvsadm.log")
-	os.RemoveAll("/tmp/iptables.log")
 
 	// manually configure
 	initialize()
@@ -48,8 +46,6 @@ func TestMain(m *testing.M) {
 
 	// clean test dir
 	os.RemoveAll("/tmp/portalTest")
-	// os.RemoveAll("/tmp/ipvsadm.log")
-	// os.RemoveAll("/tmp/iptables.log")
 
 	os.Exit(rtn)
 }
@@ -347,53 +343,6 @@ func TestDeleteServer(t *testing.T) {
 	}
 }
 
-// ////////////////////////////////////////////////////////////////////////////////
-// // SYNC
-// ////////////////////////////////////////////////////////////////////////////////
-// // test post sync - must test first, as ipvsadm is fake (returns empty Services)
-// func TestPostSync(t *testing.T) {
-// 	resp, err := rest("POST", "/sync", "")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	if !strings.Contains(string(resp), "Success") {
-// 		t.Errorf("%q doesn't match expected out", resp)
-// 	}
-// }
-
-// // test get sync
-// func TestGetSync(t *testing.T) {
-// 	resp, err := rest("GET", "/sync", "")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	if !strings.Contains(string(resp), "Success") {
-// 		t.Errorf("%q doesn't match expected out", resp)
-// 	}
-// }
-
-// ////////////////////////////////////////////////////////////////////////////////
-// // MASS IPVSADM AND IPTABLES CHECK
-// ////////////////////////////////////////////////////////////////////////////////
-// // test lvs balancer implementation (ipvsadm and iptables)
-// func TestLvsBalancer(t *testing.T) {
-// 	ipvsadm, err := ioutil.ReadFile("/tmp/ipvsadm.log")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	if string(ipvsadm) != ipvsadmLog {
-// 		t.Errorf("ipvsadm log differs from expected")
-// 	}
-
-// 	iptables, err := ioutil.ReadFile("/tmp/iptables.log")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	if string(iptables) != iptablesLog {
-// 		t.Errorf("iptables log differs from expected")
-// 	}
-// }
-
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVS
 ////////////////////////////////////////////////////////////////////////////////
@@ -455,86 +404,3 @@ func initialize() {
 		os.Exit(1)
 	}
 }
-
-var ipvsadmLog = `ipvsadm -C
-ipvsadm -R
-ipvsadm -C
-ipvsadm -R
-ipvsadm -C
-ipvsadm -R
-ipvsadm -A -t 192.168.0.15:80 -s wrr
-ipvsadm -C
-ipvsadm -R
-ipvsadm -D -t 192.168.0.16:443
-ipvsadm -A -t 192.168.0.15:80 -s wrr
-ipvsadm -a -t 192.168.0.15:80 -r 127.0.0.11:8080 -m -y 0 -x 0 -w 5
-ipvsadm -a -t 192.168.0.15:80 -r 127.0.0.12:8080 -m -y 0 -x 0 -w 5
-ipvsadm -a -t 192.168.0.15:80 -r 127.0.0.13:8080 -m -y 0 -x 0 -w 5
-ipvsadm -d -t 192.168.0.15:80 -r 127.0.0.11:8080
-ipvsadm -C
-ipvsadm -R
-ipvsadm -S -n
-`
-
-var iptablesLog = `iptables --version
-iptables -t filter -D INPUT -j portal --wait
-iptables -t filter -N portal --wait
-iptables -t filter -X portal --wait
-iptables -t filter -N portal --wait
-iptables -t filter -C portal -j RETURN --wait
-iptables -t filter -C INPUT -j portal --wait
-iptables -t filter -E portal portal-old --wait
-iptables -t filter -N portal --wait
-iptables -t filter -N portal --wait
-iptables -t filter -C portal -j RETURN --wait
-iptables -t filter -C INPUT -j portal --wait
-iptables -t filter -D INPUT -j portal-old --wait
-iptables -t filter -N portal-old --wait
-iptables -t filter -X portal-old --wait
-iptables -t filter -E portal portal-old --wait
-iptables -t filter -N portal --wait
-iptables -t filter -N portal --wait
-iptables -t filter -C portal -j RETURN --wait
-iptables -t filter -I portal 1 -p tcp -d 192.168.0.15 --dport 80 -j ACCEPT --wait
-iptables -t filter -C INPUT -j portal --wait
-iptables -t filter -D INPUT -j portal-old --wait
-iptables -t filter -N portal-old --wait
-iptables -t filter -X portal-old --wait
-iptables -t filter -E portal portal-old --wait
-iptables -t filter -N portal --wait
-iptables -t filter -N portal --wait
-iptables -t filter -C portal -j RETURN --wait
-iptables -t filter -C INPUT -j portal --wait
-iptables -t filter -D INPUT -j portal-old --wait
-iptables -t filter -N portal-old --wait
-iptables -t filter -X portal-old --wait
-iptables -t filter -I portal 1 -p tcp -d 192.168.0.15 --dport 80 -j ACCEPT --wait
-iptables -t filter -E portal portal-old --wait
-iptables -t filter -N portal --wait
-iptables -t filter -N portal --wait
-iptables -t filter -C portal -j RETURN --wait
-iptables -t filter -I portal 1 -p tcp -d 192.168.0.16 --dport 443 -j ACCEPT --wait
-iptables -t filter -C INPUT -j portal --wait
-iptables -t filter -D INPUT -j portal-old --wait
-iptables -t filter -N portal-old --wait
-iptables -t filter -X portal-old --wait
-iptables -t filter -D portal -p tcp -d 192.168.0.16 --dport 443 -j ACCEPT --wait
-iptables -t filter -I portal 1 -p tcp -d 192.168.0.15 --dport 80 -j ACCEPT --wait
-iptables -t filter -E portal portal-old --wait
-iptables -t filter -N portal --wait
-iptables -t filter -N portal --wait
-iptables -t filter -C portal -j RETURN --wait
-iptables -t filter -I portal 1 -p tcp -d 192.168.0.15 --dport 80 -j ACCEPT --wait
-iptables -t filter -C INPUT -j portal --wait
-iptables -t filter -D INPUT -j portal-old --wait
-iptables -t filter -N portal-old --wait
-iptables -t filter -X portal-old --wait
-iptables -t filter -E portal portal-old --wait
-iptables -t filter -N portal --wait
-iptables -t filter -N portal --wait
-iptables -t filter -C portal -j RETURN --wait
-iptables -t filter -C INPUT -j portal --wait
-iptables -t filter -D INPUT -j portal-old --wait
-iptables -t filter -N portal-old --wait
-iptables -t filter -X portal-old --wait
-`
