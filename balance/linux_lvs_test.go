@@ -39,13 +39,13 @@ func TestSetService(t *testing.T) {
 	if skip {
 		t.SkipNow()
 	}
-	if err := Backend.SetService(&testService1); err != nil {
+	if err := balance.SetService(&testService1); err != nil {
 		t.Errorf("Failed to SET service - %v", err)
 		t.FailNow()
 	}
 
 	// todo: read from ipvsadm
-	service, err := Backend.GetService(testService1.Id)
+	service, err := balance.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
 	}
@@ -62,7 +62,7 @@ func TestSetServices(t *testing.T) {
 	services := []core.Service{}
 	services = append(services, testService2)
 
-	if err := Backend.SetServices(services); err != nil {
+	if err := balance.SetServices(services); err != nil {
 		t.Errorf("Failed to SET services - %v", err)
 		t.FailNow()
 	}
@@ -72,7 +72,7 @@ func TestSetServices(t *testing.T) {
 	}
 
 	// todo: read from ipvsadm
-	service, err := Backend.GetService(testService2.Id)
+	service, err := balance.GetService(testService2.Id)
 	if err != nil {
 		t.Error(err)
 	}
@@ -86,7 +86,7 @@ func TestGetServices(t *testing.T) {
 	if skip {
 		t.SkipNow()
 	}
-	services, err := Backend.GetServices()
+	services, err := balance.GetServices()
 	if err != nil {
 		t.Errorf("Failed to GET services - %v", err)
 		t.FailNow()
@@ -101,7 +101,7 @@ func TestGetService(t *testing.T) {
 	if skip {
 		t.SkipNow()
 	}
-	service, err := Backend.GetService(testService2.Id)
+	service, err := balance.GetService(testService2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %v", err)
 		t.FailNow()
@@ -116,12 +116,12 @@ func TestDeleteService(t *testing.T) {
 	if skip {
 		t.SkipNow()
 	}
-	if err := Backend.DeleteService(testService2.Id); err != nil {
+	if err := balance.DeleteService(testService2.Id); err != nil {
 		t.Errorf("Failed to GET service - %v", err)
 	}
 
 	// todo: read from ipvsadm
-	_, err := Backend.GetService(testService2.Id)
+	_, err := balance.GetService(testService2.Id)
 	if !strings.Contains(err.Error(), "No Service Found") {
 		t.Error(err)
 	}
@@ -134,14 +134,14 @@ func TestSetServer(t *testing.T) {
 	if skip {
 		t.SkipNow()
 	}
-	Backend.SetService(&testService1)
-	if err := Backend.SetServer(testService1.Id, &testServer1); err != nil {
+	balance.SetService(&testService1)
+	if err := balance.SetServer(testService1.Id, &testServer1); err != nil {
 		t.Errorf("Failed to SET server - %v", err)
 		t.FailNow()
 	}
 
 	// todo: read from ipvsadm
-	service, err := Backend.GetService(testService1.Id)
+	service, err := balance.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
 	}
@@ -160,13 +160,13 @@ func TestSetServers(t *testing.T) {
 	}
 	servers := []core.Server{}
 	servers = append(servers, testServer2)
-	if err := Backend.SetServers(testService1.Id, servers); err != nil {
+	if err := balance.SetServers(testService1.Id, servers); err != nil {
 		t.Errorf("Failed to SET servers - %v", err)
 		t.FailNow()
 	}
 
 	// todo: read from ipvsadm
-	service, err := Backend.GetService(testService1.Id)
+	service, err := balance.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
 	}
@@ -183,7 +183,7 @@ func TestGetServers(t *testing.T) {
 	if skip {
 		t.SkipNow()
 	}
-	service, err := Backend.GetService(testService1.Id)
+	service, err := balance.GetService(testService1.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %v", err)
 		t.FailNow()
@@ -198,7 +198,7 @@ func TestGetServer(t *testing.T) {
 	if skip {
 		t.SkipNow()
 	}
-	server, err := Backend.GetServer(testService1.Id, testServer2.Id)
+	server, err := balance.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET server - %v", err)
 		t.FailNow()
@@ -213,13 +213,13 @@ func TestDeleteServer(t *testing.T) {
 	if skip {
 		t.SkipNow()
 	}
-	err := Backend.DeleteServer(testService1.Id, testServer2.Id)
+	err := balance.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to DELETE server - %v", err)
 	}
 
 	// todo: read from ipvsadm
-	service, err := Backend.GetService(testService1.Id)
+	service, err := balance.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -268,7 +268,6 @@ func initialize() {
 			os.Exit(1)
 		}
 
-		Backend = &balance.Lvs{}
-		Backend.Init()
+		balance.Init()
 	}
 }
