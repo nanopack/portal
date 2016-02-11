@@ -6,12 +6,15 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/jcelliott/lumber"
 	"github.com/spf13/cobra"
 
 	"github.com/nanopack/portal/api"
 	"github.com/nanopack/portal/balance"
+	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/database"
 )
@@ -50,6 +53,7 @@ func init() {
 	Portal.Flags().StringVarP(&config.ApiCert, "api-crt", "C", "", "SSL cert for the api")
 	Portal.Flags().StringVarP(&config.ApiKeyPassword, "api-key-password", "p", "", "Password for the SSL key")
 	Portal.Flags().StringVarP(&config.DatabaseConnection, "db-connection", "d", "scribble:///var/db/portal", "Database connection string")
+	Portal.Flags().StringVarP(&config.ClusterConnection, "cluster-connection", "r", "redis://127.0.0.1:6379", "Database connection string")
 	Portal.Flags().StringVarP(&config.LogLevel, "log-level", "L", "INFO", "Log level to output")
 	Portal.Flags().StringVarP(&config.LogFile, "log-file", "l", "", "Log file to write to")
 
@@ -108,6 +112,15 @@ func startServer() {
 		config.Log.Fatal("Balancer sync failed - %v", err)
 		os.Exit(1)
 	}
+	// initialize cluster
+	err = cluster.Init()
+	if err != nil {
+		config.Log.Fatal("Cluster init failed - %v", err)
+		os.Exit(1)
+	}
+
+	go sigHandle()
+
 	// start api
 	err = api.StartApi()
 	if err != nil {
@@ -115,6 +128,18 @@ func startServer() {
 		os.Exit(1)
 	}
 	return
+}
+
+func sigHandle() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		switch <-sigs {
+		default:
+			cluster.UnInit()
+			os.Exit(0)
+		}
+	}()
 }
 
 func rest(path string, method string, body io.Reader) (*http.Response, error) {

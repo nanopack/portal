@@ -78,7 +78,7 @@ func (l *Lvs) GetServer(svcId, srvId string) (*core.Server, error) {
 func (l *Lvs) SetServer(svcId string, server *core.Server) error {
 	service, err := l.GetService(svcId)
 	if err != nil {
-		return err
+		return NoServiceError
 	}
 	lvsServer := srvToL(*server)
 
@@ -100,7 +100,6 @@ func (l *Lvs) SetServer(svcId string, server *core.Server) error {
 
 // DeleteServer
 func (l *Lvs) DeleteServer(svcId, srvId string) error {
-	var err error
 	service, err := parseSvc(svcId)
 	if err != nil {
 		// if service not valid, 'delete' successful
@@ -134,7 +133,7 @@ func (l *Lvs) DeleteServer(svcId, srvId string) error {
 func (l *Lvs) SetServers(svcId string, servers []core.Server) error {
 	service, err := l.GetService(svcId)
 	if err != nil {
-		return nil
+		return NoServiceError // was there a reason this was nil?
 	}
 
 	lvsServers := []lvs.Server{}

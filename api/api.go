@@ -23,9 +23,10 @@ import (
 	"github.com/gorilla/pat"
 	"github.com/nanobox-io/golang-nanoauth"
 
-	"github.com/nanopack/portal/balance"
+	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
+	"github.com/nanopack/portal/core/common"
 	"github.com/nanopack/portal/database"
 )
 
@@ -187,19 +188,19 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// apply to balancer
-	err = balance.SetServer(svcId, server)
+	// apply to balancer and backend
+	err = common.SetServer(svcId, server)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	// save to backend
-	err = database.SetServer(svcId, server)
+	// save to cluster
+	err = cluster.SetServer(svcId, server)
 	if err != nil {
-		// undo balance action
-		if uerr := balance.DeleteServer(svcId, server.Id); uerr != nil {
-			err = uerr
+		// undo balncer/backend action
+		if uerr := common.DeleteServer(svcId, server.Id); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -226,17 +227,17 @@ func deleteServer(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// delete rule from balancer
-	if err = balance.DeleteServer(svcId, srvId); err != nil {
+	// delete rule from balancer and backend
+	if err = common.DeleteServer(svcId, srvId); err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	// remove from backend
-	if err = database.DeleteServer(svcId, srvId); err != nil {
-		// undo balance action
-		if uerr := balance.SetServer(svcId, srv); uerr != nil {
-			err = uerr
+	// remove from cluster
+	if err = cluster.DeleteServer(svcId, srvId); err != nil {
+		// undo balancer/backend action
+		if uerr := common.SetServer(svcId, srv); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -250,7 +251,6 @@ func getServers(rw http.ResponseWriter, req *http.Request) {
 	// /services/{svcId}/servers
 	svcId := req.URL.Query().Get(":svcId")
 	service, err := database.GetService(svcId)
-	// service, err := balance.GetService(svcId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusNotFound)
 		return
@@ -286,26 +286,25 @@ func putServers(rw http.ResponseWriter, req *http.Request) {
 	}
 	oldServers := oldService.Servers
 
-	// implement in balancer
-	err = balance.SetServers(svcId, servers)
+	// implement in balancer and backend
+	err = common.SetServers(svcId, servers)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
 	// add to backend
-	err = database.SetServers(svcId, servers)
+	err = cluster.SetServers(svcId, servers)
 	if err != nil {
-		// undo balance action
-		if uerr := balance.SetServers(svcId, oldServers); uerr != nil {
-			err = uerr
+		// undo balancer/backend action
+		if uerr := common.SetServers(svcId, oldServers); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	svc, _ := balance.GetService(svcId)
-	writeBody(rw, req, svc.Servers, http.StatusOK)
+	writeBody(rw, req, servers, http.StatusOK)
 }
 
 // Get information about a service
@@ -353,19 +352,19 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// apply services to balancer
-	err = balance.SetServices(services)
+	// apply services to balancer and backend
+	err = common.SetServices(services)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	// save to backend
-	err = database.SetServices(services)
+	// save to cluster
+	err = cluster.SetServices(services)
 	if err != nil {
-		// undo balance action
-		if uerr := balance.SetServices(oldServices); uerr != nil {
-			err = uerr
+		// undo balancer/backend action
+		if uerr := common.SetServices(oldServices); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -396,19 +395,19 @@ func postService(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// apply to balancer
-	err = balance.SetService(service)
+	// apply to balancer and backend
+	err = common.SetService(service)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	// save to backend
-	err = database.SetService(service)
+	// save to cluster
+	err = cluster.SetService(service)
 	if err != nil {
-		// undo balance action
-		if uerr := balance.SetServices(oldServices); uerr != nil {
-			err = uerr
+		// undo balancer/backend action
+		if uerr := common.SetServices(oldServices); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -450,18 +449,18 @@ func putService(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// apply services to balancer
-	err = balance.SetServices(services)
+	// apply services to balancer and backend
+	err = common.SetServices(services)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	// save to backend
-	if err := database.SetServices(services); err != nil {
-		// undo balance action
-		if uerr := balance.SetServices(oldServices); uerr != nil {
-			err = uerr
+	// save to cluster
+	if err := cluster.SetServices(services); err != nil {
+		// undo balancer/backend action
+		if uerr := common.SetServices(oldServices); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
@@ -484,20 +483,20 @@ func deleteService(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// delete backend rule
-	err = balance.DeleteService(svcId)
+	// remove from backend and balancer
+	err = common.DeleteService(svcId)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	// remove from backend
-	err = database.DeleteService(svcId)
+	// remove from cluster
+	err = cluster.DeleteService(svcId)
 	if err != nil {
-		// undo balance action
+		// undo backend/balancer action
 		if oldService != nil {
-			if uerr := balance.SetService(oldService); uerr != nil {
-				err = uerr
+			if uerr := common.SetService(oldService); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 			}
 		}
 		writeError(rw, req, err, http.StatusInternalServerError)

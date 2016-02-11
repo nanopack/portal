@@ -17,6 +17,7 @@ var (
 	ApiKeyPassword     string
 	ConfigFile         string
 	DatabaseConnection string
+	ClusterConnection  string
 	Insecure           bool
 	LogLevel           string
 	LogFile            string
@@ -34,6 +35,7 @@ func LoadConfigFile() {
 		viper.SetDefault("ApiCert", ApiCert)
 		viper.SetDefault("ApiKeyPassword", ApiKeyPassword)
 		viper.SetDefault("DatabaseConnection", DatabaseConnection)
+		viper.SetDefault("ClusterConnection", ClusterConnection)
 		viper.SetDefault("Insecure", Insecure)
 		viper.SetDefault("LogLevel", LogLevel)
 		viper.SetDefault("LogFile", LogFile)
@@ -55,6 +57,7 @@ func LoadConfigFile() {
 		ApiCert = viper.GetString("ApiCert")
 		ApiKeyPassword = viper.GetString("ApiKeyPassword")
 		DatabaseConnection = viper.GetString("DatabaseConnection")
+		ClusterConnection = viper.GetString("ClusterConnection")
 		Insecure = viper.GetBool("Insecure")
 		LogLevel = viper.GetString("LogLevel")
 		LogFile = viper.GetString("LogFile")

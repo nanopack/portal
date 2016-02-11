@@ -14,6 +14,7 @@ import (
 
 	"github.com/nanopack/portal/api"
 	"github.com/nanopack/portal/balance"
+	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/commands"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
@@ -333,6 +334,7 @@ func capture(fn execable) ([]byte, error) {
 func initialize() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	config.DatabaseConnection = "scribble:///tmp/cliTest"
+	config.ClusterConnection = "none://"
 	config.ApiHost = "127.0.0.1"
 	config.ApiPort = "8445"
 	config.ApiToken = ""
@@ -343,6 +345,12 @@ func initialize() {
 	err := database.Init()
 	if err != nil {
 		fmt.Printf("Database init failed - %v\n", err)
+		os.Exit(1)
+	}
+	// initialize clusterer
+	err = cluster.Init()
+	if err != nil {
+		fmt.Printf("Clusterer init failed - %v\n", err)
 		os.Exit(1)
 	}
 	// initialize balancer
