@@ -83,8 +83,8 @@ func subscribe(r *Redis) {
 					config.Log.Error("[cluster] - Failed to set services - %v", err.Error())
 					break
 				}
-				// todo: could be Sum of v.Data, same thing, less clear
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", services))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", *services))))
+				config.Log.Trace("set-services hash - %v", actionHash)
 				r.pubconn.Do("SADD", actionHash, self)
 			case "set-service":
 				if len(pdata) != 2 {
@@ -103,7 +103,7 @@ func subscribe(r *Redis) {
 					config.Log.Error("[cluster] - Failed to set service - %v", err.Error())
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", svc))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", *svc))))
 				r.pubconn.Do("SADD", actionHash, self)
 			case "delete-service":
 				if len(pdata) != 2 {
@@ -135,7 +135,7 @@ func subscribe(r *Redis) {
 					config.Log.Error("[cluster] - Failed to set servers - %v", err.Error())
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", servers, svcId))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", *servers, svcId))))
 				r.pubconn.Do("SADD", actionHash, self)
 			case "set-server":
 				if len(pdata) != 3 {
@@ -155,7 +155,7 @@ func subscribe(r *Redis) {
 					config.Log.Error("[cluster] - Failed to set server - %v", err.Error())
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s", server, svcId))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s", *server, svcId))))
 				r.pubconn.Do("SADD", actionHash, self)
 			case "delete-server":
 				if len(pdata) != 3 {
@@ -214,15 +214,17 @@ func (r Redis) publishServer(action, svcId string, v interface{}) error {
 }
 
 func (r Redis) waitForMembers(actionHash string) error {
+	config.Log.Trace("Waiting for updates to %s", actionHash)
 	// make timeout configurable
 	timeout := time.After(30 * time.Second)
 	tick := time.Tick(500 * time.Millisecond)
-
+	var list []string
+	var err error
 	for {
 		select {
 		case <-tick:
-			// compare who we know about to who performed the update
-			list, err := redis.Strings(r.pubconn.Do("SDIFF", actionHash, "members"))
+			// compare who we know about, to who performed the update
+			list, err = redis.Strings(r.pubconn.Do("SDIFF", "members", actionHash))
 			if err != nil {
 				return err
 			}
@@ -232,7 +234,7 @@ func (r Redis) waitForMembers(actionHash string) error {
 			}
 		// if members don't respond in time, return error
 		case <-timeout:
-			return fmt.Errorf("Member(s) '%v' failed to set-service")
+			return fmt.Errorf("Member(s) '%v' failed to set-service", list)
 		}
 	}
 }
@@ -281,12 +283,11 @@ func (r *Redis) SetService(service *core.Service) error {
 	// publishService to others
 	err := r.publishService("set-service", service)
 	if err != nil {
-		// api will rollback my things with common.SetService
-		// if i failed to publishService, request should fail
+		// nothing to rollback yet (nobody recieved)
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", service))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", *service))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(actionHash)
@@ -314,9 +315,9 @@ func (r *Redis) SetService(service *core.Service) error {
 // DeleteService
 func (r *Redis) DeleteService(id string) error {
 	oldService, err := common.GetService(id)
-	if err != nil {
+	if err != nil { // todo: this should not return nil (ensure gone from cluster)
 		// if invalid service, 'delete' succesful
-		return nil
+		return nil // common.DeleteService as example/extended functionality
 	}
 
 	// publishService to others
@@ -396,7 +397,7 @@ func (r *Redis) SetServer(svcId string, server *core.Server) error {
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", server, svcId))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *server, svcId))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(actionHash)
@@ -434,7 +435,7 @@ func (r *Redis) DeleteServer(svcId, srvId string) error {
 	// ensure all members applied action
 	err = r.waitForMembers(actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", oldServer, svcId))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *oldServer, svcId))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer r.pubconn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here

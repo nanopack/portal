@@ -164,7 +164,6 @@ func DeleteServer(svcId, srvId string) error {
 	return nil
 }
 
-// required to prevent circular import cycle
 func GetServices() ([]core.Service, error) {
 	return database.GetServices()
 }
