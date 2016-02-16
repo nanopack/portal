@@ -71,9 +71,6 @@ func init() {
 	Portal.AddCommand(serverShowCmd)
 	Portal.AddCommand(serversShowCmd)
 	Portal.AddCommand(serversSetCmd)
-
-	Portal.AddCommand(syncLvsCmd)
-	Portal.AddCommand(syncPortalCmd)
 }
 
 func startServer() {
