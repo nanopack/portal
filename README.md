@@ -88,7 +88,7 @@ json:
 ```
 
 Fields:
- - *error**: Error message
+ - **error**: Error message
 
 ### Message:
 json:
@@ -117,9 +117,11 @@ Fields:
 | **Get** /services/:service_id/servers/:server_id | Get information about a server on a service | nil | json server object |
 | **Delete** /services/:service_id/servers/:server_id | Delete a server from a service | nil | success message or an error |
 
+- **service_id** is a formatted combination of service info: type-host-port. (tcp-127_0_0_3-80)  
+- **server_id** is a formatted combination of server info: host-port. (192_0_0_3-8080)  
+
 ## Usage:
 
-See [Api](api/README.md)
-See [Cli](commands/README.md)  
+For usage examples, see [Api](api/README.md) and/or [Cli](commands/README.md)  
 
 [![portal logo](http://nano-assets.gopagoda.io/open-src/nanobox-open-src.png)](http://nanobox.io/open-source)
