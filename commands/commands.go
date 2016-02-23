@@ -133,7 +133,9 @@ func sigHandle() {
 	go func() {
 		switch <-sigs {
 		default:
-			cluster.UnInit()
+			// todo: should we do this still? live cluster will cleanup for us
+			// cluster.UnInit() // removing for now
+			fmt.Println()
 			os.Exit(0)
 		}
 	}()
@@ -156,7 +158,14 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 		panic(err)
 	}
 	req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
-	return client.Do(req)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode == 401 {
+		return nil, fmt.Errorf("401 Unauthorized. Please specify api token (-t 'token')")
+	}
+	return res, nil
 }
 
 func fail(format string, args ...interface{}) {

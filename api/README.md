@@ -12,6 +12,7 @@ An api-driven, in-kernel layer 2/3 load balancer.
 | **Get** /services | List all services | nil | json array of service objects |
 | **Post** /services | Add a service | json service object | json service object |
 | **Put** /services | Reset the list of services | json array of service objects | json array of service objects |
+| **Put** /services/:service_id | Reset the specified service | nil | json service object |
 | **Get** /services/:service_id | Get information about a service | nil | json service object |
 | **Delete** /services/:service_id | Delete a service | nil | success message or an error |
 | **Get** /services/:service_id/servers | List all servers on a service | nil | json array of server objects |
