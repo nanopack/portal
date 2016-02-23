@@ -18,6 +18,7 @@ var (
 	ConfigFile         string
 	DatabaseConnection string
 	ClusterConnection  string
+	ClusterToken       string
 	Insecure           bool
 	LogLevel           string
 	LogFile            string
@@ -27,7 +28,6 @@ var (
 func LoadConfigFile() {
 	if ConfigFile != "" {
 		// Set defaults to whatever might be there already
-		viper.SetDefault("ApiToken", ApiToken)
 		viper.SetDefault("ApiToken", ApiToken)
 		viper.SetDefault("ApiHost", ApiHost)
 		viper.SetDefault("ApiPort", ApiPort)

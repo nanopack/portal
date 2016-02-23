@@ -2,12 +2,13 @@
 // vim: ts=4 sw=4 ft=lua noet
 //--------------------------------------------------------------------
 // @author Daniel Barney <daniel@nanobox.io>
-// @copyright 2015, Pagoda Box Inc.
+// @copyright 2016, Pagoda Box Inc.
 // @doc
 //
 // @end
 // Created :   7 August 2015 by Daniel Barney <daniel@nanobox.io>
 //--------------------------------------------------------------------
+
 package main
 
 import (

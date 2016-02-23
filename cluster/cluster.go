@@ -12,13 +12,8 @@ import (
 	"github.com/nanopack/portal/core"
 )
 
-type Cluster interface {
-	core.Backender
-	UnInit() error
-}
-
 var (
-	Clusterer      Cluster
+	Clusterer      core.Backender
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
 	BadJson        = errors.New("Bad JSON syntax received in body")
@@ -40,10 +35,6 @@ func Init() error {
 	}
 
 	return Clusterer.Init()
-}
-
-func UnInit() error {
-	return Clusterer.UnInit()
 }
 
 func GetServices() ([]core.Service, error) {

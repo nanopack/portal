@@ -40,20 +40,17 @@ var (
 func init() {
 	// Portal.PersistentFlags()
 	Portal.PersistentFlags().BoolVarP(&config.Insecure, "insecure", "i", true, "Disable tls key checking")
-	Portal.PersistentFlags().StringVarP(&config.ApiToken, "api-token", "t", "",
-		"Token for API Access")
-	Portal.PersistentFlags().StringVarP(&config.ApiHost, "api-host", "H", "127.0.0.1",
-		"Listen address for the API")
-	Portal.PersistentFlags().StringVarP(&config.ApiPort, "api-port", "P", "8443",
-		"Listen address for the API")
-	Portal.PersistentFlags().StringVarP(&config.ConfigFile, "conf", "c", "",
-		"Configuration file to load")
+	Portal.PersistentFlags().StringVarP(&config.ApiToken, "api-token", "t", "", "Token for API Access")
+	Portal.PersistentFlags().StringVarP(&config.ApiHost, "api-host", "H", "127.0.0.1", "Listen address for the API")
+	Portal.PersistentFlags().StringVarP(&config.ApiPort, "api-port", "P", "8443", "Listen address for the API")
+	Portal.PersistentFlags().StringVarP(&config.ConfigFile, "conf", "c", "", "Configuration file to load")
 
 	Portal.Flags().StringVarP(&config.ApiKey, "api-key", "k", "", "SSL key for the api")
 	Portal.Flags().StringVarP(&config.ApiCert, "api-crt", "C", "", "SSL cert for the api")
 	Portal.Flags().StringVarP(&config.ApiKeyPassword, "api-key-password", "p", "", "Password for the SSL key")
 	Portal.Flags().StringVarP(&config.DatabaseConnection, "db-connection", "d", "scribble:///var/db/portal", "Database connection string")
-	Portal.Flags().StringVarP(&config.ClusterConnection, "cluster-connection", "r", "redis://127.0.0.1:6379", "Database connection string")
+	Portal.Flags().StringVarP(&config.ClusterConnection, "cluster-connection", "r", "redis://127.0.0.1:6379", "Cluster connection string")
+	Portal.Flags().StringVarP(&config.ClusterToken, "cluster-token", "T", "", "Cluster security token")
 	Portal.Flags().StringVarP(&config.LogLevel, "log-level", "L", "INFO", "Log level to output")
 	Portal.Flags().StringVarP(&config.LogFile, "log-file", "l", "", "Log file to write to")
 
@@ -133,8 +130,6 @@ func sigHandle() {
 	go func() {
 		switch <-sigs {
 		default:
-			// todo: should we do this still? live cluster will cleanup for us
-			// cluster.UnInit() // removing for now
 			fmt.Println()
 			os.Exit(0)
 		}
