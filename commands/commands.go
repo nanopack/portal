@@ -130,6 +130,8 @@ func sigHandle() {
 	go func() {
 		switch <-sigs {
 		default:
+			// clear balancer rules - (stop balancing if we are offline)
+			balance.SetServices(make([]core.Service, 0, 0))
 			fmt.Println()
 			os.Exit(0)
 		}

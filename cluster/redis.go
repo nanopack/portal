@@ -10,6 +10,7 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 
+	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/core/common"
@@ -17,8 +18,8 @@ import (
 
 var (
 	self string
-	ttl  = 120
-	beat = time.Duration(ttl / 2) * time.Second
+	ttl  = 20 // time until a member is deemed "dead"
+	beat = time.Duration(ttl/2) * time.Second
 )
 
 type (
@@ -31,13 +32,14 @@ type (
 func (r *Redis) Init() error {
 	hostname, _ := os.Hostname()
 	self = fmt.Sprintf("%v:%v", hostname, config.ApiPort)
-	p, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(30 * time.Second), redis.DialWriteTimeout(10 * time.Second), redis.DialReadTimeout(10 * time.Second), redis.DialPassword(config.ClusterToken))
+	p, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(30*time.Second), redis.DialWriteTimeout(10*time.Second), redis.DialReadTimeout(10*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
 		return fmt.Errorf("Failed to reach redis for pubconn - %v", err)
 	}
 	r.pubconn = p
 
-	s, err := redis.DialURL(config.ClusterConnection, redis.DialReadTimeout(10 * time.Second), redis.DialPassword(config.ClusterToken))
+	// don't set read timeout on subscriber - it dies if no 'updates' within that time
+	s, err := redis.DialURL(config.ClusterConnection, redis.DialPassword(config.ClusterToken))
 	if err != nil {
 		return fmt.Errorf("Failed to reach redis for subconn - %v", err)
 	}
@@ -317,7 +319,7 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 		}
 	}
 
-	c, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(15 * time.Second), redis.DialPassword(config.ClusterToken))
+	c, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(15*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to reach redis for services subscriber - %v", err)
 	}
@@ -402,6 +404,8 @@ func (r Redis) cleanup() {
 	conn, err := redis.DialURL((config.ClusterConnection), redis.DialPassword(config.ClusterToken))
 	if err != nil {
 		config.Log.Error("[cluster] - Failed to reach redis for cleanup - %v", err)
+		// clear balancer rules ("stop balancing if we are 'dead'")
+		balance.SetServices(make([]core.Service, 0, 0))
 		os.Exit(1)
 	}
 
@@ -423,20 +427,32 @@ func (r Redis) cleanup() {
 // heartbeat records that the member is still alive
 func (r Redis) heartbeat() {
 	tick := time.Tick(beat)
-  // set write timeout so each 'beat' ensures we can talk to redis (network partition) (rather than create new connection)
-	conn, err := redis.DialURL((config.ClusterConnection), redis.DialWriteTimeout(5 * time.Second), redis.DialReadTimeout(5 * time.Second), redis.DialPassword(config.ClusterToken))
+	// set write timeout so each 'beat' ensures we can talk to redis (network partition) (rather than create new connection)
+	conn, err := redis.DialURL((config.ClusterConnection), redis.DialWriteTimeout(5*time.Second), redis.DialReadTimeout(5*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
 		config.Log.Error("[cluster] - Failed to reach redis for heartbeat - %v", err)
+		// clear balancer rules ("stop balancing if we are 'dead'")
+		balance.SetServices(make([]core.Service, 0, 0))
 		os.Exit(1)
 	}
 
 	for _ = range tick {
-		conn.Do("SET", self, "alive", "EX", ttl)
+		config.Log.Trace("[cluster] - Heartbeat...")
+		_, err = conn.Do("SET", self, "alive", "EX", ttl)
+		if err != nil {
+			conn.Close()
+			config.Log.Error("[cluster] - Failed to heartbeat - %v", err)
+			// clear balancer rules ("stop balancing if we are 'dead'")
+			balance.SetServices(make([]core.Service, 0, 0))
+			os.Exit(1)
+		}
 		// re-add ourself to member list (just in case)
 		_, err = conn.Do("SADD", "members", self)
 		if err != nil {
 			conn.Close()
-			config.Log.Error("Failed to add myself to list of members - %v", err)
+			config.Log.Error("[cluster] - Failed to add myself to list of members - %v", err)
+			// clear balancer rules ("stop balancing if we are 'dead'")
+			balance.SetServices(make([]core.Service, 0, 0))
 			os.Exit(1)
 		}
 	}
@@ -585,6 +601,8 @@ func (r Redis) subscribe() {
 		case error:
 			config.Log.Error("[cluster] - Subscriber failed to receive - %v", v.Error())
 			if strings.Contains(v.Error(), "closed network connection") {
+				// clear balancer rules ("stop balancing if we are 'dead'")
+				balance.SetServices(make([]core.Service, 0, 0))
 				// exit so we don't get spammed with logs
 				os.Exit(1)
 			}
@@ -600,6 +618,7 @@ func (r Redis) publishService(action string, v interface{}) error {
 		return BadJson
 	}
 
+	// todo: should create new connection(or use pool) - single connection limits concurrency
 	_, err = r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s", action, s))
 	return err
 }
@@ -611,6 +630,7 @@ func (r Redis) publishServer(action, svcId string, v interface{}) error {
 		return BadJson
 	}
 
+	// todo: should create new connection(or use pool) - single connection limits concurrency
 	_, err = r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s", action, s, svcId))
 	return err
 }
@@ -619,6 +639,7 @@ func (r Redis) publishServer(action, svcId string, v interface{}) error {
 func (r Redis) waitForMembers(actionHash string) error {
 	config.Log.Trace("[cluster] - Waiting for updates to %s", actionHash)
 	// todo: make timeout configurable
+	// timeout is the amount of time to wait for members to apply the action
 	timeout := time.After(30 * time.Second)
 	tick := time.Tick(500 * time.Millisecond)
 	var list []string
