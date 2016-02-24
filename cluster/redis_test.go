@@ -45,7 +45,6 @@ func TestSetService(t *testing.T) {
 		t.FailNow()
 	}
 
-	// todo: read from ipvsadm
 	service, err := cluster.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
@@ -72,7 +71,6 @@ func TestSetServices(t *testing.T) {
 		t.Errorf("Failed to clear old services on PUT - %v", err)
 	}
 
-	// todo: read from ipvsadm
 	service, err := cluster.GetService(testService2.Id)
 	if err != nil {
 		t.Error(err)
@@ -123,7 +121,6 @@ func TestDeleteService(t *testing.T) {
 		t.FailNow()
 	}
 
-	// todo: read from ipvsadm
 	_, err := cluster.GetService(testService2.Id)
 	if !strings.Contains(err.Error(), "No Service Found") {
 		t.Error(err)
@@ -143,7 +140,6 @@ func TestSetServer(t *testing.T) {
 		t.FailNow()
 	}
 
-	// todo: read from ipvsadm
 	service, err := cluster.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
@@ -168,7 +164,6 @@ func TestSetServers(t *testing.T) {
 		t.FailNow()
 	}
 
-	// todo: read from ipvsadm
 	service, err := cluster.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
@@ -221,7 +216,6 @@ func TestDeleteServer(t *testing.T) {
 		t.Errorf("Failed to DELETE server - %v", err)
 	}
 
-	// todo: read from ipvsadm
 	service, err := cluster.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
@@ -254,17 +248,15 @@ func initialize() {
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 
 	if !skip {
-		config.ClusterConnection = "redis://"
+		config.ClusterConnection = "redis://localhost:6379"
 		config.DatabaseConnection = "scribble:///tmp/clusterTest"
 
-		fmt.Println("database init...")
 		err = database.Init()
 		if err != nil {
 			fmt.Printf("database init failed - %v\n", err)
 			os.Exit(1)
 		}
 
-		fmt.Println("balance init...")
 		balance.Balancer = &database.ScribbleDatabase{}
 		err = balance.Balancer.Init()
 		if err != nil {
@@ -272,7 +264,6 @@ func initialize() {
 			os.Exit(1)
 		}
 
-		fmt.Println("cluster init...")
 		err = cluster.Init()
 		if err != nil {
 			fmt.Printf("cluster init failed - %v\n", err)
