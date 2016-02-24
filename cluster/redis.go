@@ -161,7 +161,7 @@ func (r *Redis) DeleteService(id string) error {
 	}
 
 	// publishService to others
-	err = r.publishService("delete-service", id)
+	err = r.publishString("delete-service", id)
 	if err != nil {
 		// if i failed to publishService, request should fail
 		return err
@@ -268,7 +268,8 @@ func (r *Redis) DeleteServer(svcId, srvId string) error {
 	}
 
 	// publishServer to others
-	err = r.publishServer("delete-server", svcId, srvId)
+	// todo: swap srv/svc ids to match backender interface for better readability
+	err = r.publishString("delete-server", srvId, svcId)
 	if err != nil {
 		return err
 	}
@@ -524,6 +525,7 @@ func (r Redis) subscribe() {
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", *svc))))
+				config.Log.Trace("[cluster] - set-service hash - %v", actionHash)
 				r.pubconn.Do("SADD", actionHash, self)
 				config.Log.Debug("[cluster] - set-service successful")
 			case "delete-service":
@@ -538,6 +540,7 @@ func (r Redis) subscribe() {
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-service %s", svcId))))
+				config.Log.Trace("[cluster] - delete-service hash - %v", actionHash)
 				r.pubconn.Do("SADD", actionHash, self)
 				config.Log.Debug("[cluster] - delete-service successful")
 				// SERVERS ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -558,6 +561,7 @@ func (r Redis) subscribe() {
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", *servers, svcId))))
+				config.Log.Trace("[cluster] - set-servers hash - %v", actionHash)
 				r.pubconn.Do("SADD", actionHash, self)
 				config.Log.Debug("[cluster] - set-servers successful")
 			case "set-server":
@@ -577,7 +581,8 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to set server - %v", err.Error())
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s", *server, svcId))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *server, svcId))))
+				config.Log.Trace("[cluster] - set-server hash - %v", actionHash)
 				r.pubconn.Do("SADD", actionHash, self)
 				config.Log.Debug("[cluster] - set-server successful")
 			case "delete-server":
@@ -592,7 +597,8 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to delete server - %v", err.Error())
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-server %s", srvId, svcId))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-server %s %s", srvId, svcId))))
+				config.Log.Trace("[cluster] - delete-server hash - %v", actionHash)
 				r.pubconn.Do("SADD", actionHash, self)
 				config.Log.Debug("[cluster] - delete-server successful")
 			default:
@@ -631,7 +637,14 @@ func (r Redis) publishServer(action, svcId string, v interface{}) error {
 	}
 
 	// todo: should create new connection(or use pool) - single connection limits concurrency
-	_, err = r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s", action, s, svcId))
+	_, err = r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s %s", action, s, svcId))
+	return err
+}
+
+// publishString publishes string[s] to the "portal" channel
+func (r Redis) publishString(action string, s ...string) error {
+	// todo: should create new connection(or use pool) - single connection limits concurrency
+	_, err := r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s", action, strings.Join(s, " ")))
 	return err
 }
 

@@ -16,6 +16,7 @@ import (
 	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/config"
+	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
 )
 

@@ -142,19 +142,20 @@ func DeleteServer(svcId, srvId string) error {
 	// in case of failure
 	srv, err := database.GetServer(svcId, srvId)
 	if err != nil {
-		if strings.Contains(err.Error(), "No Server Found") {
-			return nil
+		if !strings.Contains(err.Error(), "No Server Found") {
+			return err
 		}
-		return err
 	}
 
 	// delete rule from balancer
 	if err = balance.DeleteServer(svcId, srvId); err != nil {
-		return err
+		if !strings.Contains(err.Error(), "No Server Found") {
+			return err
+		}
 	}
 
 	// remove from backend
-	if err = database.DeleteServer(svcId, srvId); err != nil {
+	if err = database.DeleteServer(svcId, srvId); err != nil && !strings.Contains(err.Error(), "No Server Found") {
 		// undo balance action
 		if uerr := balance.SetServer(svcId, srv); uerr != nil {
 			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())

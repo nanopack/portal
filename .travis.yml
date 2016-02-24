@@ -1,5 +1,5 @@
 language: go
 
+services: redis-server
 install: go get -t -v .
-# bin_test contains fake iptables/ipvsadm bins
-script: PATH=./bin_test:$PATH; go test -v ./...
+script: go test -v ./...
