@@ -1,4 +1,10 @@
 language: go
+go: 1.5
+
+addons:
+  apt:
+    packages:
+      - redis-server
 
 services: redis-server
 install: go get -t -v .
