@@ -27,10 +27,17 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	// clean test dir
+	os.RemoveAll("/tmp/clusterTest")
+
 	// initialize backend if redis-server found
 	initialize()
 
-	os.Exit(m.Run())
+	// clean test dir
+	os.RemoveAll("/tmp/clusterTest")
+	rtn := m.Run()
+
+	os.Exit(rtn)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

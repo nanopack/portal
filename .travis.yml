@@ -6,6 +6,7 @@ addons:
   apt:
     packages:
       - redis-server
+      - ipvsadm
 
 services: redis-server
 install: go get -t -v .

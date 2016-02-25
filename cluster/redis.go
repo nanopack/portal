@@ -20,11 +20,11 @@ var (
 	self string
 	ttl  = 20 // time until a member is deemed "dead"
 	beat = time.Duration(ttl/2) * time.Second
+	pool *redis.Pool
 )
 
 type (
 	Redis struct {
-		pubconn redis.Conn
 		subconn redis.PubSubConn
 	}
 )
@@ -32,19 +32,7 @@ type (
 func (r *Redis) Init() error {
 	hostname, _ := os.Hostname()
 	self = fmt.Sprintf("%v:%v", hostname, config.ApiPort)
-	p, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(30*time.Second), redis.DialWriteTimeout(10*time.Second), redis.DialReadTimeout(10*time.Second), redis.DialPassword(config.ClusterToken))
-	if err != nil {
-		return fmt.Errorf("Failed to reach redis for pubconn - %v", err)
-	}
-	r.pubconn = p
-
-	// don't set read timeout on subscriber - it dies if no 'updates' within that time
-	s, err := redis.DialURL(config.ClusterConnection, redis.DialPassword(config.ClusterToken))
-	if err != nil {
-		return fmt.Errorf("Failed to reach redis for subconn - %v", err)
-	}
-	r.subconn = redis.PubSubConn{s}
-	r.subconn.Subscribe("portal")
+	pool = r.newPool(config.ClusterConnection, config.ClusterToken)
 
 	services, err := r.GetServices()
 	if err != nil {
@@ -59,8 +47,21 @@ func (r *Redis) Init() error {
 		}
 	}
 
-	r.pubconn.Do("SET", self, "alive", "EX", ttl)
-	_, err = r.pubconn.Do("SADD", "members", self)
+	// note: keep subconn connection initialization out here or sleep after `go r.subscribe()`
+	// don't set read timeout on subscriber - it dies if no 'updates' within that time
+	s, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(30*time.Second), redis.DialPassword(config.ClusterToken))
+	if err != nil {
+		return fmt.Errorf("Failed to reach redis for subconn - %v", err)
+	}
+
+	r.subconn = redis.PubSubConn{s}
+	r.subconn.Subscribe("portal")
+
+	p := pool.Get()
+	defer p.Close()
+
+	p.Do("SET", self, "alive", "EX", ttl)
+	_, err = p.Do("SADD", "members", self)
 	if err != nil {
 		return fmt.Errorf("Failed to add myself to list of members - %v", err)
 	}
@@ -79,13 +80,16 @@ func (r *Redis) Init() error {
 // SetServices tells all members to replace the services in their database with a new set.
 // rolls back on failure
 func (r *Redis) SetServices(services []core.Service) error {
+	conn := pool.Get()
+	defer conn.Close()
+
 	oldServices, err := common.GetServices()
 	if err != nil {
 		return err
 	}
 
 	// publishService to others
-	err = r.publishService("set-services", services)
+	err = r.publishService(conn, "set-services", services)
 	if err != nil {
 		// if i failed to publishService, request should fail
 		return err
@@ -94,22 +98,16 @@ func (r *Redis) SetServices(services []core.Service) error {
 	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", services))))
 
 	// ensure all members applied action
-	err = r.waitForMembers(actionHash)
+	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
 		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", oldServices))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
-		defer r.pubconn.Do("DEL", uActionHash, actionHash)
+		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
-		uerr := r.publishService("set-services", oldServices)
+		uerr := r.publishService(conn, "set-services", oldServices)
 		if uerr != nil {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
-		return err
-	}
-
-	// clear cruft
-	_, err = r.pubconn.Do("DEL", actionHash)
-	if err != nil {
 		return err
 	}
 
@@ -119,8 +117,11 @@ func (r *Redis) SetServices(services []core.Service) error {
 // SetService tells all members to add the service to their database.
 // rolls back on failure
 func (r *Redis) SetService(service *core.Service) error {
+	conn := pool.Get()
+	defer conn.Close()
+
 	// publishService to others
-	err := r.publishService("set-service", service)
+	err := r.publishService(conn, "set-service", service)
 	if err != nil {
 		// nothing to rollback yet (nobody received)
 		return err
@@ -129,22 +130,16 @@ func (r *Redis) SetService(service *core.Service) error {
 	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", *service))))
 
 	// ensure all members applied action
-	err = r.waitForMembers(actionHash)
+	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
 		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-service %s", service.Id))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
-		defer r.pubconn.Do("DEL", uActionHash, actionHash)
+		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
-		uerr := r.publishService("delete-service", service.Id)
+		uerr := r.publishService(conn, "delete-service", service.Id)
 		if uerr != nil {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
-		return err
-	}
-
-	// clear cruft
-	_, err = r.pubconn.Do("DEL", actionHash)
-	if err != nil {
 		return err
 	}
 
@@ -154,6 +149,9 @@ func (r *Redis) SetService(service *core.Service) error {
 // DeleteService tells all members to remove the service from their database.
 // rolls back on failure
 func (r *Redis) DeleteService(id string) error {
+	conn := pool.Get()
+	defer conn.Close()
+
 	oldService, err := common.GetService(id)
 	// this should not return nil to ensure the service is gone from entire cluster
 	if err != nil && !strings.Contains(err.Error(), "No Service Found") {
@@ -161,7 +159,7 @@ func (r *Redis) DeleteService(id string) error {
 	}
 
 	// publishService to others
-	err = r.publishString("delete-service", id)
+	err = r.publishString(conn, "delete-service", id)
 	if err != nil {
 		// if i failed to publishService, request should fail
 		return err
@@ -170,22 +168,16 @@ func (r *Redis) DeleteService(id string) error {
 	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-service %s", id))))
 
 	// ensure all members applied action
-	err = r.waitForMembers(actionHash)
+	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
 		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("add-service %s", oldService))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
-		defer r.pubconn.Do("DEL", uActionHash, actionHash)
+		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
-		uerr := r.publishService("add-service", oldService)
+		uerr := r.publishService(conn, "add-service", oldService)
 		if uerr != nil {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
-		return err
-	}
-
-	// clear cruft
-	_, err = r.pubconn.Do("DEL", actionHash)
-	if err != nil {
 		return err
 	}
 
@@ -199,6 +191,9 @@ func (r *Redis) DeleteService(id string) error {
 // SetServers tells all members to replace a service's servers with a new set.
 // rolls back on failure
 func (r *Redis) SetServers(svcId string, servers []core.Server) error {
+	conn := pool.Get()
+	defer conn.Close()
+
 	service, err := common.GetService(svcId)
 	if err != nil {
 		return NoServiceError
@@ -206,7 +201,7 @@ func (r *Redis) SetServers(svcId string, servers []core.Server) error {
 	oldServers := service.Servers
 
 	// publishServer to others
-	err = r.publishServer("set-servers", svcId, servers)
+	err = r.publishServer(conn, "set-servers", svcId, servers)
 	if err != nil {
 		return err
 	}
@@ -214,13 +209,13 @@ func (r *Redis) SetServers(svcId string, servers []core.Server) error {
 	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", servers, svcId))))
 
 	// ensure all members applied action
-	err = r.waitForMembers(actionHash)
+	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
 		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", oldServers, svcId))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
-		defer r.pubconn.Do("DEL", uActionHash, actionHash)
+		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
-		uerr := r.publishServer("set-servers", svcId, oldServers)
+		uerr := r.publishServer(conn, "set-servers", svcId, oldServers)
 		if uerr != nil {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
@@ -233,8 +228,11 @@ func (r *Redis) SetServers(svcId string, servers []core.Server) error {
 // SetServer tells all members to add the server to their database.
 // rolls back on failure
 func (r *Redis) SetServer(svcId string, server *core.Server) error {
+	conn := pool.Get()
+	defer conn.Close()
+
 	// publishServer to others
-	err := r.publishServer("set-server", svcId, server)
+	err := r.publishServer(conn, "set-server", svcId, server)
 	if err != nil {
 		return err
 	}
@@ -242,13 +240,13 @@ func (r *Redis) SetServer(svcId string, server *core.Server) error {
 	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *server, svcId))))
 
 	// ensure all members applied action
-	err = r.waitForMembers(actionHash)
+	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
 		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-server %s %s", server.Id, svcId))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
-		defer r.pubconn.Do("DEL", uActionHash, actionHash)
+		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
-		uerr := r.publishServer("delete-server", server.Id, svcId)
+		uerr := r.publishServer(conn, "delete-server", server.Id, svcId)
 		if uerr != nil {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
@@ -261,6 +259,9 @@ func (r *Redis) SetServer(svcId string, server *core.Server) error {
 // DeleteServer tells all members to remove the server from their database.
 // rolls back on failure
 func (r *Redis) DeleteServer(svcId, srvId string) error {
+	conn := pool.Get()
+	defer conn.Close()
+
 	oldServer, err := common.GetServer(svcId, srvId)
 	// mustn't return nil here to ensure cluster removes the server
 	if err != nil && !strings.Contains(err.Error(), "No Server Found") {
@@ -269,7 +270,7 @@ func (r *Redis) DeleteServer(svcId, srvId string) error {
 
 	// publishServer to others
 	// todo: swap srv/svc ids to match backender interface for better readability
-	err = r.publishString("delete-server", srvId, svcId)
+	err = r.publishString(conn, "delete-server", srvId, svcId)
 	if err != nil {
 		return err
 	}
@@ -277,13 +278,13 @@ func (r *Redis) DeleteServer(svcId, srvId string) error {
 	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-server %s %s", srvId, svcId))))
 
 	// ensure all members applied action
-	err = r.waitForMembers(actionHash)
+	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
 		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *oldServer, svcId))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
-		defer r.pubconn.Do("DEL", uActionHash, actionHash)
+		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
-		uerr := r.publishServer("add-server", svcId, oldServer)
+		uerr := r.publishServer(conn, "add-server", svcId, oldServer)
 		if uerr != nil {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
@@ -304,8 +305,11 @@ func (r *Redis) GetService(id string) (*core.Service, error) {
 
 // GetServices gets a list of services from the database, or another cluster member.
 func (r *Redis) GetServices() ([]core.Service, error) {
+	conn := pool.Get()
+	defer conn.Close()
+
 	// get known members(other than me) to 'poll' for services
-	members, _ := redis.Strings(r.pubconn.Do("SMEMBERS", "members"))
+	members, _ := redis.Strings(conn.Do("SMEMBERS", "members"))
 	if len(members) == 0 {
 		// should only happen on new cluster
 		// assume i'm ok to be master so don't reset imported services
@@ -330,7 +334,9 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 	subconn := redis.PubSubConn{c}
 
 	// subscribe to channel that services will be published on
-	subconn.Subscribe("services")
+	if err := subconn.Subscribe("services"); err != nil {
+		return nil, fmt.Errorf("Failed to reach redis for services subscriber - %v", err)
+	}
 	defer subconn.Close()
 
 	// listen always
@@ -357,7 +363,7 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 
 				// ask a member for its services
 				config.Log.Trace("[cluster] - Attempting to request services from %v...", member)
-				_, err = r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("get-services %s", member))
+				_, err := conn.Do("PUBLISH", "portal", fmt.Sprintf("get-services %s", member))
 				if err != nil {
 					return nil, err
 				}
@@ -402,17 +408,18 @@ func (r *Redis) GetServer(svcId, srvId string) (*core.Server, error) {
 func (r Redis) cleanup() {
 	// cycle every second to check for dead members
 	tick := time.Tick(time.Second)
-	conn, err := redis.DialURL((config.ClusterConnection), redis.DialPassword(config.ClusterToken))
-	if err != nil {
-		config.Log.Error("[cluster] - Failed to reach redis for cleanup - %v", err)
-		// clear balancer rules ("stop balancing if we are 'dead'")
-		balance.SetServices(make([]core.Service, 0, 0))
-		os.Exit(1)
-	}
+	conn := pool.Get()
+	defer conn.Close()
 
 	for _ = range tick {
 		// get list of members that should be alive
-		members, _ := redis.Strings(conn.Do("SMEMBERS", "members"))
+		members, err := redis.Strings(conn.Do("SMEMBERS", "members"))
+		if err != nil {
+			config.Log.Error("[cluster] - Failed to reach redis for cleanup - %v", err)
+			// clear balancer rules ("stop balancing if we are 'dead'")
+			balance.SetServices(make([]core.Service, 0, 0))
+			os.Exit(1)
+		}
 		for _, member := range members {
 			// if the member timed out, remove the member from the member set
 			exist, _ := redis.Int(conn.Do("EXISTS", member))
@@ -428,18 +435,13 @@ func (r Redis) cleanup() {
 // heartbeat records that the member is still alive
 func (r Redis) heartbeat() {
 	tick := time.Tick(beat)
-	// set write timeout so each 'beat' ensures we can talk to redis (network partition) (rather than create new connection)
-	conn, err := redis.DialURL((config.ClusterConnection), redis.DialWriteTimeout(5*time.Second), redis.DialReadTimeout(5*time.Second), redis.DialPassword(config.ClusterToken))
-	if err != nil {
-		config.Log.Error("[cluster] - Failed to reach redis for heartbeat - %v", err)
-		// clear balancer rules ("stop balancing if we are 'dead'")
-		balance.SetServices(make([]core.Service, 0, 0))
-		os.Exit(1)
-	}
+	// write timeout set in connection pool so each 'beat' ensures we can talk to redis (network partition) (rather than create new connection)
+	conn := pool.Get()
+	defer conn.Close()
 
 	for _ = range tick {
 		config.Log.Trace("[cluster] - Heartbeat...")
-		_, err = conn.Do("SET", self, "alive", "EX", ttl)
+		_, err := conn.Do("SET", self, "alive", "EX", ttl)
 		if err != nil {
 			conn.Close()
 			config.Log.Error("[cluster] - Failed to heartbeat - %v", err)
@@ -459,10 +461,32 @@ func (r Redis) heartbeat() {
 	}
 }
 
+// creates a redis connection pool to use
+func (r Redis) newPool(server, password string) *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 5 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.DialURL(server, redis.DialConnectTimeout(30*time.Second),
+				redis.DialWriteTimeout(10*time.Second), redis.DialPassword(password))
+
+			if err != nil {
+				return nil, fmt.Errorf("Failed to reach redis - %v", err)
+			}
+			return c, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+}
+
 // subscribe listens on the portal channel and acts based on messages received
 func (r Redis) subscribe() {
 	config.Log.Info("[cluster] - Redis subscribing on %s...", config.ClusterConnection)
 
+	// listen for published messages
 	for {
 		switch v := r.subconn.Receive().(type) {
 		case redis.Message:
@@ -487,7 +511,9 @@ func (r Redis) subscribe() {
 						break
 					}
 					config.Log.Debug("[cluster] - get-services requested, publishing my services")
-					r.pubconn.Do("PUBLISH", "services", fmt.Sprintf("%s", services))
+					conn := pool.Get()
+					conn.Do("PUBLISH", "services", fmt.Sprintf("%s", services))
+					conn.Close()
 				}
 			case "set-services":
 				if len(pdata) != 2 {
@@ -506,7 +532,9 @@ func (r Redis) subscribe() {
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", *services))))
 				config.Log.Trace("[cluster] - set-services hash - %v", actionHash)
-				r.pubconn.Do("SADD", actionHash, self)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
 				config.Log.Debug("[cluster] - set-services successful")
 			case "set-service":
 				if len(pdata) != 2 {
@@ -526,7 +554,9 @@ func (r Redis) subscribe() {
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", *svc))))
 				config.Log.Trace("[cluster] - set-service hash - %v", actionHash)
-				r.pubconn.Do("SADD", actionHash, self)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
 				config.Log.Debug("[cluster] - set-service successful")
 			case "delete-service":
 				if len(pdata) != 2 {
@@ -541,7 +571,9 @@ func (r Redis) subscribe() {
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-service %s", svcId))))
 				config.Log.Trace("[cluster] - delete-service hash - %v", actionHash)
-				r.pubconn.Do("SADD", actionHash, self)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
 				config.Log.Debug("[cluster] - delete-service successful")
 				// SERVERS ///////////////////////////////////////////////////////////////////////////////////////////////
 			case "set-servers":
@@ -562,7 +594,9 @@ func (r Redis) subscribe() {
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", *servers, svcId))))
 				config.Log.Trace("[cluster] - set-servers hash - %v", actionHash)
-				r.pubconn.Do("SADD", actionHash, self)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
 				config.Log.Debug("[cluster] - set-servers successful")
 			case "set-server":
 				if len(pdata) != 3 {
@@ -583,7 +617,9 @@ func (r Redis) subscribe() {
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *server, svcId))))
 				config.Log.Trace("[cluster] - set-server hash - %v", actionHash)
-				r.pubconn.Do("SADD", actionHash, self)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
 				config.Log.Debug("[cluster] - set-server successful")
 			case "delete-server":
 				if len(pdata) != 3 {
@@ -599,7 +635,9 @@ func (r Redis) subscribe() {
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-server %s %s", srvId, svcId))))
 				config.Log.Trace("[cluster] - delete-server hash - %v", actionHash)
-				r.pubconn.Do("SADD", actionHash, self)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
 				config.Log.Debug("[cluster] - delete-server successful")
 			default:
 				config.Log.Error("[cluster] - Recieved unknown data on %v: %v", v.Channel, string(v.Data))
@@ -618,39 +656,43 @@ func (r Redis) subscribe() {
 }
 
 // publishService publishes service[s] to the "portal" channel
-func (r Redis) publishService(action string, v interface{}) error {
+func (r Redis) publishService(conn redis.Conn, action string, v interface{}) error {
 	s, err := json.Marshal(v)
 	if err != nil {
 		return BadJson
 	}
 
 	// todo: should create new connection(or use pool) - single connection limits concurrency
-	_, err = r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s", action, s))
+	_, err = conn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s", action, s))
 	return err
 }
 
 // publishServer publishes server[s] to the "portal" channel
-func (r Redis) publishServer(action, svcId string, v interface{}) error {
+func (r Redis) publishServer(conn redis.Conn, action, svcId string, v interface{}) error {
 	s, err := json.Marshal(v)
 	if err != nil {
 		return BadJson
 	}
 
 	// todo: should create new connection(or use pool) - single connection limits concurrency
-	_, err = r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s %s", action, s, svcId))
+	_, err = conn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s %s", action, s, svcId))
 	return err
 }
 
 // publishString publishes string[s] to the "portal" channel
-func (r Redis) publishString(action string, s ...string) error {
+func (r Redis) publishString(conn redis.Conn, action string, s ...string) error {
 	// todo: should create new connection(or use pool) - single connection limits concurrency
-	_, err := r.pubconn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s", action, strings.Join(s, " ")))
+	_, err := conn.Do("PUBLISH", "portal", fmt.Sprintf("%s %s", action, strings.Join(s, " ")))
 	return err
 }
 
 // waitForMembers waits for all members to apply the action
-func (r Redis) waitForMembers(actionHash string) error {
+func (r Redis) waitForMembers(conn redis.Conn, actionHash string) error {
 	config.Log.Trace("[cluster] - Waiting for updates to %s", actionHash)
+
+	// clear cruft
+	defer conn.Do("DEL", actionHash)
+
 	// todo: make timeout configurable
 	// timeout is the amount of time to wait for members to apply the action
 	timeout := time.After(30 * time.Second)
@@ -661,7 +703,7 @@ func (r Redis) waitForMembers(actionHash string) error {
 		select {
 		case <-tick:
 			// compare who we know about, to who performed the update
-			list, err = redis.Strings(r.pubconn.Do("SDIFF", "members", actionHash))
+			list, err = redis.Strings(conn.Do("SDIFF", "members", actionHash))
 			if err != nil {
 				return err
 			}
