@@ -187,6 +187,11 @@ func TestGetServers(t *testing.T) {
 		t.FailNow()
 	}
 
+	if service.Host == "" || len(service.Servers) == 0 {
+		t.Errorf("GOT empty service")
+		t.FailNow()
+	}
+
 	if service.Servers[0].Id != testServer2.Id {
 		t.Errorf("Read server differs from written server")
 	}
@@ -248,7 +253,7 @@ func initialize() {
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 
 	if !skip {
-		config.ClusterConnection = "redis://localhost:6379"
+		config.ClusterConnection = "redis://127.0.0.1:6379"
 		config.DatabaseConnection = "scribble:///tmp/clusterTest"
 
 		err = database.Init()
