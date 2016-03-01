@@ -43,7 +43,34 @@ Flags:
 Use " [command] --help" for more information about a command.
 ```
 
-## Usage Example:
+## Server Usage Example:
+```
+$ ./portal --server
+```
+or
+```
+$ ./portal -s -c config.json
+```
+
+>config.json
+>```json
+{
+  "ApiToken": "",
+  "ApiHost": "127.0.0.1",
+  "ApiPort": 8443,
+  "ApiKey": "",
+  "ApiCert": "",
+  "ApiKeyPassword": "",
+  "DatabaseConnection": "scribble:///var/db/portal",
+  "ClusterConnection": "none://",
+  "ClusterToken": "",
+  "Insecure": true,
+  "LogLevel": "INFO",
+  "LogFile": ""
+}
+```
+
+## Client Usage Example:
 
 add service
 ```

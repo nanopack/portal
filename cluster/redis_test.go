@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/jcelliott/lumber"
+	"github.com/garyburd/redigo/redis"
 
 	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/cluster"
@@ -33,9 +34,18 @@ func TestMain(m *testing.M) {
 	// initialize backend if redis-server found
 	initialize()
 
+	rtn := m.Run()
+
 	// clean test dir
 	os.RemoveAll("/tmp/clusterTest")
-	rtn := m.Run()
+
+	conn, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(30*time.Second), redis.DialPassword(config.ClusterToken))
+	if err != nil {
+		return fmt.Errorf("Failed to reach redis for subconn - %v", err)
+	}
+	self := fmt.Sprintf("%v:%v", hostname, config.ApiPort)
+	conn.Do("SREM", "members", self)
+	conn.Close()
 
 	os.Exit(rtn)
 }
