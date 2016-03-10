@@ -2,7 +2,7 @@
 set -e
 
 # try and use the correct MD5 lib (depending on user OS darwin/linux)
-MD5=$(which md5 || echo "$(which md5sum) | cut -f 1" )`
+MD5=$(which md5 || which md5sum)
 
 # remove any previous builds that may have failed
 [ -e "./build" ] && \
@@ -18,7 +18,7 @@ echo "Generating md5s..."
 for os in $(ls ./build); do
   for arch in $(ls ./build/${os}); do
     for file in $(ls ./build/${os}/${arch}); do
-      cat "./build/${os}/${arch}/${file}" | ${MD5} >> "./build/${os}/${arch}/${file}.md5"
+      cat "./build/${os}/${arch}/${file}" | ${MD5} | awk '{print $1}' >> "./build/${os}/${arch}/${file}.md5"
     done
   done
 done
