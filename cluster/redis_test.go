@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 	"testing"
 
 	"github.com/jcelliott/lumber"
@@ -41,8 +42,9 @@ func TestMain(m *testing.M) {
 
 	conn, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(30*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
-		return fmt.Errorf("Failed to reach redis for subconn - %v", err)
+		return
 	}
+	hostname, _ := os.Hostname()
 	self := fmt.Sprintf("%v:%v", hostname, config.ApiPort)
 	conn.Do("SREM", "members", self)
 	conn.Close()
