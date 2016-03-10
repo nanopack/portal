@@ -24,4 +24,8 @@ _testmain.go
 *.test
 *.prof
 
+# custom
+.DS_Store
+TODO
+build
 portal
