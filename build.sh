@@ -2,7 +2,7 @@
 set -e
 
 # try and use the correct MD5 lib (depending on user OS darwin/linux)
-MD5=$(which md5 || which md5sum)
+MD5=$(which md5 || echo "$(which md5sum) | cut -f 1" )
 
 # build portal
 echo "Building PORTAL and uploading it to 's3://tools.nanopack.io/portal'"
