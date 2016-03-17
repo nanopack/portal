@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"github.com/nanobox-io/nanobox-router"
+
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/core/common"
 )
@@ -13,6 +15,27 @@ func (n None) UnInit() error {
 	return nil
 }
 func (n None) Init() error {
+	// load services
+	services, err := common.GetServices()
+	if err != nil {
+		return err
+	}
+	// apply services
+	err = common.SetServices(services)
+	if err != nil {
+		return err
+	}
+
+	// load routes
+	routes, err := common.GetRoutes()
+	if err != nil {
+		return err
+	}
+	// apply routes
+	err = common.SetRoutes(routes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func (n None) GetServices() ([]core.Service, error) {
@@ -41,4 +64,16 @@ func (n None) DeleteServer(svcId, srvId string) error {
 }
 func (n None) GetServer(svcId, srvId string) (*core.Server, error) {
 	return common.GetServer(svcId, srvId)
+}
+func (n None) SetRoutes(routes []router.Route) error {
+	return common.SetRoutes(routes)
+}
+func (n None) SetRoute(route router.Route) error {
+	return common.SetRoute(route)
+}
+func (n None) DeleteRoute(route router.Route) error {
+	return common.DeleteRoute(route)
+}
+func (n None) GetRoutes() ([]router.Route, error) {
+	return common.GetRoutes()
 }

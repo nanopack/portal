@@ -5,15 +5,23 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/nanobox-io/nanobox-router"
+
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
+	"github.com/nanopack/portal/routemgr"
 )
 
 var (
-	Backend        core.Backender
+	Backend        Storable
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
 )
+
+type Storable interface {
+	core.Backender
+	routemgr.Routable
+}
 
 func Init() error {
 	var err error
@@ -69,4 +77,20 @@ func DeleteServer(svcId, srvId string) error {
 
 func GetServer(svcId, srvId string) (*core.Server, error) {
 	return Backend.GetServer(svcId, srvId)
+}
+
+func SetRoutes(routes []router.Route) error {
+	return Backend.SetRoutes(routes)
+}
+
+func SetRoute(route router.Route) error {
+	return Backend.SetRoute(route)
+}
+
+func DeleteRoute(route router.Route) error {
+	return Backend.DeleteRoute(route)
+}
+
+func GetRoutes() ([]router.Route, error) {
+	return Backend.GetRoutes()
 }

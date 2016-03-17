@@ -17,8 +17,8 @@ import (
 	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/commands"
 	"github.com/nanopack/portal/config"
-	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
+	"github.com/nanopack/portal/routemgr"
 )
 
 type (
@@ -338,6 +338,8 @@ func initialize() {
 	config.ApiHost = "127.0.0.1"
 	config.ApiPort = "8445"
 	config.ApiToken = ""
+	config.RoutePortHttp = 9081
+	config.RoutePortTls = 9444
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 	apiAddr = fmt.Sprintf("%v:%v", config.ApiHost, config.ApiPort)
 
@@ -347,12 +349,6 @@ func initialize() {
 		fmt.Printf("Database init failed - %v\n", err)
 		os.Exit(1)
 	}
-	// initialize clusterer
-	err = cluster.Init()
-	if err != nil {
-		fmt.Printf("Clusterer init failed - %v\n", err)
-		os.Exit(1)
-	}
 	// initialize balancer
 	balance.Balancer = &database.ScribbleDatabase{}
 	err = balance.Balancer.Init()
@@ -360,12 +356,16 @@ func initialize() {
 		fmt.Printf("Balancer init failed - %v\n", err)
 		os.Exit(1)
 	}
-	// fake saved rules
-	services := make([]core.Service, 0, 0)
-	// apply saved rules
-	err = balance.Balancer.SetServices(services)
+	// initialize routemgr
+	err = routemgr.Init()
 	if err != nil {
-		fmt.Printf("Balancer sync failed - %v\n", err)
+		fmt.Printf("Routemgr init failed - %v\n", err)
+		os.Exit(1)
+	}
+	// initialize clusterer
+	err = cluster.Init()
+	if err != nil {
+		fmt.Printf("Clusterer init failed - %v\n", err)
 		os.Exit(1)
 	}
 }

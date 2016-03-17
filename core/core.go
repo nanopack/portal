@@ -21,6 +21,7 @@ type (
 	}
 
 	Server struct {
+		// todo: change "Id" to "name" (for clarity)
 		Id             string `json:"id,omitempty"`
 		Host           string `json:"host"`
 		Port           int    `json:"port"`

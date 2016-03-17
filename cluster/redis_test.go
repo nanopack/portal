@@ -6,17 +6,18 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 	"testing"
+	"time"
 
-	"github.com/jcelliott/lumber"
 	"github.com/garyburd/redigo/redis"
+	"github.com/jcelliott/lumber"
 
 	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
+	"github.com/nanopack/portal/routemgr"
 )
 
 var (
@@ -269,6 +270,8 @@ func initialize() {
 		skip = true
 	}
 
+	config.RoutePortHttp = 9082
+	config.RoutePortTls = 9445
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 
 	if !skip {
@@ -285,6 +288,13 @@ func initialize() {
 		err = balance.Balancer.Init()
 		if err != nil {
 			fmt.Printf("balance init failed - %v\n", err)
+			os.Exit(1)
+		}
+
+		// initialize routemgr
+		err = routemgr.Init()
+		if err != nil {
+			fmt.Printf("Routemgr init failed - %v\n", err)
 			os.Exit(1)
 		}
 

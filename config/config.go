@@ -23,6 +23,8 @@ var (
 	LogLevel           string
 	LogFile            string
 	Log                lumber.Logger
+	RoutePortHttp      int = 80
+	RoutePortTls       int = 443
 )
 
 func LoadConfigFile() {
@@ -36,6 +38,7 @@ func LoadConfigFile() {
 		viper.SetDefault("ApiKeyPassword", ApiKeyPassword)
 		viper.SetDefault("DatabaseConnection", DatabaseConnection)
 		viper.SetDefault("ClusterConnection", ClusterConnection)
+		viper.SetDefault("ClusterToken", ClusterToken)
 		viper.SetDefault("Insecure", Insecure)
 		viper.SetDefault("LogLevel", LogLevel)
 		viper.SetDefault("LogFile", LogFile)
@@ -58,6 +61,7 @@ func LoadConfigFile() {
 		ApiKeyPassword = viper.GetString("ApiKeyPassword")
 		DatabaseConnection = viper.GetString("DatabaseConnection")
 		ClusterConnection = viper.GetString("ClusterConnection")
+		ClusterToken = viper.GetString("ClusterToken")
 		Insecure = viper.GetBool("Insecure")
 		LogLevel = viper.GetString("LogLevel")
 		LogFile = viper.GetString("LogFile")

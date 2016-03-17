@@ -8,16 +8,25 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/nanobox-io/nanobox-router"
+
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
+	"github.com/nanopack/portal/routemgr"
 )
 
 var (
-	Clusterer      core.Backender
+	// Clusterer      core.Backender
+	Clusterer      Clusterable
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
 	BadJson        = errors.New("Bad JSON syntax received in body")
 )
+
+type Clusterable interface {
+	core.Backender
+	routemgr.Routable
+}
 
 func Init() error {
 	url, err := url.Parse(config.ClusterConnection)
@@ -31,7 +40,8 @@ func Init() error {
 	case "none":
 		Clusterer = &None{}
 	default:
-		Clusterer = &Redis{}
+		Clusterer = &None{}
+		// Clusterer = &Redis{}
 	}
 
 	return Clusterer.Init()
@@ -71,6 +81,22 @@ func DeleteServer(svcId, srvId string) error {
 
 func GetServer(svcId, srvId string) (*core.Server, error) {
 	return Clusterer.GetServer(svcId, srvId)
+}
+
+func SetRoutes(routes []router.Route) error {
+	return Clusterer.SetRoutes(routes)
+}
+
+func SetRoute(route router.Route) error {
+	return Clusterer.SetRoute(route)
+}
+
+func DeleteRoute(route router.Route) error {
+	return Clusterer.DeleteRoute(route)
+}
+
+func GetRoutes() ([]router.Route, error) {
+	return Clusterer.GetRoutes()
 }
 
 func parseSvc(serviceId string) (*core.Service, error) {
@@ -166,4 +192,24 @@ func marshalSrvs(servers []byte) (*[]core.Server, error) {
 	}
 
 	return &srvs, nil
+}
+
+func marshalRts(routes []byte) ([]router.Route, error) {
+	var rts []router.Route
+
+	if err := json.Unmarshal(routes, &rts); err != nil {
+		return nil, BadJson
+	}
+
+	return rts, nil
+}
+
+func marshalRte(routes []byte) (router.Route, error) {
+	var rte router.Route
+
+	if err := json.Unmarshal(routes, &rte); err != nil {
+		return rte, BadJson
+	}
+
+	return rte, nil
 }
