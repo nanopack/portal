@@ -7,6 +7,7 @@ import (
 	"github.com/nanobox-io/nanobox-router"
 
 	"github.com/nanopack/portal/balance"
+	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
 	"github.com/nanopack/portal/routemgr"
@@ -254,4 +255,82 @@ func DeleteRoute(route router.Route) error {
 
 func GetRoutes() ([]router.Route, error) {
 	return database.GetRoutes()
+}
+
+func SetCerts(certs []router.KeyPair) error {
+	// in case of failure
+	oldCerts, err := database.GetCerts()
+	if err != nil {
+		return err
+	}
+
+	// apply certs to certmgr
+	err = certmgr.SetCerts(certs)
+	if err != nil {
+		return err
+	}
+	// save to backend
+	err = database.SetCerts(certs)
+	if err != nil {
+		// undo certmgr action
+		if uerr := certmgr.SetCerts(oldCerts); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func SetCert(cert router.KeyPair) error {
+	// in case of failure
+	oldCerts, err := database.GetCerts()
+	if err != nil {
+		return err
+	}
+
+	// apply to certmgr
+	err = certmgr.SetCert(cert)
+	if err != nil {
+		return err
+	}
+
+	// save to backend
+	err = database.SetCert(cert)
+	if err != nil {
+		// undo certmgr action
+		if uerr := certmgr.SetCerts(oldCerts); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func DeleteCert(cert router.KeyPair) error {
+	// in case of failure
+	oldCerts, err := database.GetCerts()
+	if err != nil {
+		return err
+	}
+
+	// apply to certmgr
+	err = certmgr.DeleteCert(cert)
+	if err != nil {
+		return err
+	}
+
+	// save to backend
+	err = database.DeleteCert(cert)
+	if err != nil {
+		// undo certmgr action
+		if uerr := certmgr.SetCerts(oldCerts); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func GetCerts() ([]router.KeyPair, error) {
+	return database.GetCerts()
 }

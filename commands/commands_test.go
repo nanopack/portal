@@ -14,6 +14,7 @@ import (
 
 	"github.com/nanopack/portal/api"
 	"github.com/nanopack/portal/balance"
+	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/commands"
 	"github.com/nanopack/portal/config"
@@ -338,8 +339,8 @@ func initialize() {
 	config.ApiHost = "127.0.0.1"
 	config.ApiPort = "8445"
 	config.ApiToken = ""
-	config.RoutePortHttp = 9081
-	config.RoutePortTls = 9444
+	config.RouteHttp = "0.0.0.0:9081"
+	config.RouteTls = "0.0.0.0:9444"
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 	apiAddr = fmt.Sprintf("%v:%v", config.ApiHost, config.ApiPort)
 
@@ -360,6 +361,12 @@ func initialize() {
 	err = routemgr.Init()
 	if err != nil {
 		fmt.Printf("Routemgr init failed - %v\n", err)
+		os.Exit(1)
+	}
+	// initialize certmgr
+	err = certmgr.Init()
+	if err != nil {
+		fmt.Printf("Certmgr init failed - %v\n", err)
 		os.Exit(1)
 	}
 	// initialize clusterer

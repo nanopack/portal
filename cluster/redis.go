@@ -422,6 +422,117 @@ func (r Redis) DeleteRoute(route router.Route) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// CERTS
+////////////////////////////////////////////////////////////////////////////////
+
+// SetCerts tells all members to replace the certs in their database with a new set.
+// rolls back on failure
+func (r Redis) SetCerts(certs []router.KeyPair) error {
+	conn := pool.Get()
+	defer conn.Close()
+
+	oldCerts, err := common.GetCerts()
+	if err != nil {
+		return err
+	}
+
+	// publishJson to others
+	err = r.publishJson(conn, "set-certs", certs)
+	if err != nil {
+		// if i failed to publishJson, request should fail
+		return err
+	}
+
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-certs %s", certs))))
+
+	// ensure all members applied action
+	err = r.waitForMembers(conn, actionHash)
+	if err != nil {
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-certs %s", oldCerts))))
+		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
+		defer conn.Do("DEL", uActionHash, actionHash)
+		// attempt rollback - no need to waitForMembers here
+		uerr := r.publishJson(conn, "set-certs", oldCerts)
+		if uerr != nil {
+			err = fmt.Errorf("%v - %v", err, uerr)
+		}
+		return err
+	}
+
+	return nil
+}
+
+// SetCert tells all members to add the cert to their database.
+// rolls back on failure
+func (r Redis) SetCert(cert router.KeyPair) error {
+	conn := pool.Get()
+	defer conn.Close()
+
+	// publishJson to others
+	err := r.publishJson(conn, "set-cert", cert)
+	if err != nil {
+		// nothing to rollback yet (nobody received)
+		return err
+	}
+
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-cert %s", cert))))
+
+	// ensure all members applied action
+	err = r.waitForMembers(conn, actionHash)
+	if err != nil {
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-cert %s", cert))))
+		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
+		defer conn.Do("DEL", uActionHash, actionHash)
+		// attempt rollback - no need to waitForMembers here
+		uerr := r.publishJson(conn, "delete-cert", cert)
+		if uerr != nil {
+			err = fmt.Errorf("%v - %v", err, uerr)
+		}
+		return err
+	}
+
+	return nil
+}
+
+// DeleteCert tells all members to remove the cert from their database.
+// rolls back on failure
+func (r Redis) DeleteCert(cert router.KeyPair) error {
+	conn := pool.Get()
+	defer conn.Close()
+
+	oldCerts, err := common.GetCerts()
+	// this should not return nil to ensure the cert is gone from entire cluster
+	if err != nil && !strings.Contains(err.Error(), "No Cert Found") {
+		return err
+	}
+
+	// publishJson to others
+	err = r.publishJson(conn, "delete-cert", cert)
+	if err != nil {
+		// if i failed to publishJson, request should fail
+		return err
+	}
+
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-cert %s", cert))))
+
+	// ensure all members applied action
+	err = r.waitForMembers(conn, actionHash)
+	if err != nil {
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-certs", oldCerts))))
+		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
+		defer conn.Do("DEL", uActionHash, actionHash)
+		// attempt rollback - no need to waitForMembers here
+		uerr := r.publishJson(conn, "set-certs", oldCerts)
+		if uerr != nil {
+			err = fmt.Errorf("%v - %v", err, uerr)
+		}
+		return err
+	}
+
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // GETS
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -602,7 +713,8 @@ func (r *Redis) GetRoutes() ([]router.Route, error) {
 						switch v := msg.(type) {
 						case redis.Message:
 							config.Log.Trace("[cluster] - Received message on 'routes' channel")
-							routes, err := marshalRts(v.Data)
+							var routes []router.Route
+							err = parseBody(v.Data, &routes)
 							if err != nil {
 								return nil, fmt.Errorf("Failed to marshal routes - %v", err.Error())
 							}
@@ -614,6 +726,99 @@ func (r *Redis) GetRoutes() ([]router.Route, error) {
 					}
 				}
 			nextRouteMember:
+			}
+		}
+	}
+}
+
+// GetCerts gets a list of certs from the database, or another cluster member.
+func (r *Redis) GetCerts() ([]router.KeyPair, error) {
+	conn := pool.Get()
+	defer conn.Close()
+
+	// get known members(other than me) to 'poll' for certs
+	members, _ := redis.Strings(conn.Do("SMEMBERS", "members"))
+	if len(members) == 0 {
+		// should only happen on new cluster
+		// assume i'm ok to be master so don't reset imported certs
+		config.Log.Trace("[cluster] - Assuming OK to be master, using certs from my database...")
+		return common.GetCerts()
+	}
+	for i := range members {
+		if members[i] == self {
+			// if i'm in the list of members, new requests should have failed while `waitForMembers`ing
+			config.Log.Trace("[cluster] - Assuming I was in sync, using certs from my database...")
+			return common.GetCerts()
+		}
+	}
+
+	c, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(15*time.Second), redis.DialPassword(config.ClusterToken))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to reach redis for certs subscriber - %v", err)
+	}
+	defer c.Close()
+
+	message := make(chan interface{})
+	subconn := redis.PubSubConn{c}
+
+	// subscribe to channel that certs will be published on
+	if err := subconn.Subscribe("certs"); err != nil {
+		return nil, fmt.Errorf("Failed to reach redis for certs subscriber - %v", err)
+	}
+	defer subconn.Close()
+
+	// listen always
+	go func() {
+		for {
+			message <- subconn.Receive()
+		}
+	}()
+
+	// todo: maybe use ttl?
+	// timeout is how long to wait for the listed members to come back online
+	timeout := time.After(time.Duration(20) * time.Second)
+
+	// loop attempts for timeout, allows last dead members to start back up
+	for {
+		select {
+		case <-timeout:
+			return nil, fmt.Errorf("Timed out waiting for certs from %v", strings.Join(members, ", "))
+		default:
+			// request certs from each member until successful
+			for _, member := range members {
+				// memberTimeout is how long to wait for a member to respond with list of certs
+				memberTimeout := time.After(3 * time.Second)
+
+				// ask a member for its certs
+				config.Log.Trace("[cluster] - Attempting to request certs from %v...", member)
+				_, err := conn.Do("PUBLISH", "portal", fmt.Sprintf("get-certs %s", member))
+				if err != nil {
+					return nil, err
+				}
+
+				// wait for member to respond
+				for {
+					select {
+					case <-memberTimeout:
+						config.Log.Debug("[cluster] - Timed out waiting for certs from %v", member)
+						goto nextCertMember
+					case msg := <-message:
+						switch v := msg.(type) {
+						case redis.Message:
+							config.Log.Trace("[cluster] - Received message on 'certs' channel")
+							var certs []router.KeyPair
+							err = parseBody(v.Data, &certs)
+							if err != nil {
+								return nil, fmt.Errorf("Failed to marshal certs - %v", err.Error())
+							}
+							config.Log.Trace("[cluster] - Certs from cluster: %#v\n", certs)
+							return certs, nil
+						case error:
+							return nil, fmt.Errorf("Subscriber failed to receive certs - %v", v.Error())
+						}
+					}
+				}
+			nextCertMember:
 			}
 		}
 	}
@@ -858,7 +1063,7 @@ func (r Redis) subscribe() {
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
 				config.Log.Debug("[cluster] - delete-server successful")
-				// ROUTES ///////////////////////////////////////////////////////////////////////////////////////////////
+			// ROUTES ///////////////////////////////////////////////////////////////////////////////////////////////
 			// todo: needed pre-test
 			case "get-routes":
 				if len(pdata) != 2 {
@@ -888,7 +1093,8 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - routes not passed in message")
 					break
 				}
-				routes, err := marshalRts([]byte(pdata[1]))
+				var routes []router.Route
+				err := parseBody([]byte(pdata[1]), &routes)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal routes - %v", err.Error())
 					break
@@ -910,7 +1116,8 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - route not passed in message")
 					break
 				}
-				rte, err := marshalRte([]byte(pdata[1]))
+				var rte router.Route
+				err := parseBody([]byte(pdata[1]), &rte)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal route - %v", err.Error())
 					break
@@ -931,7 +1138,8 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - route id not passed in message")
 					break
 				}
-				rte, err := marshalRte([]byte(pdata[1]))
+				var rte router.Route
+				err := parseBody([]byte(pdata[1]), &rte)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal route - %v", err.Error())
 					break
@@ -947,6 +1155,99 @@ func (r Redis) subscribe() {
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
 				config.Log.Debug("[cluster] - delete-route successful")
+				// todo: end needed pre-test
+			// CERTS ///////////////////////////////////////////////////////////////////////////////////////////////
+			// todo: needed pre-test
+			case "get-certs":
+				if len(pdata) != 2 {
+					config.Log.Error("[cluster] - member not passed in message")
+					break
+				}
+				member := pdata[1]
+
+				if member == self {
+					rts, err := common.GetCerts()
+					if err != nil {
+						config.Log.Error("[cluster] - Failed to get certs - %v", err.Error())
+						break
+					}
+					certs, err := json.Marshal(rts)
+					if err != nil {
+						config.Log.Error("[cluster] - Failed to marshal certs - %v", err.Error())
+						break
+					}
+					config.Log.Debug("[cluster] - get-certs requested, publishing my certs")
+					conn := pool.Get()
+					conn.Do("PUBLISH", "certs", fmt.Sprintf("%s", certs))
+					conn.Close()
+				}
+			case "set-certs":
+				if len(pdata) != 2 {
+					config.Log.Error("[cluster] - certs not passed in message")
+					break
+				}
+				var certs []router.KeyPair
+				err := parseBody([]byte(pdata[1]), &certs)
+				if err != nil {
+					config.Log.Error("[cluster] - Failed to marshal certs - %v", err.Error())
+					break
+				}
+				err = common.SetCerts(certs)
+				if err != nil {
+					config.Log.Error("[cluster] - Failed to set certs - %v", err.Error())
+					break
+				}
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-certs %s", certs))))
+				config.Log.Trace("[cluster] - set-certs hash - %v", actionHash)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
+				config.Log.Debug("[cluster] - set-certs successful")
+			case "set-cert":
+				if len(pdata) != 2 {
+					// shouldn't happen unless redis is not secure and someone manually `publishJson`es
+					config.Log.Error("[cluster] - cert not passed in message")
+					break
+				}
+				var crt router.KeyPair
+				err := parseBody([]byte(pdata[1]), &crt)
+				if err != nil {
+					config.Log.Error("[cluster] - Failed to marshal cert - %v", err.Error())
+					break
+				}
+				err = common.SetCert(crt)
+				if err != nil {
+					config.Log.Error("[cluster] - Failed to set cert - %v", err.Error())
+					break
+				}
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-cert %s", crt))))
+				config.Log.Trace("[cluster] - set-cert hash - %v", actionHash)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
+				config.Log.Debug("[cluster] - set-cert successful")
+			case "delete-cert":
+				if len(pdata) != 2 {
+					config.Log.Error("[cluster] - cert id not passed in message")
+					break
+				}
+				var crt router.KeyPair
+				err := parseBody([]byte(pdata[1]), &crt)
+				if err != nil {
+					config.Log.Error("[cluster] - Failed to marshal cert - %v", err.Error())
+					break
+				}
+				err = common.DeleteCert(crt)
+				if err != nil {
+					config.Log.Error("[cluster] - Failed to delete cert - %v", err.Error())
+					break
+				}
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-cert %s", crt))))
+				config.Log.Trace("[cluster] - delete-cert hash - %v", actionHash)
+				conn := pool.Get()
+				conn.Do("SADD", actionHash, self)
+				conn.Close()
+				config.Log.Debug("[cluster] - delete-cert successful")
 				// todo: end needed pre-test
 			default:
 				config.Log.Error("[cluster] - Recieved unknown data on %v: %v", v.Channel, string(v.Data))

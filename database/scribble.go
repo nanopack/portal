@@ -8,6 +8,7 @@ import (
 
 	"github.com/nanobox-io/golang-scribble"
 	"github.com/nanobox-io/nanobox-router"
+	"github.com/twinj/uuid"
 
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
@@ -221,4 +222,71 @@ func (s ScribbleDatabase) DeleteRoute(route router.Route) error {
 		}
 	}
 	return s.SetRoutes(routes)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CERTS
+////////////////////////////////////////////////////////////////////////////////
+
+func (s ScribbleDatabase) GetCerts() ([]router.KeyPair, error) {
+	certs := make([]router.KeyPair, 0, 0)
+	values, err := s.scribbleDb.ReadAll("certs")
+	if err != nil {
+		if strings.Contains(err.Error(), "no such file or directory") {
+			// if error is about a missing db, return empty array
+			return certs, nil
+		}
+		return nil, err
+	}
+	for i := range values {
+		var cert router.KeyPair
+		if err = json.Unmarshal([]byte(values[i]), &cert); err != nil {
+			return nil, fmt.Errorf("Bad JSON syntax stored in db")
+		}
+		certs = append(certs, cert)
+	}
+	return certs, nil
+}
+
+func (s ScribbleDatabase) SetCerts(certs []router.KeyPair) error {
+	s.scribbleDb.Delete("certs", "")
+	for i := range certs {
+		// unique key to store cert by
+		ukey := uuid.NewV4().String()
+		err := s.scribbleDb.Write("certs", ukey, certs[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s ScribbleDatabase) SetCert(cert router.KeyPair) error {
+	certs, err := s.GetCerts()
+	if err != nil {
+		return err
+	}
+	// for idempotency
+	for i := 0; i < len(certs); i++ {
+		if certs[i].Cert == cert.Cert && certs[i].Key == cert.Key {
+			return nil
+		}
+	}
+
+	certs = append(certs, cert)
+	return s.SetCerts(certs)
+}
+
+func (s ScribbleDatabase) DeleteCert(cert router.KeyPair) error {
+	certs, err := s.GetCerts()
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(certs); i++ {
+		if certs[i].Cert == cert.Cert && certs[i].Key == cert.Key {
+			certs = append(certs[:i], certs[i+1:]...)
+			break
+		}
+	}
+	return s.SetCerts(certs)
 }

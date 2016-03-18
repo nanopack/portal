@@ -13,6 +13,7 @@ import (
 	"github.com/jcelliott/lumber"
 
 	"github.com/nanopack/portal/balance"
+	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
@@ -270,8 +271,8 @@ func initialize() {
 		skip = true
 	}
 
-	config.RoutePortHttp = 9082
-	config.RoutePortTls = 9445
+	config.RouteHttp = "0.0.0.0:9082"
+	config.RouteTls = "0.0.0.0:9445"
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 
 	if !skip {
@@ -295,6 +296,13 @@ func initialize() {
 		err = routemgr.Init()
 		if err != nil {
 			fmt.Printf("Routemgr init failed - %v\n", err)
+			os.Exit(1)
+		}
+
+		// initialize certmgr
+		err = certmgr.Init()
+		if err != nil {
+			fmt.Printf("Certmgr init failed - %v\n", err)
 			os.Exit(1)
 		}
 

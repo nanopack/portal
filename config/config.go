@@ -23,8 +23,8 @@ var (
 	LogLevel           string
 	LogFile            string
 	Log                lumber.Logger
-	RoutePortHttp      int = 80
-	RoutePortTls       int = 443
+	RouteHttp          = "0.0.0.0:80"
+	RouteTls           = "0.0.0.0:443"
 )
 
 func LoadConfigFile() {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/nanobox-io/nanobox-router"
 
+	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/routemgr"
@@ -26,6 +27,7 @@ var (
 type Clusterable interface {
 	core.Backender
 	routemgr.Routable
+	certmgr.Keyable
 }
 
 func Init() error {
@@ -97,6 +99,22 @@ func DeleteRoute(route router.Route) error {
 
 func GetRoutes() ([]router.Route, error) {
 	return Clusterer.GetRoutes()
+}
+
+func SetCerts(certs []router.KeyPair) error {
+	return Clusterer.SetCerts(certs)
+}
+
+func SetCert(cert router.KeyPair) error {
+	return Clusterer.SetCert(cert)
+}
+
+func DeleteCert(cert router.KeyPair) error {
+	return Clusterer.DeleteCert(cert)
+}
+
+func GetCerts() ([]router.KeyPair, error) {
+	return Clusterer.GetCerts()
 }
 
 func parseSvc(serviceId string) (*core.Service, error) {
@@ -194,22 +212,9 @@ func marshalSrvs(servers []byte) (*[]core.Server, error) {
 	return &srvs, nil
 }
 
-func marshalRts(routes []byte) ([]router.Route, error) {
-	var rts []router.Route
-
-	if err := json.Unmarshal(routes, &rts); err != nil {
-		return nil, BadJson
+func parseBody(body []byte, v interface{}) error {
+	if err := json.Unmarshal(body, v); err != nil {
+		return BadJson
 	}
-
-	return rts, nil
-}
-
-func marshalRte(routes []byte) (router.Route, error) {
-	var rte router.Route
-
-	if err := json.Unmarshal(routes, &rte); err != nil {
-		return rte, BadJson
-	}
-
-	return rte, nil
+	return nil
 }

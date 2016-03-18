@@ -7,6 +7,7 @@ import (
 
 	"github.com/nanobox-io/nanobox-router"
 
+	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/routemgr"
@@ -21,6 +22,7 @@ var (
 type Storable interface {
 	core.Backender
 	routemgr.Routable
+	certmgr.Keyable
 }
 
 func Init() error {
@@ -93,4 +95,20 @@ func DeleteRoute(route router.Route) error {
 
 func GetRoutes() ([]router.Route, error) {
 	return Backend.GetRoutes()
+}
+
+func SetCerts(certs []router.KeyPair) error {
+	return Backend.SetCerts(certs)
+}
+
+func SetCert(cert router.KeyPair) error {
+	return Backend.SetCert(cert)
+}
+
+func DeleteCert(cert router.KeyPair) error {
+	return Backend.DeleteCert(cert)
+}
+
+func GetCerts() ([]router.KeyPair, error) {
+	return Backend.GetCerts()
 }

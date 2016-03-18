@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/pat"
@@ -80,6 +81,12 @@ func routes() *pat.Router {
 	router.Get("/routes", getRoutes)
 	router.Post("/routes", postRoute)
 
+	// certificates
+	router.Delete("/certs", deleteCert)
+	router.Put("/certs", putCerts)
+	router.Get("/certs", getCerts)
+	router.Post("/certs", postCert)
+
 	return router
 }
 
@@ -109,4 +116,24 @@ func writeBody(rw http.ResponseWriter, req *http.Request, v interface{}, status 
 
 func writeError(rw http.ResponseWriter, req *http.Request, err error, status int) error {
 	return writeBody(rw, req, apiError{ErrorString: err.Error()}, status)
+}
+
+// parseBody parses the json body into v
+func parseBody(req *http.Request, v interface{}) error {
+
+	// read the body
+	b, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		config.Log.Error(err.Error())
+		return BodyReadFail
+	}
+	defer req.Body.Close()
+
+	// parse body and store in v
+	err = json.Unmarshal(b, v)
+	if err != nil {
+		return BadJson
+	}
+
+	return nil
 }

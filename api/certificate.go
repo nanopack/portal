@@ -9,66 +9,66 @@ import (
 	"github.com/nanopack/portal/core/common"
 )
 
-func postRoute(rw http.ResponseWriter, req *http.Request) {
-	var route router.Route
-	err := parseBody(req, &route)
+func postCert(rw http.ResponseWriter, req *http.Request) {
+	var cert router.KeyPair
+	err := parseBody(req, &cert)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)
 		return
 	}
 
 	// save to cluster
-	err = cluster.SetRoute(route)
+	err = cluster.SetCert(cert)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	writeBody(rw, req, route, http.StatusOK)
+	writeBody(rw, req, cert, http.StatusOK)
 }
 
-func deleteRoute(rw http.ResponseWriter, req *http.Request) {
-	var route router.Route
-	err := parseBody(req, &route)
+func deleteCert(rw http.ResponseWriter, req *http.Request) {
+	var cert router.KeyPair
+	err := parseBody(req, &cert)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)
 		return
 	}
 
 	// save to cluster
-	err = cluster.DeleteRoute(route)
+	err = cluster.DeleteCert(cert)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	writeBody(rw, req, route, http.StatusOK)
+	writeBody(rw, req, cert, http.StatusOK)
 }
 
-func putRoutes(rw http.ResponseWriter, req *http.Request) {
-	var routes []router.Route
-	err := parseBody(req, &routes)
+func putCerts(rw http.ResponseWriter, req *http.Request) {
+	var certs []router.KeyPair
+	err := parseBody(req, &certs)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)
 		return
 	}
 
 	// save to cluster
-	err = cluster.SetRoutes(routes)
+	err = cluster.SetCerts(certs)
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
 
-	writeBody(rw, req, routes, http.StatusOK)
+	writeBody(rw, req, certs, http.StatusOK)
 }
 
-// List the routes registered in my system
-func getRoutes(rw http.ResponseWriter, req *http.Request) {
-	routes, err := common.GetRoutes()
+// List the certs registered in my system
+func getCerts(rw http.ResponseWriter, req *http.Request) {
+	certs, err := common.GetCerts()
 	if err != nil {
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}
-	writeBody(rw, req, routes, http.StatusOK)
+	writeBody(rw, req, certs, http.StatusOK)
 }

@@ -36,6 +36,17 @@ func (n None) Init() error {
 	if err != nil {
 		return err
 	}
+
+	// load certs
+	certs, err := common.GetCerts()
+	if err != nil {
+		return err
+	}
+	// apply certs
+	err = common.SetCerts(certs)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func (n None) GetServices() ([]core.Service, error) {
@@ -76,4 +87,16 @@ func (n None) DeleteRoute(route router.Route) error {
 }
 func (n None) GetRoutes() ([]router.Route, error) {
 	return common.GetRoutes()
+}
+func (n None) SetCerts(certs []router.KeyPair) error {
+	return common.SetCerts(certs)
+}
+func (n None) SetCert(cert router.KeyPair) error {
+	return common.SetCert(cert)
+}
+func (n None) DeleteCert(cert router.KeyPair) error {
+	return common.DeleteCert(cert)
+}
+func (n None) GetCerts() ([]router.KeyPair, error) {
+	return common.GetCerts()
 }

@@ -3,8 +3,6 @@
 package routemgr
 
 import (
-	"fmt"
-
 	"github.com/nanobox-io/nanobox-router"
 
 	"github.com/nanopack/portal/config"
@@ -23,10 +21,10 @@ var (
 
 // todo: for improved pluggable-ness, maybe define Route here?
 
-// Start both http and tls servers
+// start http server
 func Init() error {
 	Router = &Nanobox{}
-	return router.Start(fmt.Sprintf("0.0.0.0:%v", config.RoutePortHttp), fmt.Sprintf("0.0.0.0:%v", config.RoutePortTls))
+	return router.StartHTTP(config.RouteHttp)
 }
 
 func SetRoute(route router.Route) error {
