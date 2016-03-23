@@ -1,8 +1,6 @@
 package cluster
 
 import (
-	"github.com/nanobox-io/nanobox-router"
-
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/core/common"
 )
@@ -76,27 +74,27 @@ func (n None) DeleteServer(svcId, srvId string) error {
 func (n None) GetServer(svcId, srvId string) (*core.Server, error) {
 	return common.GetServer(svcId, srvId)
 }
-func (n None) SetRoutes(routes []router.Route) error {
+func (n None) SetRoutes(routes []core.Route) error {
 	return common.SetRoutes(routes)
 }
-func (n None) SetRoute(route router.Route) error {
+func (n None) SetRoute(route core.Route) error {
 	return common.SetRoute(route)
 }
-func (n None) DeleteRoute(route router.Route) error {
+func (n None) DeleteRoute(route core.Route) error {
 	return common.DeleteRoute(route)
 }
-func (n None) GetRoutes() ([]router.Route, error) {
+func (n None) GetRoutes() ([]core.Route, error) {
 	return common.GetRoutes()
 }
-func (n None) SetCerts(certs []router.KeyPair) error {
+func (n None) SetCerts(certs []core.CertBundle) error {
 	return common.SetCerts(certs)
 }
-func (n None) SetCert(cert router.KeyPair) error {
+func (n None) SetCert(cert core.CertBundle) error {
 	return common.SetCert(cert)
 }
-func (n None) DeleteCert(cert router.KeyPair) error {
+func (n None) DeleteCert(cert core.CertBundle) error {
 	return common.DeleteCert(cert)
 }
-func (n None) GetCerts() ([]router.KeyPair, error) {
+func (n None) GetCerts() ([]core.CertBundle, error) {
 	return common.GetCerts()
 }

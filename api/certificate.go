@@ -3,14 +3,13 @@ package api
 import (
 	"net/http"
 
-	"github.com/nanobox-io/nanobox-router"
-
 	"github.com/nanopack/portal/cluster"
+	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/core/common"
 )
 
 func postCert(rw http.ResponseWriter, req *http.Request) {
-	var cert router.KeyPair
+	var cert core.CertBundle
 	err := parseBody(req, &cert)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)
@@ -28,7 +27,7 @@ func postCert(rw http.ResponseWriter, req *http.Request) {
 }
 
 func deleteCert(rw http.ResponseWriter, req *http.Request) {
-	var cert router.KeyPair
+	var cert core.CertBundle
 	err := parseBody(req, &cert)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)
@@ -46,7 +45,7 @@ func deleteCert(rw http.ResponseWriter, req *http.Request) {
 }
 
 func putCerts(rw http.ResponseWriter, req *http.Request) {
-	var certs []router.KeyPair
+	var certs []core.CertBundle
 	err := parseBody(req, &certs)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)

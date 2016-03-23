@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/nanobox-io/nanobox-router"
 
 	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/config"
@@ -316,7 +315,7 @@ func (r *Redis) DeleteServer(svcId, srvId string) error {
 
 // SetRoutes tells all members to replace the routes in their database with a new set.
 // rolls back on failure
-func (r Redis) SetRoutes(routes []router.Route) error {
+func (r Redis) SetRoutes(routes []core.Route) error {
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -353,7 +352,7 @@ func (r Redis) SetRoutes(routes []router.Route) error {
 
 // SetRoute tells all members to add the route to their database.
 // rolls back on failure
-func (r Redis) SetRoute(route router.Route) error {
+func (r Redis) SetRoute(route core.Route) error {
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -385,7 +384,7 @@ func (r Redis) SetRoute(route router.Route) error {
 
 // DeleteRoute tells all members to remove the route from their database.
 // rolls back on failure
-func (r Redis) DeleteRoute(route router.Route) error {
+func (r Redis) DeleteRoute(route core.Route) error {
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -427,7 +426,7 @@ func (r Redis) DeleteRoute(route router.Route) error {
 
 // SetCerts tells all members to replace the certs in their database with a new set.
 // rolls back on failure
-func (r Redis) SetCerts(certs []router.KeyPair) error {
+func (r Redis) SetCerts(certs []core.CertBundle) error {
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -464,7 +463,7 @@ func (r Redis) SetCerts(certs []router.KeyPair) error {
 
 // SetCert tells all members to add the cert to their database.
 // rolls back on failure
-func (r Redis) SetCert(cert router.KeyPair) error {
+func (r Redis) SetCert(cert core.CertBundle) error {
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -496,7 +495,7 @@ func (r Redis) SetCert(cert router.KeyPair) error {
 
 // DeleteCert tells all members to remove the cert from their database.
 // rolls back on failure
-func (r Redis) DeleteCert(cert router.KeyPair) error {
+func (r Redis) DeleteCert(cert core.CertBundle) error {
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -639,7 +638,7 @@ func (r *Redis) GetServer(svcId, srvId string) (*core.Server, error) {
 }
 
 // GetRoutes gets a list of routes from the database, or another cluster member.
-func (r *Redis) GetRoutes() ([]router.Route, error) {
+func (r *Redis) GetRoutes() ([]core.Route, error) {
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -713,7 +712,7 @@ func (r *Redis) GetRoutes() ([]router.Route, error) {
 						switch v := msg.(type) {
 						case redis.Message:
 							config.Log.Trace("[cluster] - Received message on 'routes' channel")
-							var routes []router.Route
+							var routes []core.Route
 							err = parseBody(v.Data, &routes)
 							if err != nil {
 								return nil, fmt.Errorf("Failed to marshal routes - %v", err.Error())
@@ -732,7 +731,7 @@ func (r *Redis) GetRoutes() ([]router.Route, error) {
 }
 
 // GetCerts gets a list of certs from the database, or another cluster member.
-func (r *Redis) GetCerts() ([]router.KeyPair, error) {
+func (r *Redis) GetCerts() ([]core.CertBundle, error) {
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -806,7 +805,7 @@ func (r *Redis) GetCerts() ([]router.KeyPair, error) {
 						switch v := msg.(type) {
 						case redis.Message:
 							config.Log.Trace("[cluster] - Received message on 'certs' channel")
-							var certs []router.KeyPair
+							var certs []core.CertBundle
 							err = parseBody(v.Data, &certs)
 							if err != nil {
 								return nil, fmt.Errorf("Failed to marshal certs - %v", err.Error())
@@ -1093,7 +1092,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - routes not passed in message")
 					break
 				}
-				var routes []router.Route
+				var routes []core.Route
 				err := parseBody([]byte(pdata[1]), &routes)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal routes - %v", err.Error())
@@ -1116,7 +1115,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - route not passed in message")
 					break
 				}
-				var rte router.Route
+				var rte core.Route
 				err := parseBody([]byte(pdata[1]), &rte)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal route - %v", err.Error())
@@ -1138,7 +1137,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - route id not passed in message")
 					break
 				}
-				var rte router.Route
+				var rte core.Route
 				err := parseBody([]byte(pdata[1]), &rte)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal route - %v", err.Error())
@@ -1186,7 +1185,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - certs not passed in message")
 					break
 				}
-				var certs []router.KeyPair
+				var certs []core.CertBundle
 				err := parseBody([]byte(pdata[1]), &certs)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal certs - %v", err.Error())
@@ -1209,7 +1208,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - cert not passed in message")
 					break
 				}
-				var crt router.KeyPair
+				var crt core.CertBundle
 				err := parseBody([]byte(pdata[1]), &crt)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal cert - %v", err.Error())
@@ -1231,7 +1230,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - cert id not passed in message")
 					break
 				}
-				var crt router.KeyPair
+				var crt core.CertBundle
 				err := parseBody([]byte(pdata[1]), &crt)
 				if err != nil {
 					config.Log.Error("[cluster] - Failed to marshal cert - %v", err.Error())

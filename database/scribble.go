@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/nanobox-io/golang-scribble"
-	"github.com/nanobox-io/nanobox-router"
 	"github.com/twinj/uuid"
 
 	"github.com/nanopack/portal/config"
@@ -161,8 +160,8 @@ func (s ScribbleDatabase) GetServer(svcId, srvId string) (*core.Server, error) {
 // ROUTES
 ////////////////////////////////////////////////////////////////////////////////
 
-func (s ScribbleDatabase) GetRoutes() ([]router.Route, error) {
-	routes := make([]router.Route, 0, 0)
+func (s ScribbleDatabase) GetRoutes() ([]core.Route, error) {
+	routes := make([]core.Route, 0, 0)
 	values, err := s.scribbleDb.ReadAll("routes")
 	if err != nil {
 		if strings.Contains(err.Error(), "no such file or directory") {
@@ -172,7 +171,7 @@ func (s ScribbleDatabase) GetRoutes() ([]router.Route, error) {
 		return nil, err
 	}
 	for i := range values {
-		var route router.Route
+		var route core.Route
 		if err = json.Unmarshal([]byte(values[i]), &route); err != nil {
 			return nil, fmt.Errorf("Bad JSON syntax stored in db")
 		}
@@ -181,7 +180,7 @@ func (s ScribbleDatabase) GetRoutes() ([]router.Route, error) {
 	return routes, nil
 }
 
-func (s ScribbleDatabase) SetRoutes(routes []router.Route) error {
+func (s ScribbleDatabase) SetRoutes(routes []core.Route) error {
 	s.scribbleDb.Delete("routes", "")
 	for i := range routes {
 		// unique (as much as what we keep) key to store route by
@@ -194,7 +193,7 @@ func (s ScribbleDatabase) SetRoutes(routes []router.Route) error {
 	return nil
 }
 
-func (s ScribbleDatabase) SetRoute(route router.Route) error {
+func (s ScribbleDatabase) SetRoute(route core.Route) error {
 	routes, err := s.GetRoutes()
 	if err != nil {
 		return err
@@ -210,7 +209,7 @@ func (s ScribbleDatabase) SetRoute(route router.Route) error {
 	return s.SetRoutes(routes)
 }
 
-func (s ScribbleDatabase) DeleteRoute(route router.Route) error {
+func (s ScribbleDatabase) DeleteRoute(route core.Route) error {
 	routes, err := s.GetRoutes()
 	if err != nil {
 		return err
@@ -228,8 +227,8 @@ func (s ScribbleDatabase) DeleteRoute(route router.Route) error {
 // CERTS
 ////////////////////////////////////////////////////////////////////////////////
 
-func (s ScribbleDatabase) GetCerts() ([]router.KeyPair, error) {
-	certs := make([]router.KeyPair, 0, 0)
+func (s ScribbleDatabase) GetCerts() ([]core.CertBundle, error) {
+	certs := make([]core.CertBundle, 0, 0)
 	values, err := s.scribbleDb.ReadAll("certs")
 	if err != nil {
 		if strings.Contains(err.Error(), "no such file or directory") {
@@ -239,7 +238,7 @@ func (s ScribbleDatabase) GetCerts() ([]router.KeyPair, error) {
 		return nil, err
 	}
 	for i := range values {
-		var cert router.KeyPair
+		var cert core.CertBundle
 		if err = json.Unmarshal([]byte(values[i]), &cert); err != nil {
 			return nil, fmt.Errorf("Bad JSON syntax stored in db")
 		}
@@ -248,7 +247,7 @@ func (s ScribbleDatabase) GetCerts() ([]router.KeyPair, error) {
 	return certs, nil
 }
 
-func (s ScribbleDatabase) SetCerts(certs []router.KeyPair) error {
+func (s ScribbleDatabase) SetCerts(certs []core.CertBundle) error {
 	s.scribbleDb.Delete("certs", "")
 	for i := range certs {
 		// unique key to store cert by
@@ -261,7 +260,7 @@ func (s ScribbleDatabase) SetCerts(certs []router.KeyPair) error {
 	return nil
 }
 
-func (s ScribbleDatabase) SetCert(cert router.KeyPair) error {
+func (s ScribbleDatabase) SetCert(cert core.CertBundle) error {
 	certs, err := s.GetCerts()
 	if err != nil {
 		return err
@@ -277,7 +276,7 @@ func (s ScribbleDatabase) SetCert(cert router.KeyPair) error {
 	return s.SetCerts(certs)
 }
 
-func (s ScribbleDatabase) DeleteCert(cert router.KeyPair) error {
+func (s ScribbleDatabase) DeleteCert(cert core.CertBundle) error {
 	certs, err := s.GetCerts()
 	if err != nil {
 		return err

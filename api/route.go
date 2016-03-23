@@ -3,14 +3,13 @@ package api
 import (
 	"net/http"
 
-	"github.com/nanobox-io/nanobox-router"
-
 	"github.com/nanopack/portal/cluster"
+	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/core/common"
 )
 
 func postRoute(rw http.ResponseWriter, req *http.Request) {
-	var route router.Route
+	var route core.Route
 	err := parseBody(req, &route)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)
@@ -28,7 +27,7 @@ func postRoute(rw http.ResponseWriter, req *http.Request) {
 }
 
 func deleteRoute(rw http.ResponseWriter, req *http.Request) {
-	var route router.Route
+	var route core.Route
 	err := parseBody(req, &route)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)
@@ -46,7 +45,7 @@ func deleteRoute(rw http.ResponseWriter, req *http.Request) {
 }
 
 func putRoutes(rw http.ResponseWriter, req *http.Request) {
-	var routes []router.Route
+	var routes []core.Route
 	err := parseBody(req, &routes)
 	if err != nil {
 		writeError(rw, req, err, http.StatusBadRequest)

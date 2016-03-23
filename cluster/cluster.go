@@ -8,12 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nanobox-io/nanobox-router"
-
-	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
-	"github.com/nanopack/portal/routemgr"
 )
 
 var (
@@ -26,8 +22,7 @@ var (
 
 type Clusterable interface {
 	core.Backender
-	routemgr.Routable
-	certmgr.Keyable
+	core.Proxyable
 }
 
 func Init() error {
@@ -85,35 +80,35 @@ func GetServer(svcId, srvId string) (*core.Server, error) {
 	return Clusterer.GetServer(svcId, srvId)
 }
 
-func SetRoutes(routes []router.Route) error {
+func SetRoutes(routes []core.Route) error {
 	return Clusterer.SetRoutes(routes)
 }
 
-func SetRoute(route router.Route) error {
+func SetRoute(route core.Route) error {
 	return Clusterer.SetRoute(route)
 }
 
-func DeleteRoute(route router.Route) error {
+func DeleteRoute(route core.Route) error {
 	return Clusterer.DeleteRoute(route)
 }
 
-func GetRoutes() ([]router.Route, error) {
+func GetRoutes() ([]core.Route, error) {
 	return Clusterer.GetRoutes()
 }
 
-func SetCerts(certs []router.KeyPair) error {
+func SetCerts(certs []core.CertBundle) error {
 	return Clusterer.SetCerts(certs)
 }
 
-func SetCert(cert router.KeyPair) error {
+func SetCert(cert core.CertBundle) error {
 	return Clusterer.SetCert(cert)
 }
 
-func DeleteCert(cert router.KeyPair) error {
+func DeleteCert(cert core.CertBundle) error {
 	return Clusterer.DeleteCert(cert)
 }
 
-func GetCerts() ([]router.KeyPair, error) {
+func GetCerts() ([]core.CertBundle, error) {
 	return Clusterer.GetCerts()
 }
 

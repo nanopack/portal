@@ -13,12 +13,11 @@ import (
 	"github.com/jcelliott/lumber"
 
 	"github.com/nanopack/portal/balance"
-	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
-	"github.com/nanopack/portal/routemgr"
+	"github.com/nanopack/portal/proxymgr"
 )
 
 var (
@@ -292,17 +291,10 @@ func initialize() {
 			os.Exit(1)
 		}
 
-		// initialize routemgr
-		err = routemgr.Init()
+		// initialize proxymgr
+		err = proxymgr.Init()
 		if err != nil {
-			fmt.Printf("Routemgr init failed - %v\n", err)
-			os.Exit(1)
-		}
-
-		// initialize certmgr
-		err = certmgr.Init()
-		if err != nil {
-			fmt.Printf("Certmgr init failed - %v\n", err)
+			fmt.Printf("Proxymgr init failed - %v\n", err)
 			os.Exit(1)
 		}
 

@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nanobox-io/nanobox-router"
-
 	"github.com/nanopack/portal/balance"
-	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
-	"github.com/nanopack/portal/routemgr"
+	"github.com/nanopack/portal/proxymgr"
 )
 
 func SetServices(services []core.Service) error {
@@ -179,23 +176,23 @@ func GetServer(svcId, srvId string) (*core.Server, error) {
 	return database.GetServer(svcId, srvId)
 }
 
-func SetRoutes(routes []router.Route) error {
+func SetRoutes(routes []core.Route) error {
 	// in case of failure
 	oldRoutes, err := database.GetRoutes()
 	if err != nil {
 		return err
 	}
 
-	// apply routes to routemgr
-	err = routemgr.SetRoutes(routes)
+	// apply routes to proxymgr
+	err = proxymgr.SetRoutes(routes)
 	if err != nil {
 		return err
 	}
 	// save to backend
 	err = database.SetRoutes(routes)
 	if err != nil {
-		// undo routemgr action
-		if uerr := routemgr.SetRoutes(oldRoutes); uerr != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
 			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		return err
@@ -203,15 +200,15 @@ func SetRoutes(routes []router.Route) error {
 	return nil
 }
 
-func SetRoute(route router.Route) error {
+func SetRoute(route core.Route) error {
 	// in case of failure
 	oldRoutes, err := database.GetRoutes()
 	if err != nil {
 		return err
 	}
 
-	// apply to routemgr
-	err = routemgr.SetRoute(route)
+	// apply to proxymgr
+	err = proxymgr.SetRoute(route)
 	if err != nil {
 		return err
 	}
@@ -219,8 +216,8 @@ func SetRoute(route router.Route) error {
 	// save to backend
 	err = database.SetRoute(route)
 	if err != nil {
-		// undo routemgr action
-		if uerr := routemgr.SetRoutes(oldRoutes); uerr != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
 			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		return err
@@ -228,15 +225,15 @@ func SetRoute(route router.Route) error {
 	return nil
 }
 
-func DeleteRoute(route router.Route) error {
+func DeleteRoute(route core.Route) error {
 	// in case of failure
 	oldRoutes, err := database.GetRoutes()
 	if err != nil {
 		return err
 	}
 
-	// apply to routemgr
-	err = routemgr.DeleteRoute(route)
+	// apply to proxymgr
+	err = proxymgr.DeleteRoute(route)
 	if err != nil {
 		return err
 	}
@@ -244,8 +241,8 @@ func DeleteRoute(route router.Route) error {
 	// save to backend
 	err = database.DeleteRoute(route)
 	if err != nil {
-		// undo routemgr action
-		if uerr := routemgr.SetRoutes(oldRoutes); uerr != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
 			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		return err
@@ -253,27 +250,27 @@ func DeleteRoute(route router.Route) error {
 	return nil
 }
 
-func GetRoutes() ([]router.Route, error) {
+func GetRoutes() ([]core.Route, error) {
 	return database.GetRoutes()
 }
 
-func SetCerts(certs []router.KeyPair) error {
+func SetCerts(certs []core.CertBundle) error {
 	// in case of failure
 	oldCerts, err := database.GetCerts()
 	if err != nil {
 		return err
 	}
 
-	// apply certs to certmgr
-	err = certmgr.SetCerts(certs)
+	// apply certs to proxymgr
+	err = proxymgr.SetCerts(certs)
 	if err != nil {
 		return err
 	}
 	// save to backend
 	err = database.SetCerts(certs)
 	if err != nil {
-		// undo certmgr action
-		if uerr := certmgr.SetCerts(oldCerts); uerr != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
 			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		return err
@@ -281,15 +278,15 @@ func SetCerts(certs []router.KeyPair) error {
 	return nil
 }
 
-func SetCert(cert router.KeyPair) error {
+func SetCert(cert core.CertBundle) error {
 	// in case of failure
 	oldCerts, err := database.GetCerts()
 	if err != nil {
 		return err
 	}
 
-	// apply to certmgr
-	err = certmgr.SetCert(cert)
+	// apply to proxymgr
+	err = proxymgr.SetCert(cert)
 	if err != nil {
 		return err
 	}
@@ -297,8 +294,8 @@ func SetCert(cert router.KeyPair) error {
 	// save to backend
 	err = database.SetCert(cert)
 	if err != nil {
-		// undo certmgr action
-		if uerr := certmgr.SetCerts(oldCerts); uerr != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
 			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		return err
@@ -306,15 +303,15 @@ func SetCert(cert router.KeyPair) error {
 	return nil
 }
 
-func DeleteCert(cert router.KeyPair) error {
+func DeleteCert(cert core.CertBundle) error {
 	// in case of failure
 	oldCerts, err := database.GetCerts()
 	if err != nil {
 		return err
 	}
 
-	// apply to certmgr
-	err = certmgr.DeleteCert(cert)
+	// apply to proxymgr
+	err = proxymgr.DeleteCert(cert)
 	if err != nil {
 		return err
 	}
@@ -322,8 +319,8 @@ func DeleteCert(cert router.KeyPair) error {
 	// save to backend
 	err = database.DeleteCert(cert)
 	if err != nil {
-		// undo certmgr action
-		if uerr := certmgr.SetCerts(oldCerts); uerr != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
 			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
 		}
 		return err
@@ -331,6 +328,6 @@ func DeleteCert(cert router.KeyPair) error {
 	return nil
 }
 
-func GetCerts() ([]router.KeyPair, error) {
+func GetCerts() ([]core.CertBundle, error) {
 	return database.GetCerts()
 }

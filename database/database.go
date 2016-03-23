@@ -5,12 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/nanobox-io/nanobox-router"
-
-	"github.com/nanopack/portal/certmgr"
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
-	"github.com/nanopack/portal/routemgr"
 )
 
 var (
@@ -21,8 +17,7 @@ var (
 
 type Storable interface {
 	core.Backender
-	routemgr.Routable
-	certmgr.Keyable
+	core.Proxyable
 }
 
 func Init() error {
@@ -81,34 +76,34 @@ func GetServer(svcId, srvId string) (*core.Server, error) {
 	return Backend.GetServer(svcId, srvId)
 }
 
-func SetRoutes(routes []router.Route) error {
+func SetRoutes(routes []core.Route) error {
 	return Backend.SetRoutes(routes)
 }
 
-func SetRoute(route router.Route) error {
+func SetRoute(route core.Route) error {
 	return Backend.SetRoute(route)
 }
 
-func DeleteRoute(route router.Route) error {
+func DeleteRoute(route core.Route) error {
 	return Backend.DeleteRoute(route)
 }
 
-func GetRoutes() ([]router.Route, error) {
+func GetRoutes() ([]core.Route, error) {
 	return Backend.GetRoutes()
 }
 
-func SetCerts(certs []router.KeyPair) error {
+func SetCerts(certs []core.CertBundle) error {
 	return Backend.SetCerts(certs)
 }
 
-func SetCert(cert router.KeyPair) error {
+func SetCert(cert core.CertBundle) error {
 	return Backend.SetCert(cert)
 }
 
-func DeleteCert(cert router.KeyPair) error {
+func DeleteCert(cert core.CertBundle) error {
 	return Backend.DeleteCert(cert)
 }
 
-func GetCerts() ([]router.KeyPair, error) {
+func GetCerts() ([]core.CertBundle, error) {
 	return Backend.GetCerts()
 }

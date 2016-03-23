@@ -80,6 +80,40 @@ Fields:
 - **upper_threshold**: Stop sending connections to this server when this number is reached. 0 is no limit.
 - **lower_threshold**: Restart sending connections when drains down to this number. 0 is not set.
 
+### Route:
+json:
+```json
+{
+  "subdomain": "admin",
+  "domain": "test.com",
+  "path": "/admin*",
+  "targets": ["http://127.0.0.1:8080/app1","http://127.0.0.2"],
+  "fwdpath": "/",
+  "page": ""
+}
+```
+
+Fields:
+ - **subdomain**: Subdomain to match on
+ - **domain**: Domain to match on
+ - **path**: Path to match on
+ - **targets**: URIs of servers
+ - **fwdpath**: Path to forward to targets (combined with target path)
+ - **page**: Page to serve instead of routing to targets
+
+### Certificate:
+json:
+```json
+{
+  "key": "-----BEGIN PRIVATE KEY-----\nMII.../J8\n-----END PRIVATE KEY-----",
+  "cert": "-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"
+}
+```
+
+Fields:
+ - **key**: Pem style key
+ - **cert**: Pem style certificate
+
 ### Error:
 json:
 ```json
