@@ -16,17 +16,19 @@ func (self Nanobox) Init() error {
 	// we want to see nanobox-router logs
 	lumber.Level(lumber.LvlInt(config.LogLevel))
 
-	config.Log.Info("Proxy listening at http://%s...", config.RouteHttp)
+	// start http proxy
 	err := router.StartHTTP(config.RouteHttp)
 	if err != nil {
 		return err
 	}
+	config.Log.Info("Proxy listening at http://%s...", config.RouteHttp)
 
-	config.Log.Info("Proxy listening at https://%s...", config.RouteTls)
+	// start https proxy
 	err = router.StartTLS(config.RouteTls)
 	if err != nil {
 		return err
 	}
+	config.Log.Info("Proxy listening at https://%s...", config.RouteTls)
 
 	return nil
 }

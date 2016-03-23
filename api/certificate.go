@@ -41,7 +41,7 @@ func deleteCert(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writeBody(rw, req, cert, http.StatusOK)
+	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
 }
 
 func putCerts(rw http.ResponseWriter, req *http.Request) {

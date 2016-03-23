@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/garyburd/redigo/redis"
 
@@ -913,7 +914,7 @@ func (r Redis) subscribe() {
 	for {
 		switch v := r.subconn.Receive().(type) {
 		case redis.Message:
-			switch pdata := strings.Split(string(v.Data), " "); pdata[0] {
+			switch pdata := strings.FieldsFunc(string(v.Data), keepSubstrings); pdata[0] {
 			// SERVICES ///////////////////////////////////////////////////////////////////////////////////////////////
 			case "get-services":
 				if len(pdata) != 2 {
@@ -1063,8 +1064,8 @@ func (r Redis) subscribe() {
 				conn.Close()
 				config.Log.Debug("[cluster] - delete-server successful")
 			// ROUTES ///////////////////////////////////////////////////////////////////////////////////////////////
-			// todo: needed pre-test
 			case "get-routes":
+
 				if len(pdata) != 2 {
 					config.Log.Error("[cluster] - member not passed in message")
 					break
@@ -1092,6 +1093,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - routes not passed in message")
 					break
 				}
+
 				var routes []core.Route
 				err := parseBody([]byte(pdata[1]), &routes)
 				if err != nil {
@@ -1134,7 +1136,7 @@ func (r Redis) subscribe() {
 				config.Log.Debug("[cluster] - set-route successful")
 			case "delete-route":
 				if len(pdata) != 2 {
-					config.Log.Error("[cluster] - route id not passed in message")
+					config.Log.Error("[cluster] - route not passed in message")
 					break
 				}
 				var rte core.Route
@@ -1154,14 +1156,13 @@ func (r Redis) subscribe() {
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
 				config.Log.Debug("[cluster] - delete-route successful")
-				// todo: end needed pre-test
 			// CERTS ///////////////////////////////////////////////////////////////////////////////////////////////
-			// todo: needed pre-test
 			case "get-certs":
 				if len(pdata) != 2 {
 					config.Log.Error("[cluster] - member not passed in message")
 					break
 				}
+
 				member := pdata[1]
 
 				if member == self {
@@ -1247,7 +1248,6 @@ func (r Redis) subscribe() {
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
 				config.Log.Debug("[cluster] - delete-cert successful")
-				// todo: end needed pre-test
 			default:
 				config.Log.Error("[cluster] - Recieved unknown data on %v: %v", v.Channel, string(v.Data))
 			}
@@ -1324,5 +1324,25 @@ func (r Redis) waitForMembers(conn redis.Conn, actionHash string) error {
 		case <-timeout:
 			return fmt.Errorf("Member(s) '%v' failed to set-service", list)
 		}
+	}
+}
+
+// used in keepSubstrings
+var lastQuote = rune(0)
+
+// because subscribe needs to split on spaces, but pages can contain spaces, we
+// need to use a custom FieldsFunc. *Thanks Soheil
+func keepSubstrings(c rune) bool {
+	switch {
+	case c == lastQuote:
+		lastQuote = rune(0)
+		return false
+	case lastQuote != rune(0):
+		return false
+	case unicode.In(c, unicode.Quotation_Mark):
+		lastQuote = c
+		return false
+	default:
+		return unicode.IsSpace(c)
 	}
 }

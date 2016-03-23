@@ -14,9 +14,6 @@ var (
 	Proxy proxyable
 )
 
-// todo: for improved pluggable-ness, maybe define Route here? // is proxies stored?
-
-// start http server
 func Init() error {
 	Proxy = &Nanobox{}
 	return Proxy.Init()

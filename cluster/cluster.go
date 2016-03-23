@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strconv"
-	"strings"
 
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
@@ -112,26 +110,6 @@ func GetCerts() ([]core.CertBundle, error) {
 	return Clusterer.GetCerts()
 }
 
-func parseSvc(serviceId string) (*core.Service, error) {
-	s := strings.Replace(serviceId, "_", ".", -1)
-	svc := strings.Split(s, "-")
-	if len(svc) != 3 {
-		return nil, NoServiceError
-	}
-	p, _ := strconv.Atoi(svc[2])
-	return &core.Service{Type: svc[0], Host: svc[1], Port: p}, nil
-}
-
-func parseSrv(serverId string) (*core.Server, error) {
-	s := strings.Replace(serverId, "_", ".", -1)
-	srv := strings.Split(s, "-")
-	if len(srv) != 2 {
-		return nil, NoServerError
-	}
-	p, _ := strconv.Atoi(srv[1])
-	return &core.Server{Host: srv[0], Port: p}, nil
-}
-
 func marshalSvc(service []byte) (*core.Service, error) {
 	var svc core.Service
 
@@ -209,6 +187,7 @@ func marshalSrvs(servers []byte) (*[]core.Server, error) {
 
 func parseBody(body []byte, v interface{}) error {
 	if err := json.Unmarshal(body, v); err != nil {
+		fmt.Println(err)
 		return BadJson
 	}
 	return nil

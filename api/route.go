@@ -41,7 +41,7 @@ func deleteRoute(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writeBody(rw, req, route, http.StatusOK)
+	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
 }
 
 func putRoutes(rw http.ResponseWriter, req *http.Request) {
