@@ -54,6 +54,7 @@ Flags:
   -c, --conf="": Configuration file to load
   -d, --db-connection="scribble:///var/db/portal": Database connection string
   -i, --insecure[=false]: Disable tls key checking (client) and listen on http (server)
+  -j, --just-proxy[=false]: Proxy only (no tcp/udp load balancing)
   -L, --log-file="": Log file to write to
   -l, --log-level="INFO": Log level to output
   -s, --server[=false]: Run in server mode
@@ -85,6 +86,7 @@ An optional config file can also be passed on startup:
   "cluster-connection": "none://",
   "cluster-token": "",
   "insecure": false,
+  "just-proxy": false,
   "log-level": "INFO",
   "log-file": "",
   "server": true

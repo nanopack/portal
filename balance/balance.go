@@ -17,8 +17,8 @@ var (
 )
 
 func Init() error {
-	// todo: handle nil Balancer and make option available
 	if config.JustProxy {
+		Balancer = nil
 		return nil
 	}
 	Balancer = &Lvs{}
@@ -27,42 +27,72 @@ func Init() error {
 }
 
 func GetServices() ([]core.Service, error) {
+	if Balancer == nil {
+		return nil, nil
+	}
 	return Balancer.GetServices()
 }
 
 func GetService(id string) (*core.Service, error) {
+	if Balancer == nil {
+		return nil, nil
+	}
 	return Balancer.GetService(id)
 }
 
 func SetServices(services []core.Service) error {
+	if Balancer == nil {
+		return nil
+	}
 	return Balancer.SetServices(services)
 }
 
 func SetService(service *core.Service) error {
+	if Balancer == nil {
+		return nil
+	}
 	return Balancer.SetService(service)
 }
 
 func DeleteService(id string) error {
+	if Balancer == nil {
+		return nil
+	}
 	return Balancer.DeleteService(id)
 }
 
 func SetServers(svcId string, servers []core.Server) error {
+	if Balancer == nil {
+		return nil
+	}
 	return Balancer.SetServers(svcId, servers)
 }
 
 func SetServer(svcId string, server *core.Server) error {
+	if Balancer == nil {
+		return nil
+	}
 	return Balancer.SetServer(svcId, server)
 }
 
 func DeleteServer(svcId, srvId string) error {
+	if Balancer == nil {
+		return nil
+	}
 	return Balancer.DeleteServer(svcId, srvId)
 }
 
 func GetServer(svcId, srvId string) (*core.Server, error) {
+	if Balancer == nil {
+		return nil, nil
+	}
 	return Balancer.GetServer(svcId, srvId)
 }
 
 func parseSvc(serviceId string) (*core.Service, error) {
+	if Balancer == nil {
+		return nil, nil
+	}
 	s := strings.Replace(serviceId, "_", ".", -1)
 	svc := strings.Split(s, "-")
 	if len(svc) != 3 {
@@ -73,6 +103,9 @@ func parseSvc(serviceId string) (*core.Service, error) {
 }
 
 func parseSrv(serverId string) (*core.Server, error) {
+	if Balancer == nil {
+		return nil, nil
+	}
 	s := strings.Replace(serverId, "_", ".", -1)
 	srv := strings.Split(s, "-")
 	if len(srv) != 2 {
