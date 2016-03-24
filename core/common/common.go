@@ -1,3 +1,5 @@
+// common contains all the logic to perform an action, as well as roll back
+// other "systems" upon failure, effectively "undoing" the action.
 package common
 
 import (
@@ -7,6 +9,7 @@ import (
 	"github.com/nanopack/portal/balance"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
+	"github.com/nanopack/portal/proxymgr"
 )
 
 func SetServices(services []core.Service) error {
@@ -173,4 +176,160 @@ func GetService(id string) (*core.Service, error) {
 }
 func GetServer(svcId, srvId string) (*core.Server, error) {
 	return database.GetServer(svcId, srvId)
+}
+
+func SetRoutes(routes []core.Route) error {
+	// in case of failure
+	oldRoutes, err := database.GetRoutes()
+	if err != nil {
+		return err
+	}
+
+	// apply routes to proxymgr
+	err = proxymgr.SetRoutes(routes)
+	if err != nil {
+		return err
+	}
+	// save to backend
+	err = database.SetRoutes(routes)
+	if err != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func SetRoute(route core.Route) error {
+	// in case of failure
+	oldRoutes, err := database.GetRoutes()
+	if err != nil {
+		return err
+	}
+
+	// apply to proxymgr
+	err = proxymgr.SetRoute(route)
+	if err != nil {
+		return err
+	}
+
+	// save to backend
+	err = database.SetRoute(route)
+	if err != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func DeleteRoute(route core.Route) error {
+	// in case of failure
+	oldRoutes, err := database.GetRoutes()
+	if err != nil {
+		return err
+	}
+
+	// apply to proxymgr
+	err = proxymgr.DeleteRoute(route)
+	if err != nil {
+		return err
+	}
+
+	// save to backend
+	err = database.DeleteRoute(route)
+	if err != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func GetRoutes() ([]core.Route, error) {
+	return database.GetRoutes()
+}
+
+func SetCerts(certs []core.CertBundle) error {
+	// in case of failure
+	oldCerts, err := database.GetCerts()
+	if err != nil {
+		return err
+	}
+
+	// apply certs to proxymgr
+	err = proxymgr.SetCerts(certs)
+	if err != nil {
+		return err
+	}
+	// save to backend
+	err = database.SetCerts(certs)
+	if err != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func SetCert(cert core.CertBundle) error {
+	// in case of failure
+	oldCerts, err := database.GetCerts()
+	if err != nil {
+		return err
+	}
+
+	// apply to proxymgr
+	err = proxymgr.SetCert(cert)
+	if err != nil {
+		return err
+	}
+
+	// save to backend
+	err = database.SetCert(cert)
+	if err != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func DeleteCert(cert core.CertBundle) error {
+	// in case of failure
+	oldCerts, err := database.GetCerts()
+	if err != nil {
+		return err
+	}
+
+	// apply to proxymgr
+	err = proxymgr.DeleteCert(cert)
+	if err != nil {
+		return err
+	}
+
+	// save to backend
+	err = database.DeleteCert(cert)
+	if err != nil {
+		// undo proxymgr action
+		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func GetCerts() ([]core.CertBundle, error) {
+	return database.GetCerts()
 }

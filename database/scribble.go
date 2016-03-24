@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/nanobox-io/golang-scribble"
+	"github.com/twinj/uuid"
 
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
@@ -153,4 +154,138 @@ func (s ScribbleDatabase) GetServer(svcId, srvId string) (*core.Server, error) {
 	}
 
 	return nil, NoServerError
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ROUTES
+////////////////////////////////////////////////////////////////////////////////
+
+func (s ScribbleDatabase) GetRoutes() ([]core.Route, error) {
+	routes := make([]core.Route, 0, 0)
+	values, err := s.scribbleDb.ReadAll("routes")
+	if err != nil {
+		if strings.Contains(err.Error(), "no such file or directory") {
+			// if error is about a missing db, return empty array
+			return routes, nil
+		}
+		return nil, err
+	}
+	for i := range values {
+		var route core.Route
+		if err = json.Unmarshal([]byte(values[i]), &route); err != nil {
+			return nil, fmt.Errorf("Bad JSON syntax stored in db")
+		}
+		routes = append(routes, route)
+	}
+	return routes, nil
+}
+
+func (s ScribbleDatabase) SetRoutes(routes []core.Route) error {
+	s.scribbleDb.Delete("routes", "")
+	for i := range routes {
+		// unique (as much as what we keep) key to store route by
+		ukey := fmt.Sprintf("%v-%v%v", strings.Replace(routes[i].SubDomain, ".", "-", -1), strings.Replace(routes[i].Domain, ".", "-", -1), strings.Replace(routes[i].Path, "/", "_", -1))
+		err := s.scribbleDb.Write("routes", ukey, routes[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s ScribbleDatabase) SetRoute(route core.Route) error {
+	routes, err := s.GetRoutes()
+	if err != nil {
+		return err
+	}
+	// for idempotency
+	for i := 0; i < len(routes); i++ {
+		if routes[i].SubDomain == route.SubDomain && routes[i].Domain == route.Domain && routes[i].Path == route.Path {
+			return nil
+		}
+	}
+
+	routes = append(routes, route)
+	return s.SetRoutes(routes)
+}
+
+func (s ScribbleDatabase) DeleteRoute(route core.Route) error {
+	routes, err := s.GetRoutes()
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(routes); i++ {
+		if routes[i].SubDomain == route.SubDomain && routes[i].Domain == route.Domain && routes[i].Path == route.Path {
+			routes = append(routes[:i], routes[i+1:]...)
+			break
+		}
+	}
+	return s.SetRoutes(routes)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CERTS
+////////////////////////////////////////////////////////////////////////////////
+
+func (s ScribbleDatabase) GetCerts() ([]core.CertBundle, error) {
+	certs := make([]core.CertBundle, 0, 0)
+	values, err := s.scribbleDb.ReadAll("certs")
+	if err != nil {
+		if strings.Contains(err.Error(), "no such file or directory") {
+			// if error is about a missing db, return empty array
+			return certs, nil
+		}
+		return nil, err
+	}
+	for i := range values {
+		var cert core.CertBundle
+		if err = json.Unmarshal([]byte(values[i]), &cert); err != nil {
+			return nil, fmt.Errorf("Bad JSON syntax stored in db")
+		}
+		certs = append(certs, cert)
+	}
+	return certs, nil
+}
+
+func (s ScribbleDatabase) SetCerts(certs []core.CertBundle) error {
+	s.scribbleDb.Delete("certs", "")
+	for i := range certs {
+		// unique key to store cert by
+		ukey := uuid.NewV4().String()
+		err := s.scribbleDb.Write("certs", ukey, certs[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s ScribbleDatabase) SetCert(cert core.CertBundle) error {
+	certs, err := s.GetCerts()
+	if err != nil {
+		return err
+	}
+	// for idempotency
+	for i := 0; i < len(certs); i++ {
+		if certs[i].Cert == cert.Cert && certs[i].Key == cert.Key {
+			return nil
+		}
+	}
+
+	certs = append(certs, cert)
+	return s.SetCerts(certs)
+}
+
+func (s ScribbleDatabase) DeleteCert(cert core.CertBundle) error {
+	certs, err := s.GetCerts()
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(certs); i++ {
+		if certs[i].Cert == cert.Cert && certs[i].Key == cert.Key {
+			certs = append(certs[:i], certs[i+1:]...)
+			break
+		}
+	}
+	return s.SetCerts(certs)
 }

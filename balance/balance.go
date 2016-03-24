@@ -1,3 +1,4 @@
+// balance handles the load balancing portion of portal.
 package balance
 
 import (
@@ -5,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 )
 
@@ -15,7 +17,12 @@ var (
 )
 
 func Init() error {
+	// todo: handle nil Balancer and make option available
+	if config.JustProxy {
+		return nil
+	}
 	Balancer = &Lvs{}
+
 	return Balancer.Init()
 }
 

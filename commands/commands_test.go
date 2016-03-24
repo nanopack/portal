@@ -17,8 +17,8 @@ import (
 	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/commands"
 	"github.com/nanopack/portal/config"
-	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
+	"github.com/nanopack/portal/proxymgr"
 )
 
 type (
@@ -313,6 +313,129 @@ func TestShowServerId(t *testing.T) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// ROUTES
+////////////////////////////////////////////////////////////////////////////////
+func TestShowRoutes(t *testing.T) {
+	Portal.SetArgs(strings.Split("show-routes", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "[]\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestAddRoute(t *testing.T) {
+	Portal.SetArgs(strings.Split("add-route -j {\"domain\":\"portal.test\",\"page\":\"testing\"}", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\"}\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestRemoveRoute(t *testing.T) {
+	args := strings.Split("remove-route -d portal.test", " ")
+	Portal.SetArgs(args)
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != successMsg {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestSetRoutes(t *testing.T) {
+	Portal.SetArgs(strings.Split("set-routes -j [{\"domain\":\"portal.test\",\"page\":\"testing\"}]", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "[{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\"}]\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CERTS
+////////////////////////////////////////////////////////////////////////////////
+func TestShowCerts(t *testing.T) {
+	Portal.SetArgs(strings.Split("show-certs", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "[]\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestAddCert(t *testing.T) {
+	Portal.SetArgs(strings.Split("add-cert -j {\"key\":\"portal.test\",\"cert\":\"certified\"}", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if !strings.Contains(string(out), "error") {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestRemoveCert(t *testing.T) {
+	args := strings.Split("remove-cert -j {\"key\":\"portal.test\",\"cert\":\"certified\"}", " ")
+	Portal.SetArgs(args)
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != successMsg {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestSetCerts(t *testing.T) {
+	Portal.SetArgs(strings.Split("set-certs -j [{\"key\":\"portal.test\",\"cert\":\"certified\"}]", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if !strings.Contains(string(out), "error") {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestRunServer(t *testing.T) {
+	config.JustProxy = true
+	config.RouteHttp = "0.0.0.0:9085"
+	config.RouteTls = "0.0.0.0:9448"
+
+	Portal.SetArgs(strings.Split("-s -d /tmp/portalServer -l FATAL -P 8446", " "))
+
+	go Portal.Execute()
+	time.Sleep(time.Second)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PRIVS
 ////////////////////////////////////////////////////////////////////////////////
 func capture(fn execable) ([]byte, error) {
@@ -338,19 +461,16 @@ func initialize() {
 	config.ApiHost = "127.0.0.1"
 	config.ApiPort = "8445"
 	config.ApiToken = ""
-	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
+	config.RouteHttp = "0.0.0.0:9081"
+	config.RouteTls = "0.0.0.0:9444"
+	config.LogLevel = "FATAL"
+	config.Log = lumber.NewConsoleLogger(lumber.LvlInt(config.LogLevel))
 	apiAddr = fmt.Sprintf("%v:%v", config.ApiHost, config.ApiPort)
 
 	// initialize database
 	err := database.Init()
 	if err != nil {
 		fmt.Printf("Database init failed - %v\n", err)
-		os.Exit(1)
-	}
-	// initialize clusterer
-	err = cluster.Init()
-	if err != nil {
-		fmt.Printf("Clusterer init failed - %v\n", err)
 		os.Exit(1)
 	}
 	// initialize balancer
@@ -360,12 +480,16 @@ func initialize() {
 		fmt.Printf("Balancer init failed - %v\n", err)
 		os.Exit(1)
 	}
-	// fake saved rules
-	services := make([]core.Service, 0, 0)
-	// apply saved rules
-	err = balance.Balancer.SetServices(services)
+	// initialize proxymgr
+	err = proxymgr.Init()
 	if err != nil {
-		fmt.Printf("Balancer sync failed - %v\n", err)
+		fmt.Printf("Proxymgr init failed - %v\n", err)
+		os.Exit(1)
+	}
+	// initialize clusterer
+	err = cluster.Init()
+	if err != nil {
+		fmt.Printf("Clusterer init failed - %v\n", err)
 		os.Exit(1)
 	}
 }

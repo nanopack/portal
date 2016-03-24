@@ -1,3 +1,5 @@
+// config is a central location for configuration options. It also contains
+// config file parsing logic.
 package config
 
 import (
@@ -9,57 +11,68 @@ import (
 )
 
 var (
-	ApiToken           string
-	ApiHost            string
-	ApiPort            string
-	ApiKey             string
-	ApiCert            string
-	ApiKeyPassword     string
-	ConfigFile         string
-	DatabaseConnection string
-	ClusterConnection  string
-	ClusterToken       string
-	Insecure           bool
-	LogLevel           string
-	LogFile            string
+	ApiToken           = ""
+	ApiHost            = "127.0.0.1"
+	ApiPort            = "8443"
+	ApiKey             = ""
+	ApiCert            = ""
+	ApiKeyPassword     = ""
+	ConfigFile         = ""
+	DatabaseConnection = "scribble:///var/db/portal"
+	ClusterConnection  = "none://"
+	ClusterToken       = ""
+	Insecure           = false
+	LogLevel           = "INFO"
+	LogFile            = ""
 	Log                lumber.Logger
+	RouteHttp          = "0.0.0.0:80"
+	RouteTls           = "0.0.0.0:443"
+	JustProxy          = false
+	Server             = false
 )
 
-func LoadConfigFile() {
-	if ConfigFile != "" {
-		// Set defaults to whatever might be there already
-		viper.SetDefault("ApiToken", ApiToken)
-		viper.SetDefault("ApiHost", ApiHost)
-		viper.SetDefault("ApiPort", ApiPort)
-		viper.SetDefault("ApiKey", ApiKey)
-		viper.SetDefault("ApiCert", ApiCert)
-		viper.SetDefault("ApiKeyPassword", ApiKeyPassword)
-		viper.SetDefault("DatabaseConnection", DatabaseConnection)
-		viper.SetDefault("ClusterConnection", ClusterConnection)
-		viper.SetDefault("Insecure", Insecure)
-		viper.SetDefault("LogLevel", LogLevel)
-		viper.SetDefault("LogFile", LogFile)
-
-		filename := filepath.Base(ConfigFile)
-		viper.SetConfigName(filename[:len(filename)-len(filepath.Ext(filename))])
-		viper.AddConfigPath(filepath.Dir(ConfigFile))
-
-		err := viper.ReadInConfig()
-		if err != nil {
-			panic(fmt.Errorf("Fatal error config file: %s \n", err))
-		}
-
-		// Set values. Config file will override commandline
-		ApiToken = viper.GetString("ApiToken")
-		ApiHost = viper.GetString("ApiHost")
-		ApiPort = viper.GetString("ApiPort")
-		ApiKey = viper.GetString("ApiKey")
-		ApiCert = viper.GetString("ApiCert")
-		ApiKeyPassword = viper.GetString("ApiKeyPassword")
-		DatabaseConnection = viper.GetString("DatabaseConnection")
-		ClusterConnection = viper.GetString("ClusterConnection")
-		Insecure = viper.GetBool("Insecure")
-		LogLevel = viper.GetString("LogLevel")
-		LogFile = viper.GetString("LogFile")
+func LoadConfigFile() error {
+	if ConfigFile == "" {
+		return nil
 	}
+	// Set defaults to whatever might be there already
+	viper.SetDefault("api-token", ApiToken)
+	viper.SetDefault("api-host", ApiHost)
+	viper.SetDefault("api-port", ApiPort)
+	viper.SetDefault("api-key", ApiKey)
+	viper.SetDefault("api-cert", ApiCert)
+	viper.SetDefault("api-key-password", ApiKeyPassword)
+	viper.SetDefault("db-connection", DatabaseConnection)
+	viper.SetDefault("cluster-connection", ClusterConnection)
+	viper.SetDefault("cluster-token", ClusterToken)
+	viper.SetDefault("insecure", Insecure)
+	viper.SetDefault("log-level", LogLevel)
+	viper.SetDefault("log-file", LogFile)
+	viper.SetDefault("server", Server)
+
+	filename := filepath.Base(ConfigFile)
+	viper.SetConfigName(filename[:len(filename)-len(filepath.Ext(filename))])
+	viper.AddConfigPath(filepath.Dir(ConfigFile))
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		return fmt.Errorf("Fatal error config file: %s \n", err)
+	}
+
+	// Set values. Config file will override commandline
+	ApiToken = viper.GetString("api-token")
+	ApiHost = viper.GetString("api-host")
+	ApiPort = viper.GetString("api-port")
+	ApiKey = viper.GetString("api-key")
+	ApiCert = viper.GetString("api-cert")
+	ApiKeyPassword = viper.GetString("api-key-password")
+	DatabaseConnection = viper.GetString("db-connection")
+	ClusterConnection = viper.GetString("cluster-connection")
+	ClusterToken = viper.GetString("cluster-token")
+	Insecure = viper.GetBool("insecure")
+	LogLevel = viper.GetString("log-level")
+	LogFile = viper.GetString("log-file")
+	Server = viper.GetBool("server")
+
+	return nil
 }

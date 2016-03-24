@@ -1,3 +1,4 @@
+// database handles portal's persistant storage.
 package database
 
 import (
@@ -10,10 +11,15 @@ import (
 )
 
 var (
-	Backend        core.Backender
+	Backend        Storable
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
 )
+
+type Storable interface {
+	core.Backender
+	core.Proxyable
+}
 
 func Init() error {
 	var err error
@@ -69,4 +75,36 @@ func DeleteServer(svcId, srvId string) error {
 
 func GetServer(svcId, srvId string) (*core.Server, error) {
 	return Backend.GetServer(svcId, srvId)
+}
+
+func SetRoutes(routes []core.Route) error {
+	return Backend.SetRoutes(routes)
+}
+
+func SetRoute(route core.Route) error {
+	return Backend.SetRoute(route)
+}
+
+func DeleteRoute(route core.Route) error {
+	return Backend.DeleteRoute(route)
+}
+
+func GetRoutes() ([]core.Route, error) {
+	return Backend.GetRoutes()
+}
+
+func SetCerts(certs []core.CertBundle) error {
+	return Backend.SetCerts(certs)
+}
+
+func SetCert(cert core.CertBundle) error {
+	return Backend.SetCert(cert)
+}
+
+func DeleteCert(cert core.CertBundle) error {
+	return Backend.DeleteCert(cert)
+}
+
+func GetCerts() ([]core.CertBundle, error) {
+	return Backend.GetCerts()
 }

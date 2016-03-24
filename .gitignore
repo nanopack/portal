@@ -29,3 +29,5 @@ _testmain.go
 TODO
 build
 portal
+*.cover*
+config.json

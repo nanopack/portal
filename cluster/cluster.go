@@ -1,3 +1,4 @@
+// cluster handles the multi-master clustering of portal.
 package cluster
 
 import (
@@ -5,19 +6,23 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strconv"
-	"strings"
 
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 )
 
 var (
-	Clusterer      core.Backender
+	// Clusterer      core.Backender
+	Clusterer      Clusterable
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
 	BadJson        = errors.New("Bad JSON syntax received in body")
 )
+
+type Clusterable interface {
+	core.Backender
+	core.Proxyable
+}
 
 func Init() error {
 	url, err := url.Parse(config.ClusterConnection)
@@ -31,7 +36,8 @@ func Init() error {
 	case "none":
 		Clusterer = &None{}
 	default:
-		Clusterer = &Redis{}
+		Clusterer = &None{}
+		// Clusterer = &Redis{}
 	}
 
 	return Clusterer.Init()
@@ -73,24 +79,36 @@ func GetServer(svcId, srvId string) (*core.Server, error) {
 	return Clusterer.GetServer(svcId, srvId)
 }
 
-func parseSvc(serviceId string) (*core.Service, error) {
-	s := strings.Replace(serviceId, "_", ".", -1)
-	svc := strings.Split(s, "-")
-	if len(svc) != 3 {
-		return nil, NoServiceError
-	}
-	p, _ := strconv.Atoi(svc[2])
-	return &core.Service{Type: svc[0], Host: svc[1], Port: p}, nil
+func SetRoutes(routes []core.Route) error {
+	return Clusterer.SetRoutes(routes)
 }
 
-func parseSrv(serverId string) (*core.Server, error) {
-	s := strings.Replace(serverId, "_", ".", -1)
-	srv := strings.Split(s, "-")
-	if len(srv) != 2 {
-		return nil, NoServerError
-	}
-	p, _ := strconv.Atoi(srv[1])
-	return &core.Server{Host: srv[0], Port: p}, nil
+func SetRoute(route core.Route) error {
+	return Clusterer.SetRoute(route)
+}
+
+func DeleteRoute(route core.Route) error {
+	return Clusterer.DeleteRoute(route)
+}
+
+func GetRoutes() ([]core.Route, error) {
+	return Clusterer.GetRoutes()
+}
+
+func SetCerts(certs []core.CertBundle) error {
+	return Clusterer.SetCerts(certs)
+}
+
+func SetCert(cert core.CertBundle) error {
+	return Clusterer.SetCert(cert)
+}
+
+func DeleteCert(cert core.CertBundle) error {
+	return Clusterer.DeleteCert(cert)
+}
+
+func GetCerts() ([]core.CertBundle, error) {
+	return Clusterer.GetCerts()
 }
 
 func marshalSvc(service []byte) (*core.Service, error) {
@@ -166,4 +184,12 @@ func marshalSrvs(servers []byte) (*[]core.Server, error) {
 	}
 
 	return &srvs, nil
+}
+
+func parseBody(body []byte, v interface{}) error {
+	if err := json.Unmarshal(body, v); err != nil {
+		fmt.Println(err)
+		return BadJson
+	}
+	return nil
 }

@@ -1,3 +1,26 @@
+// api handles the api routes and pertaining funtionality.
+//
+//  | Action | Route                             | Description                                 | Payload                                     | Output                        |
+//  |--------|-----------------------------------|---------------------------------------------|---------------------------------------------|-------------------------------|
+//  | GET    | /services                         | List all services                           | nil                                         | json array of service objects |
+//  | POST   | /services                         | Add a service                               | json service object                         | json service object           |
+//  | PUT    | /services                         | Reset the list of services                  | json array of service objects               | json array of service objects |
+//  | PUT    | /services/:svc_id                 | Reset the specified service                 | nil                                         | json service object           |
+//  | GET    | /services/:svc_id                 | Get information about a service             | nil                                         | json service object           |
+//  | DELETE | /services/:svc_id                 | Delete a service                            | nil                                         | success message or an error   |
+//  | GET    | /services/:svc_id/servers         | List all servers on a service               | nil                                         | json array of server objects  |
+//  | POST   | /services/:svc_id/servers         | Add new server to a service                 | json server object                          | json server object            |
+//  | PUT    | /services/:svc_id/servers         | Reset the list of servers on a service      | json array of server objects                | json array of server objects  |
+//  | GET    | /services/:svc_id/servers/:srv_id | Get information about a server on a service | nil                                         | json server object            |
+//  | DELETE | /services/:svc_id/servers/:srv_id | Delete a server from a service              | nil                                         | success message or an error   |
+//  | DELETE | /routes                           | Delete a route                              | subdomain, domain, and path (json or query) | success message or an error   |
+//  | GET    | /routes                           | List all routes                             | nil                                         | json array of route objects   |
+//  | POST   | /routes                           | Add new route                               | json route object                           | json route object             |
+//  | PUT    | /routes                           | Reset the list of routes                    | json array of route objects                 | json array of route objects   |
+//  | DELETE | /certs                            | Delete a cert                               | json cert object                            | success message or an error   |
+//  | GET    | /certs                            | List all certs                              | nil                                         | json array of cert objects    |
+//  | POST   | /certs                            | Add new cert                                | json cert object                            | json cert object              |
+//  | PUT    | /certs                            | Reset the list of certs                     | json array of cert objects                  | json array of route objects   |
 package api
 
 // Things this api needs to support
@@ -18,15 +41,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/pat"
 	"github.com/nanobox-io/golang-nanoauth"
 
-	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/config"
-	"github.com/nanopack/portal/core"
-	"github.com/nanopack/portal/core/common"
 )
 
 var (
@@ -47,6 +66,10 @@ type (
 )
 
 func StartApi() error {
+	if config.Insecure {
+		config.Log.Info("Api listening at http://%s:%s...", config.ApiHost, config.ApiPort)
+		return http.ListenAndServe(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), routes())
+	}
 	var cert *tls.Certificate
 	var err error
 	if config.ApiCert == "" {
@@ -60,12 +83,13 @@ func StartApi() error {
 	auth.Certificate = cert
 	auth.Header = "X-NANOBOX-TOKEN"
 
-	config.Log.Info("Api listening at %s:%s...", config.ApiHost, config.ApiPort)
+	config.Log.Info("Api listening at https://%s:%s...", config.ApiHost, config.ApiPort)
 	return auth.ListenAndServeTLS(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), config.ApiToken, routes())
 }
 
 func routes() *pat.Router {
 	router := pat.New()
+	// balancing
 	router.Delete("/services/{svcId}/servers/{srvId}", deleteServer)
 	router.Get("/services/{svcId}/servers/{srvId}", getServer)
 	router.Put("/services/{svcId}/servers", putServers)
@@ -77,6 +101,19 @@ func routes() *pat.Router {
 	router.Post("/services", postService)
 	router.Put("/services", putServices)
 	router.Get("/services", getServices)
+
+	// routing
+	router.Delete("/routes", deleteRoute)
+	router.Put("/routes", putRoutes)
+	router.Get("/routes", getRoutes)
+	router.Post("/routes", postRoute)
+
+	// certificates
+	router.Delete("/certs", deleteCert)
+	router.Put("/certs", putCerts)
+	router.Get("/certs", getCerts)
+	router.Post("/certs", postCert)
+
 	return router
 }
 
@@ -108,288 +145,22 @@ func writeError(rw http.ResponseWriter, req *http.Request, err error, status int
 	return writeBody(rw, req, apiError{ErrorString: err.Error()}, status)
 }
 
-func parseReqService(req *http.Request) (*core.Service, error) {
+// parseBody parses the json body into v
+func parseBody(req *http.Request, v interface{}) error {
+
+	// read the body
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		config.Log.Error(err.Error())
-		return nil, BodyReadFail
+		return BodyReadFail
 	}
+	defer req.Body.Close()
 
-	var svc core.Service
-
-	if err := json.Unmarshal(b, &svc); err != nil {
-		return nil, BadJson
-	}
-
-	svc.GenId()
-	if svc.Id == "--0" {
-		return nil, NoServiceError
-	}
-
-	for i := range svc.Servers {
-		svc.Servers[i].GenId()
-	}
-
-	config.Log.Trace("SERVICE: %+v", svc)
-	return &svc, nil
-}
-
-func parseReqServer(req *http.Request) (*core.Server, error) {
-	b, err := ioutil.ReadAll(req.Body)
+	// parse body and store in v
+	err = json.Unmarshal(b, v)
 	if err != nil {
-		config.Log.Error(err.Error())
-		return nil, BodyReadFail
+		return BadJson
 	}
 
-	var srv core.Server
-
-	if err := json.Unmarshal(b, &srv); err != nil {
-		return nil, BadJson
-	}
-
-	srv.GenId()
-	if srv.Id == "-0" {
-		return nil, NoServerError
-	}
-
-	config.Log.Trace("SERVER: %+v", srv)
-	return &srv, nil
-}
-
-// Get information about a backend server
-func getServer(rw http.ResponseWriter, req *http.Request) {
-	// /services/{svcId}/servers/{srvId}
-	svcId := req.URL.Query().Get(":svcId")
-	srvId := req.URL.Query().Get(":srvId")
-
-	server, err := common.GetServer(svcId, srvId)
-	if err != nil {
-		writeError(rw, req, err, http.StatusNotFound)
-		return
-	}
-	writeBody(rw, req, server, http.StatusOK)
-}
-
-// Create a backend server
-func postServer(rw http.ResponseWriter, req *http.Request) {
-	// /services/{svcId}/servers
-	svcId := req.URL.Query().Get(":svcId")
-
-	server, err := parseReqServer(req)
-	if err != nil {
-		writeError(rw, req, err, http.StatusBadRequest)
-		return
-	}
-
-	// idempotent additions (don't update server on post)
-	if srv, _ := common.GetServer(svcId, server.Id); srv != nil {
-		writeBody(rw, req, server, http.StatusOK)
-		return
-	}
-
-	// save to cluster
-	err = cluster.SetServer(svcId, server)
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	// todo: or service (which would include server)
-	writeBody(rw, req, server, http.StatusOK)
-}
-
-// Delete a backend server
-func deleteServer(rw http.ResponseWriter, req *http.Request) {
-	// /services/{svcId}/servers/{srvId}
-	svcId := req.URL.Query().Get(":svcId")
-	srvId := req.URL.Query().Get(":srvId")
-
-	// remove from cluster
-	err := cluster.DeleteServer(svcId, srvId)
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
-}
-
-// Get information about a backend server
-func getServers(rw http.ResponseWriter, req *http.Request) {
-	// /services/{svcId}/servers
-	svcId := req.URL.Query().Get(":svcId")
-	service, err := common.GetService(svcId)
-	if err != nil {
-		writeError(rw, req, err, http.StatusNotFound)
-		return
-	}
-	if service.Servers == nil {
-		service.Servers = make([]core.Server, 0, 0)
-	}
-	// writeBody(rw, req, service, http.StatusOK)
-	writeBody(rw, req, service.Servers, http.StatusOK)
-}
-
-// Create a backend server
-func putServers(rw http.ResponseWriter, req *http.Request) {
-	// /services/{svcId}/servers
-	svcId := req.URL.Query().Get(":svcId")
-
-	servers := []core.Server{}
-	decoder := json.NewDecoder(req.Body)
-	if err := decoder.Decode(&servers); err != nil {
-		writeError(rw, req, BadJson, http.StatusBadRequest)
-		return
-	}
-
-	for i := range servers {
-		servers[i].GenId()
-	}
-
-	// add to cluster
-	err := cluster.SetServers(svcId, servers)
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	writeBody(rw, req, servers, http.StatusOK)
-}
-
-// Get information about a service
-func getService(rw http.ResponseWriter, req *http.Request) {
-	// /services/{svcId}
-	svcId := req.URL.Query().Get(":svcId")
-
-	service, err := common.GetService(svcId)
-	if err != nil {
-		writeError(rw, req, err, http.StatusNotFound)
-		return
-	}
-	writeBody(rw, req, service, http.StatusOK)
-}
-
-// Reset all services
-// /services
-func putServices(rw http.ResponseWriter, req *http.Request) {
-	services := []core.Service{}
-	decoder := json.NewDecoder(req.Body)
-	if err := decoder.Decode(&services); err != nil {
-		writeError(rw, req, BadJson, http.StatusBadRequest)
-		return
-	}
-
-	for i := range services {
-		services[i].GenId()
-		if services[i].Id == "--0" {
-			writeError(rw, req, NoServiceError, http.StatusBadRequest)
-			return
-		}
-		for j := range services[i].Servers {
-			services[i].Servers[j].GenId()
-			if services[i].Servers[j].Id == "-0" {
-				writeError(rw, req, NoServerError, http.StatusBadRequest)
-				return
-			}
-		}
-	}
-
-	// save to cluster
-	err := cluster.SetServices(services)
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	writeBody(rw, req, services, http.StatusOK)
-}
-
-// Create a service
-func postService(rw http.ResponseWriter, req *http.Request) {
-	// /services
-	service, err := parseReqService(req)
-	if err != nil {
-		writeError(rw, req, err, http.StatusBadRequest)
-		return
-	}
-
-	// idempotent additions (don't update service on post)
-	if svc, _ := common.GetService(service.Id); svc != nil {
-		writeBody(rw, req, service, http.StatusOK)
-		return
-	}
-
-	// save to cluster
-	err = cluster.SetService(service)
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	writeBody(rw, req, service, http.StatusOK)
-}
-
-// Replace a service (by replacing all services)
-func putService(rw http.ResponseWriter, req *http.Request) {
-	// /services/{svcId}
-	svcId := req.URL.Query().Get(":svcId")
-	// rough sanitization
-	if len(strings.Split(svcId, "-")) != 3 {
-		writeError(rw, req, NoServiceError, http.StatusBadRequest)
-		return
-	}
-
-	service, err := parseReqService(req)
-	if err != nil {
-		writeError(rw, req, err, http.StatusBadRequest)
-		return
-	}
-
-	services, err := common.GetServices()
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	// update service by id
-	for i := range services {
-		if services[i].Id == svcId {
-			services[i] = *service
-			break
-		}
-	}
-
-	// save to cluster
-	if err := cluster.SetServices(services); err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	writeBody(rw, req, service, http.StatusOK)
-}
-
-// Delete a service
-func deleteService(rw http.ResponseWriter, req *http.Request) {
-	// /services/{svcId}
-	svcId := req.URL.Query().Get(":svcId")
-
-	// remove from cluster
-	err := cluster.DeleteService(svcId)
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-
-	writeBody(rw, req, apiMsg{"Success"}, http.StatusOK)
-}
-
-// List all services
-func getServices(rw http.ResponseWriter, req *http.Request) {
-	// /services
-	svcs, err := common.GetServices()
-	if err != nil {
-		writeError(rw, req, err, http.StatusInternalServerError)
-		return
-	}
-	writeBody(rw, req, svcs, http.StatusOK)
+	return nil
 }
