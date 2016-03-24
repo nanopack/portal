@@ -1,3 +1,4 @@
+// database handles portal's persistant storage.
 package database
 
 import (

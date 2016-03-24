@@ -11,7 +11,6 @@
 // Refactored : March 2016    by Greg Linton <lintong@nanobox.io>
 //--------------------------------------------------------------------
 
-
 // Portal is an api-driven, in-kernel layer 2/3 load balancer with
 // http/s proxy cababilities.
 //
@@ -24,7 +23,7 @@
 //  Usage:
 //    portal [flags]
 //    portal [command]
-//  
+//
 //  Available Commands:
 //    add-service    Add service
 //    remove-service Remove service
@@ -45,7 +44,7 @@
 //    set-certs      Set cert list
 //    show-certs     Show all certs
 //    remove-cert    Remove cert
-//  
+//
 //  Flags:
 //    -C, --api-cert="": SSL cert for the api
 //    -H, --api-host="127.0.0.1": Listen address for the API
@@ -61,7 +60,7 @@
 //    -L, --log-file="": Log file to write to
 //    -l, --log-level="INFO": Log level to output
 //    -s, --server[=false]: Run in server mode
-//  
+//
 //  Use "portal [command] --help" for more information about a command.
 //
 //
@@ -75,31 +74,31 @@
 //  // every call starts by hitting the api
 //  API - setRoute
 //  - calls cluster.SetRoute
-//  
+//
 //    // in order to ensure syncronization comes first, cluster starts the work
 //    CLUSTER - SetRoute
 //    - calls publish "set-route"
-//  
+//
 //      // the redis clusterer utilizes the pub/sub functionality for syncronization
 //      // when it recieves a message, it calls on "common" to implement the changes
 //      SUBSCRIBER - on "set-route"
 //      - calls common.SetRoute
-//  
+//
 //        // common contains all the logic to perform an action, as well as roll back
 //        // other "systems" upon failure, effectively "undoing" the action
 //        COMMON - SetRoute
 //        - calls proxymgr.SetRoute & database.SetRoute
 //        - rolls back proxymgr if database fails
-//  
+//
 //      SUBSCRIBER
 //      - if common.SetRoute was successful, write success to redis for self, otherwise
 //        rollback self
-//  
+//
 //    // the cluster member that received the request ensures all members got the update
 //    CLUSTER
 //    - returns err if not all members have set route
 //    - rolls back `common` (via publish) if not all members can set route
-//  
+//
 //  API
 //  - if error, return 500 response, otherwise respond as fits
 //

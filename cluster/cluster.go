@@ -1,3 +1,4 @@
+// cluster handles the multi-master clustering of portal.
 package cluster
 
 import (

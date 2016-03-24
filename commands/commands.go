@@ -1,3 +1,4 @@
+// commands is where all cli logic is, including starting portal as a server.
 package commands
 
 import (

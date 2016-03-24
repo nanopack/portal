@@ -1,3 +1,5 @@
+// common contains all the logic to perform an action, as well as roll back
+// other "systems" upon failure, effectively "undoing" the action.
 package common
 
 import (

@@ -1,3 +1,26 @@
+// api handles the api routes and pertaining funtionality.
+//
+//  | Action | Route                             | Description                                 | Payload                                     | Output                        |
+//  |--------|-----------------------------------|---------------------------------------------|---------------------------------------------|-------------------------------|
+//  | GET    | /services                         | List all services                           | nil                                         | json array of service objects |
+//  | POST   | /services                         | Add a service                               | json service object                         | json service object           |
+//  | PUT    | /services                         | Reset the list of services                  | json array of service objects               | json array of service objects |
+//  | PUT    | /services/:svc_id                 | Reset the specified service                 | nil                                         | json service object           |
+//  | GET    | /services/:svc_id                 | Get information about a service             | nil                                         | json service object           |
+//  | DELETE | /services/:svc_id                 | Delete a service                            | nil                                         | success message or an error   |
+//  | GET    | /services/:svc_id/servers         | List all servers on a service               | nil                                         | json array of server objects  |
+//  | POST   | /services/:svc_id/servers         | Add new server to a service                 | json server object                          | json server object            |
+//  | PUT    | /services/:svc_id/servers         | Reset the list of servers on a service      | json array of server objects                | json array of server objects  |
+//  | GET    | /services/:svc_id/servers/:srv_id | Get information about a server on a service | nil                                         | json server object            |
+//  | DELETE | /services/:svc_id/servers/:srv_id | Delete a server from a service              | nil                                         | success message or an error   |
+//  | DELETE | /routes                           | Delete a route                              | subdomain, domain, and path (json or query) | success message or an error   |
+//  | GET    | /routes                           | List all routes                             | nil                                         | json array of route objects   |
+//  | POST   | /routes                           | Add new route                               | json route object                           | json route object             |
+//  | PUT    | /routes                           | Reset the list of routes                    | json array of route objects                 | json array of route objects   |
+//  | DELETE | /certs                            | Delete a cert                               | json cert object                            | success message or an error   |
+//  | GET    | /certs                            | List all certs                              | nil                                         | json array of cert objects    |
+//  | POST   | /certs                            | Add new cert                                | json cert object                            | json cert object              |
+//  | PUT    | /certs                            | Reset the list of certs                     | json array of cert objects                  | json array of route objects   |
 package api
 
 // Things this api needs to support

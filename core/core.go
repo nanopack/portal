@@ -1,3 +1,4 @@
+// core centralizes the commonly used interfaces and structs.
 package core
 
 import (
