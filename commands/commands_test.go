@@ -392,7 +392,7 @@ func TestAddCert(t *testing.T) {
 		t.Errorf("Failed to execute - %v", err.Error())
 	}
 
-	if string(out) != "{\"error\":\"crypto/tls: failed to find any PEM data in certificate input\"}\n" {
+	if !strings.Contains(string(out), "error") {
 		t.Errorf("Unexpected output: %q", string(out))
 	}
 }
@@ -419,7 +419,7 @@ func TestSetCerts(t *testing.T) {
 		t.Errorf("Failed to execute - %v", err.Error())
 	}
 
-	if string(out) != "{\"error\":\"crypto/tls: failed to find any PEM data in certificate input\"}\n" {
+	if !strings.Contains(string(out), "error") {
 		t.Errorf("Unexpected output: %q", string(out))
 	}
 }
