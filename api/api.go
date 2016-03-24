@@ -43,6 +43,10 @@ type (
 )
 
 func StartApi() error {
+	if config.Insecure {
+		config.Log.Info("Api listening at http://%s:%s...", config.ApiHost, config.ApiPort)
+		return http.ListenAndServe(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), routes())
+	}
 	var cert *tls.Certificate
 	var err error
 	if config.ApiCert == "" {

@@ -27,11 +27,16 @@ func postRoute(rw http.ResponseWriter, req *http.Request) {
 }
 
 func deleteRoute(rw http.ResponseWriter, req *http.Request) {
+	query := req.URL.Query()
 	var route core.Route
 	err := parseBody(req, &route)
 	if err != nil {
-		writeError(rw, req, err, http.StatusBadRequest)
-		return
+		// check and use query parameters if payload fails
+		if len(query) == 0 {
+			writeError(rw, req, err, http.StatusBadRequest)
+			return
+		}
+		route = core.Route{SubDomain: query.Get("subdomain"), Domain: query.Get("domain"), Path: query.Get("path")}
 	}
 
 	// save to cluster

@@ -2,16 +2,123 @@
 [![Build Status](https://travis-ci.org/nanopack/portal.svg)](https://travis-ci.org/nanopack/portal)
 [![GoDoc](https://godoc.org/github.com/nanopack/portal?status.svg)](https://godoc.org/github.com/nanopack/portal)
 
-# Portal
+Portal is an api-driven, in-kernel layer 2/3 load balancer.
 
-An api-driven, in-kernel layer 2/3 load balancer.
+## Status
+Complete/Experimental
 
-### Status
-Incomplete/Experimental/Unstable
+## Usage:
 
-## Memory Usage
+### As a CLI
+Simply run `portal <COMMAND>`
 
-Currently portal uses 900k of ram while idling.
+`portal` or `portal -h` will show usage and a list of commands:
+
+```
+portal - load balancer/proxy
+
+Usage:
+  portal [flags]
+  portal [command]
+
+Available Commands:
+  add-service    Add service
+  remove-service Remove service
+  show-service   Show service
+  show-services  Show all services
+  set-services   Set service list
+  set-service    Set service
+  add-server     Add server to a service
+  remove-server  Remove server from a service
+  show-server    Show server on a service
+  show-servers   Show all servers on a service
+  set-servers    Set server list on a service
+  add-route      Add route
+  set-routes     Set route list
+  show-routes    Show all routes
+  remove-route   Remove route
+  add-cert       Add cert
+  set-certs      Set cert list
+  show-certs     Show all certs
+  remove-cert    Remove cert
+
+Flags:
+  -C, --api-cert="": SSL cert for the api
+  -H, --api-host="127.0.0.1": Listen address for the API
+  -k, --api-key="": SSL key for the api
+  -p, --api-key-password="": Password for the SSL key
+  -P, --api-port="8443": Listen address for the API
+  -t, --api-token="": Token for API Access
+  -r, --cluster-connection="none://": Cluster connection string (redis://127.0.0.1:6379)
+  -T, --cluster-token="": Cluster security token
+  -c, --conf="": Configuration file to load
+  -d, --db-connection="scribble:///var/db/portal": Database connection string
+  -i, --insecure[=false]: Disable tls key checking (client) and listen on http (server)
+  -L, --log-file="": Log file to write to
+  -l, --log-level="INFO": Log level to output
+  -s, --server[=false]: Run in server mode
+
+Use "portal [command] --help" for more information about a command.
+```
+
+For usage examples, see [Api](api/README.md) and/or [Cli](commands/README.md) readme  
+
+### As a Server
+To start portal as a server run:
+
+`portal --server`
+
+An optional config file can also be passed on startup:
+
+`portal -c /path/to/config.json`
+
+>config.json
+>```json
+{
+  "api-token": "",
+  "api-host": "127.0.0.1",
+  "api-port": 8443,
+  "api-key": "",
+  "api-cert": "",
+  "api-key-password": "",
+  "db-connection": "scribble:///var/db/portal",
+  "cluster-connection": "none://",
+  "cluster-token": "",
+  "insecure": false,
+  "log-level": "INFO",
+  "log-file": "",
+  "server": true
+}
+```
+
+## API:
+
+| Route | Description | payload | output |
+| --- | --- | --- | --- |
+| **Get** /services | List all services | nil | json array of service objects |
+| **Post** /services | Add a service | json service object | json service object |
+| **Put** /services | Reset the list of services | json array of service objects | json array of service objects |
+| **Put** /services/:service_id | Reset the specified service | nil | json service object |
+| **Get** /services/:service_id | Get information about a service | nil | json service object |
+| **Delete** /services/:service_id | Delete a service | nil | success message or an error |
+| **Get** /services/:service_id/servers | List all servers on a service | nil | json array of server objects |
+| **Post** /services/:service_id/servers | Add new server to a service | json server object | json server object |
+| **Put** /services/:service_id/servers | Reset the list of servers on a service | json array of server objects | json array of server objects |
+| **Get** /services/:service_id/servers/:server_id | Get information about a server on a service | nil | json server object |
+| **Delete** /services/:service_id/servers/:server_id | Delete a server from a service | nil | success message or an error |
+| **Delete** /routes | Delete a route | subdomain, domain, and path (json or query) | success message or an error |
+| **Get** /routes | List all routes | nil | json array of route objects |
+| **Post** /routes | Add new route | json route object | json route object |
+| **Put** /routes | Reset the list of routes | json array of route objects | json array of route objects |
+| **Delete** /certs | Delete a cert | json cert object | success message or an error |
+| **Get** /certs | List all certs | nil | json array of cert objects |
+| **Post** /certs | Add new cert | json cert object | json cert object |
+| **Put** /certs | Reset the list of certs | json array of cert objects | json array of route objects |
+
+- **service_id** is a formatted combination of service info: type-host-port. (tcp-127_0_0_3-80)  
+- **server_id** is a formatted combination of server info: host-port. (192_0_0_3-8080)  
+
+For examples, see [the api's readme](api/README.md)  
 
 ## Data types:
 ### Service:
@@ -135,28 +242,5 @@ json:
 
 Fields:
  - **msg**: Success message
-
-## Routes:
-
-| Route | Description | payload | output |
-| --- | --- | --- | --- |
-| **Get** /services | List all services | nil | json array of service objects |
-| **Post** /services | Add a service | json service object | json service object |
-| **Put** /services | Reset the list of services | json array of service objects | json array of service objects |
-| **Put** /services/:service_id | Reset the specified service | nil | json service object |
-| **Get** /services/:service_id | Get information about a service | nil | json service object |
-| **Delete** /services/:service_id | Delete a service | nil | success message or an error |
-| **Get** /services/:service_id/servers | List all servers on a service | nil | json array of server objects |
-| **Post** /services/:service_id/servers | Add new server to a service | json server object | json server object |
-| **Put** /services/:service_id/servers | Reset the list of servers on a service | json array of server objects | json array of server objects |
-| **Get** /services/:service_id/servers/:server_id | Get information about a server on a service | nil | json server object |
-| **Delete** /services/:service_id/servers/:server_id | Delete a server from a service | nil | success message or an error |
-
-- **service_id** is a formatted combination of service info: type-host-port. (tcp-127_0_0_3-80)  
-- **server_id** is a formatted combination of server info: host-port. (192_0_0_3-8080)  
-
-## Usage:
-
-For usage examples, see [Api](api/README.md) and/or [Cli](commands/README.md)  
 
 [![portal logo](http://nano-assets.gopagoda.io/open-src/nanobox-open-src.png)](http://nanobox.io/open-source)

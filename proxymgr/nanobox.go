@@ -62,8 +62,7 @@ func (self Nanobox) DeleteRoute(route core.Route) error {
 }
 
 func (self Nanobox) SetRoutes(routes []core.Route) error {
-	router.UpdateRoutes(self.rToRoutes(routes))
-	return nil
+	return router.UpdateRoutes(self.rToRoutes(routes))
 }
 
 func (self Nanobox) GetRoutes() ([]core.Route, error) {
@@ -100,8 +99,7 @@ func (self Nanobox) DeleteCert(cert core.CertBundle) error {
 }
 
 func (self Nanobox) SetCerts(certs []core.CertBundle) error {
-	router.UpdateCerts(self.cToKeys(certs))
-	return nil
+	return router.UpdateCerts(self.cToKeys(certs))
 }
 
 func (self Nanobox) GetCerts() ([]core.CertBundle, error) {

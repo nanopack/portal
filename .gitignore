@@ -30,3 +30,4 @@ TODO
 build
 portal
 *.cover*
+config.json

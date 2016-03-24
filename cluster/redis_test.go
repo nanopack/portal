@@ -41,17 +41,20 @@ func TestMain(m *testing.M) {
 	// initialize backend if redis-server found
 	initialize()
 
-	rtn := m.Run()
-
-	// clean test dir
-	os.RemoveAll("/tmp/clusterTest")
-
 	conn, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(30*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
 		return
 	}
 	hostname, _ := os.Hostname()
 	self := fmt.Sprintf("%v:%v", hostname, config.ApiPort)
+	defer conn.Do("SREM", "members", self)
+	defer conn.Close()
+
+	rtn := m.Run()
+
+	// clean test dir
+	os.RemoveAll("/tmp/clusterTest")
+	// just in case, ensure clean members
 	conn.Do("SREM", "members", self)
 	conn.Close()
 

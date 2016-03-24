@@ -313,6 +313,129 @@ func TestShowServerId(t *testing.T) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// ROUTES
+////////////////////////////////////////////////////////////////////////////////
+func TestShowRoutes(t *testing.T) {
+	Portal.SetArgs(strings.Split("show-routes", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "[]\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestAddRoute(t *testing.T) {
+	Portal.SetArgs(strings.Split("add-route -j {\"domain\":\"portal.test\",\"page\":\"testing\"}", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\"}\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestRemoveRoute(t *testing.T) {
+	args := strings.Split("remove-route -d portal.test", " ")
+	Portal.SetArgs(args)
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != successMsg {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestSetRoutes(t *testing.T) {
+	Portal.SetArgs(strings.Split("set-routes -j [{\"domain\":\"portal.test\",\"page\":\"testing\"}]", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "[{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\"}]\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CERTS
+////////////////////////////////////////////////////////////////////////////////
+func TestShowCerts(t *testing.T) {
+	Portal.SetArgs(strings.Split("show-certs", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "[]\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestAddCert(t *testing.T) {
+	Portal.SetArgs(strings.Split("add-cert -j {\"key\":\"portal.test\",\"cert\":\"certified\"}", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "{\"error\":\"crypto/tls: failed to find any PEM data in certificate input\"}\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestRemoveCert(t *testing.T) {
+	args := strings.Split("remove-cert -j {\"key\":\"portal.test\",\"cert\":\"certified\"}", " ")
+	Portal.SetArgs(args)
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != successMsg {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestSetCerts(t *testing.T) {
+	Portal.SetArgs(strings.Split("set-certs -j [{\"key\":\"portal.test\",\"cert\":\"certified\"}]", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != "{\"error\":\"crypto/tls: failed to find any PEM data in certificate input\"}\n" {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestRunServer(t *testing.T) {
+	config.JustProxy = true
+	config.RouteHttp = "0.0.0.0:9085"
+	config.RouteTls = "0.0.0.0:9448"
+
+	Portal.SetArgs(strings.Split("-s -d /tmp/portalServer -l FATAL -P 8446", " "))
+
+	go Portal.Execute()
+	time.Sleep(time.Second)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PRIVS
 ////////////////////////////////////////////////////////////////////////////////
 func capture(fn execable) ([]byte, error) {
@@ -340,7 +463,8 @@ func initialize() {
 	config.ApiToken = ""
 	config.RouteHttp = "0.0.0.0:9081"
 	config.RouteTls = "0.0.0.0:9444"
-	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
+	config.LogLevel = "FATAL"
+	config.Log = lumber.NewConsoleLogger(lumber.LvlInt(config.LogLevel))
 	apiAddr = fmt.Sprintf("%v:%v", config.ApiHost, config.ApiPort)
 
 	// initialize database
