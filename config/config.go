@@ -47,6 +47,8 @@ func AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&ClusterToken, "cluster-token", "T", ClusterToken, "Cluster security token")
 	cmd.Flags().StringVarP(&LogLevel, "log-level", "l", LogLevel, "Log level to output")
 	cmd.Flags().StringVarP(&LogFile, "log-file", "L", LogFile, "Log file to write to")
+	cmd.Flags().StringVarP(&RouteHttp, "proxy-http", "x", RouteHttp, "Address to listen on for proxying http")
+	cmd.Flags().StringVarP(&RouteTls, "proxy-tls", "X", RouteTls, "Address to listen on for proxying https")
 
 	cmd.Flags().BoolVarP(&Server, "server", "s", Server, "Run in server mode")
 	cmd.Flags().BoolVarP(&JustProxy, "just-proxy", "j", JustProxy, "Proxy only (no tcp/udp load balancing)")
@@ -71,6 +73,8 @@ func LoadConfigFile() error {
 	viper.SetDefault("log-level", LogLevel)
 	viper.SetDefault("log-file", LogFile)
 	viper.SetDefault("server", Server)
+	viper.SetDefault("proxy-http", RouteHttp)
+	viper.SetDefault("proxy-tls", RouteTls)
 
 	filename := filepath.Base(ConfigFile)
 	viper.SetConfigName(filename[:len(filename)-len(filepath.Ext(filename))])
@@ -96,6 +100,8 @@ func LoadConfigFile() error {
 	LogLevel = viper.GetString("log-level")
 	LogFile = viper.GetString("log-file")
 	Server = viper.GetBool("server")
+	RouteHttp = viper.GetString("proxy-http")
+	RouteTls = viper.GetString("proxy-tls")
 
 	return nil
 }

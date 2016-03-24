@@ -57,6 +57,8 @@ Flags:
   -j, --just-proxy[=false]: Proxy only (no tcp/udp load balancing)
   -L, --log-file="": Log file to write to
   -l, --log-level="INFO": Log level to output
+  -x, --proxy-http="0.0.0.0:80": Address to listen on for proxying http
+  -X, --proxy-tls="0.0.0.0:443": Address to listen on for proxying https
   -s, --server[=false]: Run in server mode
 
 Use "portal [command] --help" for more information about a command.
@@ -87,6 +89,8 @@ An optional config file can also be passed on startup:
   "cluster-token": "",
   "insecure": false,
   "just-proxy": false,
+  "proxy-http": "0.0.0.0:80",
+  "proxy-tls": "0.0.0.0:443",
   "log-level": "INFO",
   "log-file": "",
   "server": true
