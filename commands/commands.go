@@ -34,23 +34,7 @@ var (
 )
 
 func init() {
-	Portal.PersistentFlags().BoolVarP(&config.Insecure, "insecure", "i", config.Insecure, "Disable tls key checking (client) and listen on http (server)")
-	Portal.PersistentFlags().StringVarP(&config.ApiToken, "api-token", "t", config.ApiToken, "Token for API Access")
-	Portal.PersistentFlags().StringVarP(&config.ApiHost, "api-host", "H", config.ApiHost, "Listen address for the API")
-	Portal.PersistentFlags().StringVarP(&config.ApiPort, "api-port", "P", config.ApiPort, "Listen address for the API")
-	Portal.PersistentFlags().StringVarP(&config.ConfigFile, "conf", "c", config.ConfigFile, "Configuration file to load")
-
-	Portal.Flags().StringVarP(&config.ApiKey, "api-key", "k", config.ApiKey, "SSL key for the api")
-	Portal.Flags().StringVarP(&config.ApiCert, "api-cert", "C", config.ApiCert, "SSL cert for the api")
-	Portal.Flags().StringVarP(&config.ApiKeyPassword, "api-key-password", "p", config.ApiKeyPassword, "Password for the SSL key")
-	Portal.Flags().StringVarP(&config.DatabaseConnection, "db-connection", "d", config.DatabaseConnection, "Database connection string")
-	Portal.Flags().StringVarP(&config.ClusterConnection, "cluster-connection", "r", config.ClusterConnection, "Cluster connection string (redis://127.0.0.1:6379)")
-	Portal.Flags().StringVarP(&config.ClusterToken, "cluster-token", "T", config.ClusterToken, "Cluster security token")
-	Portal.Flags().StringVarP(&config.LogLevel, "log-level", "l", config.LogLevel, "Log level to output")
-	Portal.Flags().StringVarP(&config.LogFile, "log-file", "L", config.LogFile, "Log file to write to")
-
-	Portal.Flags().BoolVarP(&config.Server, "server", "s", config.Server, "Run in server mode")
-
+	config.AddFlags(Portal)
 	Portal.AddCommand(serviceAddCmd)
 	Portal.AddCommand(serviceRemoveCmd)
 	Portal.AddCommand(serviceShowCmd)
