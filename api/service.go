@@ -25,6 +25,13 @@ func parseReqService(req *http.Request) (*core.Service, error) {
 		return nil, BadJson
 	}
 
+	if svc.Interface != "" {
+		err = svc.GenHost()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	svc.GenId()
 	if svc.Id == "--0" {
 		return nil, NoServiceError
@@ -62,6 +69,13 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	for i := range services {
+		if services[i].Interface != "" {
+			err := services[i].GenHost()
+			if err != nil {
+				writeError(rw, req, err, http.StatusBadRequest)
+				return
+			}
+		}
 		services[i].GenId()
 		if services[i].Id == "--0" {
 			writeError(rw, req, NoServiceError, http.StatusBadRequest)

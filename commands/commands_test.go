@@ -52,6 +52,7 @@ var (
 		stringed: `[{"host":"127.0.0.11","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1},{"host":"127.0.0.12","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1}]`,
 		returned: "[{\"id\":\"127_0_0_11-8080\",\"host\":\"127.0.0.11\",\"port\":8080,\"forwarder\":\"m\",\"weight\":5,\"upper_threshold\":10,\"lower_threshold\":1},{\"id\":\"127_0_0_12-8080\",\"host\":\"127.0.0.12\",\"port\":8080,\"forwarder\":\"m\",\"weight\":5,\"upper_threshold\":10,\"lower_threshold\":1}]\n",
 	}
+	ifaceReturned = "{\"id\":\"tcp-127_0_0_1-80\",\"host\":\"127.0.0.1\",\"interface\":\"lo\",\"port\":80,\"type\":\"tcp\",\"scheduler\":\"wrr\",\"persistence\":0,\"netmask\":\"\"}\n"
 )
 
 func TestMain(m *testing.M) {
@@ -139,6 +140,19 @@ func TestRemoveServiceId(t *testing.T) {
 	}
 
 	if string(out) != successMsg {
+		t.Errorf("Unexpected output: %q", string(out))
+	}
+}
+
+func TestSetService(t *testing.T) {
+	Portal.SetArgs(strings.Split("set-service -F lo -R 80 -T tcp -s wrr", " "))
+
+	out, err := capture(Portal.Execute)
+	if err != nil {
+		t.Errorf("Failed to execute - %v", err.Error())
+	}
+
+	if string(out) != ifaceReturned {
 		t.Errorf("Unexpected output: %q", string(out))
 	}
 }

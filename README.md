@@ -165,6 +165,7 @@ json with a server:
 
 Fields:
 - **host**: IP of the host the service is bound to.
+- **interface**: Host interface the service is bound to (optional, overrides host).
 - **port**: Port that the service listens to.
 - **type**: Type of service. Either tcp or udp.
 - **scheduler**: How to pick downstream server. On of the following: rr, wrr, lc, wlc, lblc, lblcr, dh, sh, sed, nq
