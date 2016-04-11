@@ -96,6 +96,8 @@ $ ./portal add-service -O "127.0.0.3" -R 1234 -T "tcp" -s "rr" -e 0 -n ""
 {"id":"tcp-127_0_0_3-1234","host":"127.0.0.3","port":1234,"type":"tcp","scheduler":"rr","persistence":0,"netmask":""}
 $ ./portal add-service -j '{"id":"tcp-127_0_0_3-1234","host":"127.0.0.3","port":1234,"type":"tcp","scheduler":"rr","persistence":0,"netmask":"","servers":[{"id":"192_168_0_3-8080","host":"192.168.0.3","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1},{"id":"192_168_0_4-8080","host":"192.168.0.4","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1}]}'
 {"id":"tcp-127_0_0_3-1234","host":"127.0.0.3","port":1234,"type":"tcp","scheduler":"rr","persistence":0,"netmask":"","servers":[{"id":"192_168_0_3-8080","host":"192.168.0.3","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1},{"id":"192_168_0_4-8080","host":"192.168.0.4","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1}]}
+$ ./portal add-service -F "eth0" -R 1234 -T "tcp" -s "rr" -e 0 -n ""
+{"id":"tcp-127_0_0_3-1234","host":"127.0.0.3","interface":"eth0","port":1234,"type":"tcp","scheduler":"rr","persistence":0,"netmask":""}
 ```
 
 #### show services

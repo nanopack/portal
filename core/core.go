@@ -3,6 +3,7 @@ package core
 
 import (
 	"fmt"
+	"net"
 	"strings"
 )
 
@@ -47,6 +48,7 @@ type (
 	Service struct {
 		Id          string   `json:"id,omitempty"`
 		Host        string   `json:"host"`
+		Interface   string   `json:"interface,omitempty"`
 		Port        int      `json:"port"`
 		Type        string   `json:"type"`
 		Scheduler   string   `json:"scheduler"`
@@ -78,4 +80,21 @@ func (s *Service) GenId() {
 
 func (s *Server) GenId() {
 	s.Id = fmt.Sprintf("%v-%d", strings.Replace(s.Host, ".", "_", -1), s.Port)
+}
+
+func (s *Service) GenHost() error {
+	iface, err := net.InterfaceByName(s.Interface)
+	if err != nil {
+		return fmt.Errorf("No interface found '%v' - %v", s.Interface, err)
+	}
+	addrs, err := iface.Addrs()
+	if err != nil {
+		return fmt.Errorf("Failed to get address for '%v' - %v", s.Interface, err)
+	}
+	if len(addrs) < 1 {
+		s.Host = "127.0.0.1"
+		return nil
+	}
+	s.Host = strings.Split(addrs[0].String(), "/")[0]
+	return nil
 }
