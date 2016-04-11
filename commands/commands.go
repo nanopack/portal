@@ -137,7 +137,6 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 
 	if config.Insecure {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-		uri = fmt.Sprintf("http://%s:%s/%s", config.ApiHost, config.ApiPort, path)
 	}
 
 	req, err := http.NewRequest(method, uri, body)
@@ -147,7 +146,19 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 	req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		// if requesting `https://` failed, server may have been started with `-i`, try `http://`
+		uri = fmt.Sprintf("http://%s:%s/%s", config.ApiHost, config.ApiPort, path)
+		req, er := http.NewRequest(method, uri, body)
+		if er != nil {
+			panic(er)
+		}
+		req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
+		var err2 error
+		res, err2 = client.Do(req)
+		if err2 != nil {
+			// return original error to client
+			return nil, err
+		}
 	}
 	if res.StatusCode == 401 {
 		return nil, fmt.Errorf("401 Unauthorized. Please specify api token (-t 'token')")

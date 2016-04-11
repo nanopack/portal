@@ -75,15 +75,12 @@ func init() {
 }
 
 func serviceSimpleFlags(ccmd *cobra.Command) {
-	ccmd.Flags().StringVarP(&service.Id, "service-id", "I", "",
-		"Id of down-stream service")
+	ccmd.Flags().StringVarP(&service.Id, "service-id", "I", "", "Id of down-stream service")
 
-	ccmd.Flags().StringVarP(&service.Host, "service-host", "O", "",
-		"Host of down-stream service")
-	ccmd.Flags().IntVarP(&service.Port, "service-port", "R", 0,
-		"Port of down-stream service")
-	ccmd.Flags().StringVarP(&service.Type, "service-type", "T", "tcp",
-		"Type of service [tcp udp fwmark]")
+	ccmd.Flags().StringVarP(&service.Host, "service-host", "O", "", "Host of down-stream service")
+	ccmd.Flags().StringVarP(&service.Interface, "service-interface", "F", "", "Host interface of down-stream service (optional, overwrites service-host)")
+	ccmd.Flags().IntVarP(&service.Port, "service-port", "R", 0, "Port of down-stream service")
+	ccmd.Flags().StringVarP(&service.Type, "service-type", "T", "tcp", "Type of service [tcp udp fwmark]")
 }
 
 func serviceComplexFlags(ccmd *cobra.Command) {
