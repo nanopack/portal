@@ -69,7 +69,7 @@
 //
 // Build Specs
 //
-// It is build with clustering at it's core
+// It is built with clustering at it's core
 // to ensure syncronization between nodes. It utilizes a multi-master
 // replication system allowing any node to accept requests to update
 // load balancing or proxy rules. The high-level workflow is as follows:
