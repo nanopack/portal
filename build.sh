@@ -4,11 +4,6 @@ set -e
 # try and use the correct MD5 lib (depending on user OS darwin/linux)
 MD5=$(which md5 || which md5sum)
 
-# remove any previous builds that may have failed
-[ -e "./build" ] && \
-  echo "Cleaning up old builds..." && \
-  rm -rf "./build"
-
 # build portal
 echo "Building PORTAL and uploading it to 's3://tools.nanopack.io/portal'"
 gox -osarch "darwin/amd64 linux/amd64 windows/amd64" -output="./build/{{.OS}}/{{.Arch}}/portal"

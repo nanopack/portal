@@ -1,3 +1,4 @@
+// +build linux
 // ip.go contains logic to use `ip` to add vips
 
 package vipmgr
