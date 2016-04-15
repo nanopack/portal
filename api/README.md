@@ -27,7 +27,11 @@ An api-driven, in-kernel layer 2/3 load balancer.
 | **Delete** /certs | Delete a cert | json cert object | success message or an error |
 | **Get** /certs | List all certs | nil | json array of cert objects |
 | **Post** /certs | Add new cert | json cert object | json cert object |
-| **Put** /certs | Reset the list of certs | json array of cert objects | json array of route objects |
+| **Put** /certs | Reset the list of certs | json array of cert objects | json array of cert objects |
+| **Delete** /vips | Delete a vip | json vip object | success message or an error |
+| **Get** /vips | List all vips | nil | json array of vip objects |
+| **Post** /vips | Add new vip | json vip object | json vip object |
+| **Put** /vips | Reset the list of vips | json array of vip objects | json array of vip objects |
 
 ## Usage Example:
 
@@ -181,6 +185,35 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/certs \
             "cert":"-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"}]' \
        -X PUT
 [{"key":"-----BEGIN PRIVATE KEY-----\nMII.../J8\n-----END PRIVATE KEY-----", "cert":"-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"}]
+```
+
+#### add vip
+```
+$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips \
+       -d '{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}'
+[{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
+```
+
+#### delete vip
+```
+$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips \
+       -d '{"ip":"192.168.0.100","interface":"eth0"}'
+       -X DELETE
+{"msg":"Success"}
+```
+
+#### list vips
+```
+$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips
+[]
+```
+
+#### reset vips
+```
+$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips \
+       -d [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
+       -X PUT
+[{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
 ```
 
 [![portal logo](http://nano-assets.gopagoda.io/open-src/nanobox-open-src.png)](http://nanobox.io/open-source)

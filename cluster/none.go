@@ -45,6 +45,17 @@ func (n None) Init() error {
 	if err != nil {
 		return err
 	}
+
+	// load vips
+	vips, err := common.GetVips()
+	if err != nil {
+		return err
+	}
+	// apply vips
+	err = common.SetVips(vips)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func (n None) GetServices() ([]core.Service, error) {
@@ -97,4 +108,16 @@ func (n None) DeleteCert(cert core.CertBundle) error {
 }
 func (n None) GetCerts() ([]core.CertBundle, error) {
 	return common.GetCerts()
+}
+func (n None) SetVips(vips []core.Vip) error {
+	return common.SetVips(vips)
+}
+func (n None) SetVip(vip core.Vip) error {
+	return common.SetVip(vip)
+}
+func (n None) DeleteVip(vip core.Vip) error {
+	return common.DeleteVip(vip)
+}
+func (n None) GetVips() ([]core.Vip, error) {
+	return common.GetVips()
 }

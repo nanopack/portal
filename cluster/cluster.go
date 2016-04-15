@@ -22,6 +22,7 @@ var (
 type Clusterable interface {
 	core.Backender
 	core.Proxyable
+	core.Vipable
 }
 
 func Init() error {
@@ -109,6 +110,22 @@ func DeleteCert(cert core.CertBundle) error {
 
 func GetCerts() ([]core.CertBundle, error) {
 	return Clusterer.GetCerts()
+}
+
+func SetVips(vips []core.Vip) error {
+	return Clusterer.SetVips(vips)
+}
+
+func SetVip(vip core.Vip) error {
+	return Clusterer.SetVip(vip)
+}
+
+func DeleteVip(vip core.Vip) error {
+	return Clusterer.DeleteVip(vip)
+}
+
+func GetVips() ([]core.Vip, error) {
+	return Clusterer.GetVips()
 }
 
 func marshalSvc(service []byte) (*core.Service, error) {

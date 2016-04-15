@@ -289,3 +289,70 @@ func (s ScribbleDatabase) DeleteCert(cert core.CertBundle) error {
 	}
 	return s.SetCerts(certs)
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// VIPS
+////////////////////////////////////////////////////////////////////////////////
+
+func (s ScribbleDatabase) GetVips() ([]core.Vip, error) {
+	vips := make([]core.Vip, 0, 0)
+	values, err := s.scribbleDb.ReadAll("vips")
+	if err != nil {
+		if strings.Contains(err.Error(), "no such file or directory") {
+			// if error is about a missing db, return empty array
+			return vips, nil
+		}
+		return nil, err
+	}
+	for i := range values {
+		var vip core.Vip
+		if err = json.Unmarshal([]byte(values[i]), &vip); err != nil {
+			return nil, fmt.Errorf("Bad JSON syntax stored in db")
+		}
+		vips = append(vips, vip)
+	}
+	return vips, nil
+}
+
+func (s ScribbleDatabase) SetVips(vips []core.Vip) error {
+	s.scribbleDb.Delete("vips", "")
+	for i := range vips {
+		// unique (as much as what we keep) key to store vip by
+		ukey := fmt.Sprintf("%v-%v", strings.Replace(vips[i].Ip, ".", "_", -1), vips[i].Interface)
+		err := s.scribbleDb.Write("vips", ukey, vips[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s ScribbleDatabase) SetVip(vip core.Vip) error {
+	vips, err := s.GetVips()
+	if err != nil {
+		return err
+	}
+	// for idempotency
+	for i := 0; i < len(vips); i++ {
+		if vips[i].Ip == vip.Ip && vips[i].Interface == vip.Interface {
+			return nil
+		}
+	}
+
+	vips = append(vips, vip)
+	return s.SetVips(vips)
+}
+
+func (s ScribbleDatabase) DeleteVip(vip core.Vip) error {
+	vips, err := s.GetVips()
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(vips); i++ {
+		if vips[i].Ip == vip.Ip && vips[i].Interface == vip.Interface {
+			vips = append(vips[:i], vips[i+1:]...)
+			break
+		}
+	}
+	return s.SetVips(vips)
+}
