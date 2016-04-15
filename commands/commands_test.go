@@ -19,6 +19,7 @@ import (
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/database"
 	"github.com/nanopack/portal/proxymgr"
+	"github.com/nanopack/portal/vipmgr"
 )
 
 type (
@@ -498,6 +499,12 @@ func initialize() {
 	err = proxymgr.Init()
 	if err != nil {
 		fmt.Printf("Proxymgr init failed - %v\n", err)
+		os.Exit(1)
+	}
+	// initialize vipmgr
+	err = vipmgr.Init()
+	if err != nil {
+		fmt.Printf("Vipmgr init failed - %v\n", err)
 		os.Exit(1)
 	}
 	// initialize clusterer

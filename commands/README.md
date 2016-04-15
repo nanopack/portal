@@ -34,6 +34,10 @@ Available Commands:
   set-certs      Set cert list
   show-certs     Show all certs
   remove-cert    Remove cert
+  add-vip        Add vip
+  set-vips       Set vip list
+  show-vips      Show all vips
+  remove-vip     Remove vip
 
 Flags:
   -C, --api-cert="": SSL cert for the api
@@ -226,6 +230,30 @@ $ ./portal show-certs
 $ ./portal set-certs -j '[{"key":"-----BEGIN PRIVATE KEY-----\nMII.../J8\n-----END PRIVATE KEY-----",
   "cert":"-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"}]'
 [{"key":"-----BEGIN PRIVATE KEY-----\nMII.../J8\n-----END PRIVATE KEY-----", "cert":"-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"}]
+```
+
+#### add vip
+```
+$ ./portal add-vip -i -A eth0:1 -F eth0 -I 192.168.0.100
+{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}
+```
+
+#### delete vip
+```
+$ ./portal remove-vip -i -F eth0 -I 192.168.0.100
+{"msg":"Success"}
+```
+
+#### list vips
+```
+$ ./portal show-vips
+[]
+```
+
+#### reset vips
+```
+$ ./portal set-vips -j '[{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]'
+[{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
 ```
 
 [![portal logo](http://nano-assets.gopagoda.io/open-src/nanobox-open-src.png)](http://nanobox.io/open-source)

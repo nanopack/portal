@@ -8,6 +8,7 @@ import (
 
 	"github.com/nanopack/portal/core"
 )
+
 type ip struct{}
 
 func (self ip) Init() error {

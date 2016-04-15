@@ -41,6 +41,10 @@ Available Commands:
   set-certs      Set cert list
   show-certs     Show all certs
   remove-cert    Remove cert
+  add-vip        Add vip
+  set-vips       Set vip list
+  show-vips      Show all vips
+  remove-vip     Remove vip
 
 Flags:
   -C, --api-cert="": SSL cert for the api
@@ -287,8 +291,9 @@ Fields:
  - **msg**: Success message
 
 ## Todo
+- vip testing
 - balance vips across cluster
-- add vips through cli
+- redis cluster init to get and set certs and vips
 
 ## Changelog
 - Added ability to specify interface when registering a service

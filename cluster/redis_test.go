@@ -18,6 +18,7 @@ import (
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
 	"github.com/nanopack/portal/proxymgr"
+	"github.com/nanopack/portal/vipmgr"
 )
 
 var (
@@ -764,11 +765,17 @@ func initialize() {
 			os.Exit(1)
 		}
 
-		err = cluster.Init()
+		// initialize vipmgr
+		err = vipmgr.Init()
 		if err != nil {
-			fmt.Printf("cluster init failed - %v\n", err)
+			fmt.Printf("Vipmgr init failed - %v\n", err)
 			os.Exit(1)
 		}
 
+		err = cluster.Init()
+		if err != nil {
+			fmt.Printf("Cluster init failed - %v\n", err)
+			os.Exit(1)
+		}
 	}
 }

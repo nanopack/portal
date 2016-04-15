@@ -55,7 +55,7 @@ func (self ip) SetVip(vip core.Vip) error {
 	mutex.Lock()
 	virtIps = append(virtIps, vip)
 	mutex.Unlock()
-	config.Log.Trace("Vip added")
+	config.Log.Trace("Vip '%v' added", vip.Ip)
 
 	return nil
 }
@@ -68,12 +68,15 @@ func (self ip) DeleteVip(vip core.Vip) error {
 		// check if the vip exists...
 		if vips[i].Ip == vip.Ip && vips[i].Interface == vip.Interface {
 			// and go delete it...
-			break
+			config.Log.Trace("Vip '%v' found to remove", vip.Ip)
+			goto deleteIt
 		}
-		// otherwise, be idempotent and report it was deleted...
-		return nil
 	}
+	// otherwise, be idempotent and report it was deleted...
+	config.Log.Trace("Vip '%v' not found, reporting success", vip.Ip)
+	return nil
 
+deleteIt:
 	// remove vip from host
 	err := exec.Command("ip", "addr", "del", vip.Ip, "dev", vip.Interface).Run()
 	if err != nil {
@@ -92,7 +95,7 @@ func (self ip) DeleteVip(vip core.Vip) error {
 	mutex.Lock()
 	virtIps = vips
 	mutex.Unlock()
-	config.Log.Trace("Vip removed")
+	config.Log.Trace("Vip '%v' removed", vip.Ip)
 
 	return nil
 }
@@ -106,7 +109,7 @@ func (self ip) SetVips(vips []core.Vip) error {
 		err := self.DeleteVip(oldVips[i])
 		if err != nil {
 			// try rolling back
-			config.Log.Trace("Trying to roll back for old vip...")
+			config.Log.Trace("Trying to roll back for old vip - %v...", err)
 			err2 := self.SetVip(oldVips[i])
 			return fmt.Errorf("Failed to remove old vip - %v %v", err, err2)
 		}

@@ -58,6 +58,11 @@ func init() {
 	Portal.AddCommand(certsSetCmd)
 	Portal.AddCommand(certsShowCmd)
 	Portal.AddCommand(certRemoveCmd)
+
+	Portal.AddCommand(vipAddCmd)
+	Portal.AddCommand(vipsSetCmd)
+	Portal.AddCommand(vipsShowCmd)
+	Portal.AddCommand(vipRemoveCmd)
 }
 
 func startPortal(ccmd *cobra.Command, args []string) {
