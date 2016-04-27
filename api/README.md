@@ -37,69 +37,69 @@ An api-driven, in-kernel layer 2/3 load balancer.
 
 #### add service
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services -d \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services -d \
 '{"host":"127.0.0.3", "port":1234, "type":"tcp", "scheduler": "rr", "persistence":0, "netmask":""}'
 {"id":"tcp-127_0_0_3-1234","host":"127.0.0.3","port":1234,"type":"tcp","scheduler":"rr","persistence":0,"netmask":""}
 ```
 
 #### list services
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services
 [{"id":"tcp-127_0_0_3-1234","host":"127.0.0.3","port":1234,"type":"tcp","scheduler":"rr","persistence":0,"netmask":""}]
 ```
 
 #### get service
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234
 {"id":"tcp-127_0_0_3-1234","host":"127.0.0.3","port":1234,"type":"tcp","scheduler":"rr","persistence":0,"netmask":""}
 ```
 
 #### add server
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers \
 -d '{"host":"192.168.0.1", "port":8080, "forwarder": "m", "weight": 5, "upper_threshold": 10, "lower_threshold": 1}'
 {"id":"192_168_0_1-8080","host":"192.168.0.1","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1}
 ```
 
 #### list servers
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers
 [{"id":"192_168_0_1-8080","host":"192.168.0.1","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1}]
 ```
 
 #### get server
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers/192_168_0_1-8080
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers/192_168_0_1-8080
 {"id":"192_168_0_1-8080","host":"192.168.0.1","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1}
 ```
 
 #### delete server
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers/192_168_0_1-8080 -X DELETE
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers/192_168_0_1-8080 -X DELETE
 {"msg":"Success"}
 ```
 
 #### list servers
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers
 []
 ```
 
 #### delete service
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234 -X DELETE
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234 -X DELETE
 {"msg":"Success"}
 ```
 
 #### list services
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services
 []
 ```
 
 #### reset services
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services -d \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services -d \
 '[{"host":"127.0.0.3", "port":1234, "type":"tcp", "scheduler": "rr", "persistence":0, "netmask":"", "servers":[
 {"host":"192.168.0.3", "port":8080, "forwarder": "m", "weight": 5, "upper_threshold": 10, "lower_threshold": 1},
 {"host":"192.168.0.4", "port":8080, "forwarder": "m", "weight": 4, "upper_threshold": 10, "lower_threshold": 1}]}]' \
@@ -109,7 +109,7 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services -d \
 
 #### reset servers
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers -d \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-1234/servers -d \
 '[{"host":"192.168.0.5", "port":8080, "forwarder": "m", "weight": 5, "upper_threshold": 10, "lower_threshold": 1},
 {"host":"192.168.0.6", "port":8080, "forwarder": "m", "weight": 4, "upper_threshold": 10, "lower_threshold": 1}]' \
 -X PUT
@@ -118,24 +118,24 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services/tcp-127_0_0_3-12
 
 #### list services
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/services
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/services
 [{"id":"tcp-127_0_0_3-1234","host":"127.0.0.3","port":1234,"type":"tcp","scheduler":"rr","persistence":0,"netmask":"","servers":[{"id":"192_168_0_5-8080","host":"192.168.0.5","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1},{"id":"192_168_0_6-8080","host":"192.168.0.6","port":8080,"forwarder":"m","weight":4,"upper_threshold":10,"lower_threshold":1}]}]
 ```
 
 #### add route
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/routes \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/routes \
        -d '{"domain":"portal.test", "page":"portal works\n"}'
 {"subdomain":"","domain":"portal.test","path":"","targets":null,"fwdpath":"","page":"portal works\n"}
 ```
 
 #### delete route
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/routes?domain=portal.test \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/routes?domain=portal.test \
        -X DELETE
 {"msg":"Success"}
 ## OR
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/routes \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/routes \
        -d '{"domain":"portal.test"}' \
        -X DELETE
 {"msg":"Success"}
@@ -143,13 +143,13 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/routes \
 
 #### list routes
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/routes
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/routes
 []
 ```
 
 #### reset routes
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/routes \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/routes \
        -d '[{"domain":"portal.test", "page":"portal works\n"}]' \
        -X PUT
 [{"subdomain":"","domain":"portal.test","path":"","targets":null,"fwdpath":"","page":"portal works\n"}]
@@ -157,7 +157,7 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/routes \
 
 #### add cert
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/certs \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/certs \
        -d '{"key":"-----BEGIN PRIVATE KEY-----\nMII.../J8\n-----END PRIVATE KEY-----",
             "cert":"-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"}'
 {"key":"-----BEGIN PRIVATE KEY-----\nMII.../J8\n-----END PRIVATE KEY-----", "cert":"-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"}
@@ -165,7 +165,7 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/certs \
 
 #### delete cert
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/certs \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/certs \
        -d '{"key":"-----BEGIN PRIVATE KEY-----\nMII.../J8\n-----END PRIVATE KEY-----",
             "cert":"-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"}' \
        -X DELETE
@@ -174,13 +174,13 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/certs \
 
 #### list certs
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/certs
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/certs
 []
 ```
 
 #### reset certs
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/certs \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/certs \
        -d '[{"key":"-----BEGIN PRIVATE KEY-----\nMII.../J8\n-----END PRIVATE KEY-----",
             "cert":"-----BEGIN CERTIFICATE-----\nMII...aI=\n-----END CERTIFICATE-----"}]' \
        -X PUT
@@ -189,14 +189,14 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/certs \
 
 #### add vip
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips \
        -d '{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}'
 [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
 ```
 
 #### delete vip
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips \
        -d '{"ip":"192.168.0.100","interface":"eth0"}'
        -X DELETE
 {"msg":"Success"}
@@ -204,13 +204,13 @@ $ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips \
 
 #### list vips
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips
 []
 ```
 
 #### reset vips
 ```
-$ curl -k -H "X-NANOBOX-TOKEN:" https://127.0.0.1:8443/vips \
+$ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips \
        -d [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
        -X PUT
 [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]

@@ -543,7 +543,7 @@ func rest(method, route, data string) ([]byte, error) {
 	body := bytes.NewBuffer([]byte(data))
 
 	req, _ := http.NewRequest(method, fmt.Sprintf("https://%s%s", apiAddr, route), body)
-	req.Header.Add("X-NANOBOX-TOKEN", "")
+	req.Header.Add("X-AUTH-TOKEN", "")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

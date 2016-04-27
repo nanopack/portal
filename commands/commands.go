@@ -157,7 +157,7 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 	if err != nil {
 		panic(err)
 	}
-	req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
+	req.Header.Add("X-AUTH-TOKEN", config.ApiToken)
 	res, err := client.Do(req)
 	if err != nil {
 		// if requesting `https://` failed, server may have been started with `-i`, try `http://`
@@ -166,7 +166,7 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 		if er != nil {
 			panic(er)
 		}
-		req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
+		req.Header.Add("X-AUTH-TOKEN", config.ApiToken)
 		var err2 error
 		res, err2 = client.Do(req)
 		if err2 != nil {

@@ -85,7 +85,7 @@ func StartApi() error {
 		return err
 	}
 	auth.Certificate = cert
-	auth.Header = "X-NANOBOX-TOKEN"
+	auth.Header = "X-AUTH-TOKEN"
 
 	config.Log.Info("Api listening at https://%s:%s...", config.ApiHost, config.ApiPort)
 	return auth.ListenAndServeTLS(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), config.ApiToken, routes())
