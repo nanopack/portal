@@ -9,12 +9,13 @@ import (
 type (
 	Backender interface {
 		Init() error
+		// services
 		GetServices() ([]Service, error)
 		GetService(id string) (*Service, error)
 		SetServices(services []Service) error
 		SetService(service *Service) error
 		DeleteService(id string) error
-
+		// servers
 		SetServers(svcId string, servers []Server) error
 		SetServer(svcId string, server *Server) error
 		DeleteServer(svcId, srvId string) error
@@ -32,6 +33,14 @@ type (
 		SetCert(cert CertBundle) error
 		DeleteCert(cert CertBundle) error
 		GetCerts() ([]CertBundle, error)
+	}
+
+	Vipable interface {
+		// vips
+		SetVip(vip Vip) error
+		SetVips(vips []Vip) error
+		DeleteVip(vip Vip) error
+		GetVips() ([]Vip, error)
 	}
 
 	Server struct {
@@ -71,6 +80,12 @@ type (
 		Cert string `json:"cert"`
 		Key  string `json:"key"`
 	}
+
+	Vip struct {
+		Ip        string `json:"ip"` // ip/cidr
+		Interface string `json:"interface"`
+		Alias     string `json:"alias"`
+	}
 )
 
 func (s *Service) GenId() {
@@ -79,4 +94,19 @@ func (s *Service) GenId() {
 
 func (s *Server) GenId() {
 	s.Id = fmt.Sprintf("%v-%d", strings.Replace(s.Host, ".", "_", -1), s.Port)
+}
+
+// GenHost resets the server's Host it's service's Host if "127.0.0.1" was detected
+func (s *Server) GenHost(svcId string) {
+	if s.Host != "127.0.0.1" {
+		return
+	}
+
+	host := strings.Split(strings.Replace(svcId, "_", ".", -1), "-")
+
+	if len(host) != 3 {
+		return
+	}
+
+	s.Host = host[1]
 }

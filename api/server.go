@@ -64,6 +64,11 @@ func postServer(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// localhost doesn't work properly, use service.Host
+	if server.Host == "127.0.0.1" {
+		server.GenHost(svcId)
+	}
+
 	// save to cluster
 	err = cluster.SetServer(svcId, server)
 	if err != nil {
@@ -121,6 +126,11 @@ func putServers(rw http.ResponseWriter, req *http.Request) {
 
 	for i := range servers {
 		servers[i].GenId()
+
+		// localhost doesn't work properly, use service.Host
+		if servers[i].Host == "127.0.0.1" {
+			servers[i].GenHost(svcId)
+		}
 	}
 
 	// add to cluster

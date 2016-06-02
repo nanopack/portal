@@ -20,7 +20,11 @@
 //  | DELETE | /certs                            | Delete a cert                               | json cert object                            | success message or an error   |
 //  | GET    | /certs                            | List all certs                              | nil                                         | json array of cert objects    |
 //  | POST   | /certs                            | Add new cert                                | json cert object                            | json cert object              |
-//  | PUT    | /certs                            | Reset the list of certs                     | json array of cert objects                  | json array of route objects   |
+//  | PUT    | /certs                            | Reset the list of certs                     | json array of cert objects                  | json array of cert objects    |
+//  | DELETE | /vips                             | Delete a vip                                | json vip object                             | success message or an error   |
+//  | GET    | /vips                             | List all vips                               | nil                                         | json array of vip objects     |
+//  | POST   | /vips                             | Add new vip                                 | json vip object                             | json vip object               |
+//  | PUT    | /vips                             | Reset the list of vips                      | json array of vip objects                   | json array of vip objects     |
 package api
 
 // Things this api needs to support
@@ -81,7 +85,7 @@ func StartApi() error {
 		return err
 	}
 	auth.Certificate = cert
-	auth.Header = "X-NANOBOX-TOKEN"
+	auth.Header = "X-AUTH-TOKEN"
 
 	config.Log.Info("Api listening at https://%s:%s...", config.ApiHost, config.ApiPort)
 	return auth.ListenAndServeTLS(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), config.ApiToken, routes())
@@ -113,6 +117,12 @@ func routes() *pat.Router {
 	router.Put("/certs", putCerts)
 	router.Get("/certs", getCerts)
 	router.Post("/certs", postCert)
+
+	// ips
+	router.Delete("/vips", deleteVip)
+	router.Put("/vips", putVips)
+	router.Get("/vips", getVips)
+	router.Post("/vips", postVip)
 
 	return router
 }

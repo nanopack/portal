@@ -39,6 +39,11 @@ func parseReqService(req *http.Request) (*core.Service, error) {
 
 	for i := range svc.Servers {
 		svc.Servers[i].GenId()
+
+		// localhost doesn't work properly, use service.Host
+		if svc.Servers[i].Host == "127.0.0.1" {
+			svc.Servers[i].GenHost(svc.Id)
+		}
 	}
 
 	config.Log.Trace("SERVICE: %+v", svc)
@@ -86,6 +91,11 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 			if services[i].Servers[j].Id == "-0" {
 				writeError(rw, req, NoServerError, http.StatusBadRequest)
 				return
+			}
+
+			// localhost doesn't work properly, use service.Host
+			if services[i].Servers[j].Host == "127.0.0.1" {
+				services[i].Servers[j].GenHost(services[i].Id)
 			}
 		}
 	}

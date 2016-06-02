@@ -41,6 +41,10 @@ Available Commands:
   set-certs      Set cert list
   show-certs     Show all certs
   remove-cert    Remove cert
+  add-vip        Add vip
+  set-vips       Set vip list
+  show-vips      Show all vips
+  remove-vip     Remove vip
 
 Flags:
   -C, --api-cert="": SSL cert for the api
@@ -119,7 +123,11 @@ An optional config file can also be passed on startup:
 | **Delete** /certs | Delete a cert | json cert object | success message or an error |
 | **Get** /certs | List all certs | nil | json array of cert objects |
 | **Post** /certs | Add new cert | json cert object | json cert object |
-| **Put** /certs | Reset the list of certs | json array of cert objects | json array of route objects |
+| **Put** /certs | Reset the list of certs | json array of cert objects | json array of cert objects |
+| **Delete** /vips | Delete a vip | json vip object | success message or an error |
+| **Get** /vips | List all vips | nil | json array of vip objects |
+| **Post** /vips | Add new vip | json vip object | json vip object |
+| **Put** /vips | Reset the list of vips | json array of vip objects | json array of vip objects |
 
 - **service_id** is a formatted combination of service info: type-host-port. (tcp-127_0_0_3-80)  
 - **server_id** is a formatted combination of server info: host-port. (192_0_0_3-8080)  
@@ -167,11 +175,23 @@ Fields:
 - **host**: IP of the host the service is bound to.
 - **interface**: Host interface the service is bound to (optional, overrides host).
 - **port**: Port that the service listens to.
-- **type**: Type of service. Either tcp or udp.
-- **scheduler**: How to pick downstream server. On of the following: rr, wrr, lc, wlc, lblc, lblcr, dh, sh, sed, nq
-- **persistence**: Timeout for keeping requests from the same client going to the same server
-- **netmask**: How to group clients with persistence to servers
-- **servers**: Array of server objects associated to the service
+- **type**: Type of service.
+  - tcp
+  - udp
+- **scheduler**: How to pick downstream server.
+  - rr    - Robin Robin
+  - wrr   - Weighted Round Robin
+  - lc    - Least-Connection
+  - wlc   - Weighted Least-Connection
+  - lblc  - Locality-Based Least-Connection
+  - lblcr - Locality-Based Least-Connection with Replication
+  - dh    - Destination Hashing
+  - sh    - Source Hashing
+  - sed   - Shortest Expected Delay
+  - nq    - Never Queue
+- **persistence**: Timeout for keeping requests from the same client going to the same server.
+- **netmask**: How to group clients with persistence to servers.
+- **servers**: Array of server objects associated to the service.
 
 ### Server:
 json:
@@ -189,10 +209,30 @@ json:
 Fields:
 - **host**: IP of the host the service is bound to.
 - **port**: Port that the service listens to.
-- **forwarder**: Method to use to forward traffic to this server. One of the following: g (gatewaying), i (ipip), m (masquerading)
+- **forwarder**: Method to use to forward traffic to this server.
+  - g - Gatewaying
+  - i - Ipip encapsulation
+  - m - Masquerading
 - **weight**: Weight to perfer this server. Set to 0 if no traffic should go to this server.
-- **upper_threshold**: Stop sending connections to this server when this number is reached. 0 is no limit.
-- **lower_threshold**: Restart sending connections when drains down to this number. 0 is not set.
+- **upper_threshold**: Stop sending connections to this server when this number is reached.
+  - 0 - No limit
+- **lower_threshold**: Restart sending connections when drains down to this number.
+  - 0 - Not set
+
+### Vip:
+json:
+```json
+{
+  "ip": "192.168.0.101/24",
+  "interface": "eth1",
+  "alias": "eth1:0"
+}
+```
+
+Fields:
+ - **ip**: Ip to add to interface. Should be `ip/cidr`
+ - **interface**: Interface to add ip to
+ - **alias**: Alias to assign the ip (can be used as "interface" when adding a service)
 
 ### Route:
 json:
@@ -249,5 +289,15 @@ json:
 
 Fields:
  - **msg**: Success message
+
+## Todo
+- vip testing
+- balance vips across cluster
+- redis cluster init to get and set certs and vips
+
+## Changelog
+- Added ability to specify interface when registering a service
+- Users can now add vips to portal
+- Portal now uses the service host for server's hosts that are "127.0.0.1"
 
 [![portal logo](http://nano-assets.gopagoda.io/open-src/nanobox-open-src.png)](http://nanobox.io/open-source)

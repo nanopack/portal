@@ -21,6 +21,7 @@ import (
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
 	"github.com/nanopack/portal/proxymgr"
+	"github.com/nanopack/portal/vipmgr"
 )
 
 var (
@@ -542,7 +543,7 @@ func rest(method, route, data string) ([]byte, error) {
 	body := bytes.NewBuffer([]byte(data))
 
 	req, _ := http.NewRequest(method, fmt.Sprintf("https://%s%s", apiAddr, route), body)
-	req.Header.Add("X-NANOBOX-TOKEN", "")
+	req.Header.Add("X-AUTH-TOKEN", "")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -586,6 +587,12 @@ func initialize() {
 	err = proxymgr.Init()
 	if err != nil {
 		fmt.Printf("Proxymgr init failed - %v\n", err)
+		os.Exit(1)
+	}
+	// initialize vipmgr
+	err = vipmgr.Init()
+	if err != nil {
+		fmt.Printf("Vipmgr init failed - %v\n", err)
 		os.Exit(1)
 	}
 	// initialize clusterer

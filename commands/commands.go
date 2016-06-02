@@ -20,6 +20,7 @@ import (
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
 	"github.com/nanopack/portal/proxymgr"
+	"github.com/nanopack/portal/vipmgr"
 )
 
 var (
@@ -57,6 +58,11 @@ func init() {
 	Portal.AddCommand(certsSetCmd)
 	Portal.AddCommand(certsShowCmd)
 	Portal.AddCommand(certRemoveCmd)
+
+	Portal.AddCommand(vipAddCmd)
+	Portal.AddCommand(vipsSetCmd)
+	Portal.AddCommand(vipsShowCmd)
+	Portal.AddCommand(vipRemoveCmd)
 }
 
 func startPortal(ccmd *cobra.Command, args []string) {
@@ -98,6 +104,12 @@ func startPortal(ccmd *cobra.Command, args []string) {
 		config.Log.Fatal("Proxymgr init failed - %v", err)
 		os.Exit(1)
 	}
+	// initialize vipmgr
+	err = vipmgr.Init()
+	if err != nil {
+		config.Log.Fatal("Vipmgr init failed - %v", err)
+		os.Exit(1)
+	}
 	// initialize cluster
 	err = cluster.Init()
 	if err != nil {
@@ -124,6 +136,8 @@ func sigHandle() {
 		default:
 			// clear balancer rules - (stop balancing if we are offline)
 			balance.SetServices(make([]core.Service, 0, 0))
+			// clear vips
+			vipmgr.SetVips(make([]core.Vip, 0, 0))
 			fmt.Println()
 			os.Exit(0)
 		}
@@ -143,7 +157,7 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 	if err != nil {
 		panic(err)
 	}
-	req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
+	req.Header.Add("X-AUTH-TOKEN", config.ApiToken)
 	res, err := client.Do(req)
 	if err != nil {
 		// if requesting `https://` failed, server may have been started with `-i`, try `http://`
@@ -152,7 +166,7 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 		if er != nil {
 			panic(er)
 		}
-		req.Header.Add("X-NANOBOX-TOKEN", config.ApiToken)
+		req.Header.Add("X-AUTH-TOKEN", config.ApiToken)
 		var err2 error
 		res, err2 = client.Do(req)
 		if err2 != nil {

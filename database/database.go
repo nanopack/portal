@@ -19,6 +19,7 @@ var (
 type Storable interface {
 	core.Backender
 	core.Proxyable
+	core.Vipable
 }
 
 func Init() error {
@@ -107,4 +108,20 @@ func DeleteCert(cert core.CertBundle) error {
 
 func GetCerts() ([]core.CertBundle, error) {
 	return Backend.GetCerts()
+}
+
+func SetVips(vips []core.Vip) error {
+	return Backend.SetVips(vips)
+}
+
+func SetVip(vip core.Vip) error {
+	return Backend.SetVip(vip)
+}
+
+func DeleteVip(vip core.Vip) error {
+	return Backend.DeleteVip(vip)
+}
+
+func GetVips() ([]core.Vip, error) {
+	return Backend.GetVips()
 }

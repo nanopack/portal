@@ -10,6 +10,7 @@ import (
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
 	"github.com/nanopack/portal/proxymgr"
+	"github.com/nanopack/portal/vipmgr"
 )
 
 func SetServices(services []core.Service) error {
@@ -332,4 +333,82 @@ func DeleteCert(cert core.CertBundle) error {
 
 func GetCerts() ([]core.CertBundle, error) {
 	return database.GetCerts()
+}
+
+func SetVips(vips []core.Vip) error {
+	// in case of failure
+	oldVips, err := database.GetVips()
+	if err != nil {
+		return err
+	}
+
+	// apply vips to vipmgr
+	err = vipmgr.SetVips(vips)
+	if err != nil {
+		return err
+	}
+	// save to backend
+	err = database.SetVips(vips)
+	if err != nil {
+		// undo vipmgr action
+		if uerr := vipmgr.SetVips(oldVips); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func SetVip(vip core.Vip) error {
+	// in case of failure
+	oldVips, err := database.GetVips()
+	if err != nil {
+		return err
+	}
+
+	// apply to vipmgr
+	err = vipmgr.SetVip(vip)
+	if err != nil {
+		return err
+	}
+
+	// save to backend
+	err = database.SetVip(vip)
+	if err != nil {
+		// undo vipmgr action
+		if uerr := vipmgr.SetVips(oldVips); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func DeleteVip(vip core.Vip) error {
+	// in case of failure
+	oldVips, err := database.GetVips()
+	if err != nil {
+		return err
+	}
+
+	// apply to vipmgr
+	err = vipmgr.DeleteVip(vip)
+	if err != nil {
+		return err
+	}
+
+	// save to backend
+	err = database.DeleteVip(vip)
+	if err != nil {
+		// undo vipmgr action
+		if uerr := vipmgr.SetVips(oldVips); uerr != nil {
+			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+		}
+		return err
+	}
+	return nil
+}
+
+func GetVips() ([]core.Vip, error) {
+	return database.GetVips()
 }
