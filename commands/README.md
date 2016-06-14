@@ -87,6 +87,8 @@ $ ./portal -c config.json
   "just-proxy": false,
   "proxy-http": "0.0.0.0:80",
   "proxy-tls": "0.0.0.0:443",
+  "balancer": "nginx",
+  "work-dir": "/var/db/portal",
   "log-level": "INFO",
   "log-file": "",
   "server": true

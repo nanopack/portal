@@ -26,11 +26,25 @@ func Init() error {
 		Balancer = nil
 		return nil
 	}
-	Balancer = &Lvs{}
+
+	// decide which balancer to use
+	switch config.Balancer {
+	case "lvs":
+		Balancer = &Lvs{}
+	case "nginx":
+		Balancer = &Nginx{}
+	default:
+		Balancer = &Lvs{} // faster
+	}
 
 	var err error
 	tab, err = iptables.New()
 	if err != nil {
+		tab = nil
+	}
+	// don't break if we can't use iptables
+	if _, err = tab.List("filter", "INPUT"); err != nil {
+		config.Log.Error("Could not use iptables, continuing without - %v", err)
 		tab = nil
 	}
 	if tab != nil {

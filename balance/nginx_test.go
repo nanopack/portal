@@ -1,13 +1,8 @@
-// +build linux
-
 package balance_test
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/jcelliott/lumber"
@@ -17,28 +12,11 @@ import (
 	"github.com/nanopack/portal/core"
 )
 
-var (
-	skip    = false // skip if iptables/ipvsadm not installed
-	Backend core.Backender
-
-	testService1 = core.Service{Id: "tcp-192_168_0_15-80", Host: "192.168.0.15", Port: 80, Type: "tcp", Scheduler: "wrr"}
-	testService2 = core.Service{Id: "tcp-192_168_0_16-80", Host: "192.168.0.16", Port: 80, Type: "tcp", Scheduler: "wrr"}
-	testServer1  = core.Server{Id: "127_0_0_11-8080", Host: "127.0.0.11", Port: 8080, Forwarder: "m", Weight: 5, UpperThreshold: 10, LowerThreshold: 1}
-	testServer2  = core.Server{Id: "127_0_0_12-8080", Host: "127.0.0.12", Port: 8080, Forwarder: "m", Weight: 5, UpperThreshold: 10, LowerThreshold: 1}
-)
-
-func TestMain(m *testing.M) {
-	// initialize backend if ipvsadm/iptables found
-	initialize()
-
-	os.Exit(m.Run())
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // SERVICES
 ////////////////////////////////////////////////////////////////////////////////
-func TestSetService(t *testing.T) {
-	if skip {
+func TestSetServiceNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
 	if err := balance.SetService(&testService1); err != nil {
@@ -46,10 +24,15 @@ func TestSetService(t *testing.T) {
 		t.FailNow()
 	}
 
-	// todo: read from ipvsadm
+	if err := balance.SetService(&testService1); err != nil {
+		t.Errorf("Failed to SET service - %v", err)
+		t.FailNow()
+	}
+
 	service, err := balance.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
+		t.FailNow()
 	}
 
 	if service.Host != testService1.Host {
@@ -57,26 +40,31 @@ func TestSetService(t *testing.T) {
 	}
 }
 
-func TestSetServices(t *testing.T) {
-	if skip {
+func TestSetServicesNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
-	services := []core.Service{}
-	services = append(services, testService2)
 
-	if err := balance.SetServices(services); err != nil {
+	if err := balance.SetService(&testService1); err != nil {
 		t.Errorf("Failed to SET services - %v", err)
 		t.FailNow()
 	}
 
-	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json"); !os.IsNotExist(err) {
-		t.Errorf("Failed to clear old services on PUT - %v", err)
+	if err := balance.SetServices([]core.Service{testService2}); err != nil {
+		t.Errorf("Failed to SET services - %v", err)
+		t.FailNow()
 	}
 
-	// todo: read from ipvsadm
+	_, err := balance.GetService(testService1.Id)
+	if err == nil {
+		t.Errorf("Failed to clear old services on PUT - %v", err)
+		t.FailNow()
+	}
+
 	service, err := balance.GetService(testService2.Id)
 	if err != nil {
 		t.Error(err)
+		t.FailNow()
 	}
 
 	if service.Host != testService2.Host {
@@ -84,10 +72,16 @@ func TestSetServices(t *testing.T) {
 	}
 }
 
-func TestGetServices(t *testing.T) {
-	if skip {
+func TestGetServicesNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
+
+	if err := balance.SetServices([]core.Service{testService2}); err != nil {
+		t.Errorf("Failed to SET services - %v", err)
+		t.FailNow()
+	}
+
 	services, err := balance.GetServices()
 	if err != nil {
 		t.Errorf("Failed to GET services - %v", err)
@@ -99,11 +93,23 @@ func TestGetServices(t *testing.T) {
 	}
 }
 
-func TestGetService(t *testing.T) {
-	if skip {
+func TestGetServiceNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
+
 	service, err := balance.GetService(testService2.Id)
+	if err == nil {
+		t.Errorf("Failed to fail GETTING service - %v", err)
+		t.FailNow()
+	}
+
+	if err := balance.SetServices([]core.Service{testService2}); err != nil {
+		t.Errorf("Failed to SET services - %v", err)
+		t.FailNow()
+	}
+
+	service, err = balance.GetService(testService2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %v", err)
 		t.FailNow()
@@ -114,17 +120,22 @@ func TestGetService(t *testing.T) {
 	}
 }
 
-func TestDeleteService(t *testing.T) {
-	if skip {
+func TestDeleteServiceNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
 	if err := balance.DeleteService(testService2.Id); err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to DELETE nonexistant service - %v", err)
 	}
 
-	// todo: read from ipvsadm
+	balance.SetService(&testService2)
+
+	if err := balance.DeleteService(testService2.Id); err != nil {
+		t.Errorf("Failed to DELETE service - %v", err)
+	}
+
 	_, err := balance.GetService(testService2.Id)
-	if !strings.Contains(err.Error(), "No Service Found") {
+	if err == nil {
 		t.Error(err)
 	}
 }
@@ -132,17 +143,24 @@ func TestDeleteService(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 // SERVERS
 ////////////////////////////////////////////////////////////////////////////////
-func TestSetServer(t *testing.T) {
-	if skip {
+
+func TestSetServerNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
+
 	balance.SetService(&testService1)
+
 	if err := balance.SetServer(testService1.Id, &testServer1); err != nil {
 		t.Errorf("Failed to SET server - %v", err)
 		t.FailNow()
 	}
 
-	// todo: read from ipvsadm
+	if err := balance.SetServer(testService1.Id, &testServer1); err != nil {
+		t.Errorf("Failed to SET server - %v", err)
+		t.FailNow()
+	}
+
 	service, err := balance.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
@@ -156,18 +174,24 @@ func TestSetServer(t *testing.T) {
 	}
 }
 
-func TestSetServers(t *testing.T) {
-	if skip {
+func TestSetServersNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
-	servers := []core.Server{}
-	servers = append(servers, testServer2)
+
+	servers := []core.Server{testServer2}
+	if err := balance.SetServers(testService1.Id, servers); err == nil {
+		t.Errorf("Failed to fail SETTING servers - %v", err)
+		t.FailNow()
+	}
+
+	balance.SetService(&testService1)
+
 	if err := balance.SetServers(testService1.Id, servers); err != nil {
 		t.Errorf("Failed to SET servers - %v", err)
 		t.FailNow()
 	}
 
-	// todo: read from ipvsadm
 	service, err := balance.GetService(testService1.Id)
 	if err != nil {
 		t.Error(err)
@@ -181,13 +205,18 @@ func TestSetServers(t *testing.T) {
 	}
 }
 
-func TestGetServers(t *testing.T) {
-	if skip {
+func TestGetServersNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
+
+	svc := testService1
+	svc.Servers = append(svc.Servers, testServer2)
+	balance.SetService(&svc)
+
 	service, err := balance.GetService(testService1.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET servers - %v", err)
 		t.FailNow()
 	}
 
@@ -196,11 +225,30 @@ func TestGetServers(t *testing.T) {
 	}
 }
 
-func TestGetServer(t *testing.T) {
-	if skip {
+func TestGetServerNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
-	server, err := balance.GetServer(testService1.Id, testServer2.Id)
+
+	server, err := balance.GetServer(testService1.Id, "not-real")
+	if err == nil {
+		t.Errorf("Failed to fail GETTING server - %v", err)
+		t.FailNow()
+	}
+
+	balance.SetService(&testService1)
+
+	server, err = balance.GetServer(testService1.Id, "not-real")
+	if err == nil {
+		t.Errorf("Failed to fail GETTING server - %v", err)
+		t.FailNow()
+	}
+
+	svc := testService1
+	svc.Servers = append(svc.Servers, testServer2)
+	balance.SetService(&svc)
+
+	server, err = balance.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET server - %v", err)
 		t.FailNow()
@@ -211,11 +259,26 @@ func TestGetServer(t *testing.T) {
 	}
 }
 
-func TestDeleteServer(t *testing.T) {
-	if skip {
+func TestDeleteServerNginx(t *testing.T) {
+	if !nginxPrep() {
 		t.SkipNow()
 	}
-	err := balance.DeleteServer(testService1.Id, testServer2.Id)
+
+	err := balance.DeleteServer("not-real-thing", testServer2.Id)
+	if err == nil {
+		t.Errorf("Failed to DELETE nonexistant server - %v", err)
+	}
+
+	balance.SetService(&testService1)
+
+	err = balance.DeleteServer(testService1.Id, testServer2.Id)
+	if err != nil {
+		t.Errorf("Failed to DELETE nonexistant server - %v", err)
+	}
+
+	balance.SetServer(testService1.Id, &testServer2)
+
+	err = balance.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to DELETE server - %v", err)
 	}
@@ -235,41 +298,23 @@ func TestDeleteServer(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVS
 ////////////////////////////////////////////////////////////////////////////////
-func toJson(v interface{}) ([]byte, error) {
-	jsonified, err := json.MarshalIndent(v, "", "\t")
+func nginxPrep() bool {
+	nginx, err := exec.Command("echo", "nginx").CombinedOutput()
+	// nginx, err := exec.Command("nginx", "-v").CombinedOutput()
 	if err != nil {
-		return nil, err
-	}
-	return jsonified, nil
-}
-
-func initialize() {
-	ifIptables, err := exec.Command("iptables", "-S").CombinedOutput()
-	if err != nil {
-		fmt.Printf("Failed to run iptables - %s%v\n", ifIptables, err.Error())
-		skip = true
-	}
-	ifIpvsadm, err := exec.Command("ipvsadm", "--version").CombinedOutput()
-	if err != nil {
-		fmt.Printf("Failed to run ipvsadm - %s%v\n", ifIpvsadm, err.Error())
-		skip = true
+		fmt.Printf("Failed to run nginx - %s%v\n", nginx, err.Error())
+		return false
 	}
 
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 
-	if !skip {
-		// todo: find more friendly way to clear crufty rules only
-		err = exec.Command("iptables", "-F", "portal").Run()
-		if err != nil {
-			fmt.Printf("Failed to clear iptables - %v\n", err.Error())
-			os.Exit(1)
-		}
-		err = exec.Command("ipvsadm", "-C").Run()
-		if err != nil {
-			fmt.Printf("Failed to clear ipvsadm - %v\n", err.Error())
-			os.Exit(1)
-		}
+	config.Balancer = "nginx"
+	config.WorkDir = "/tmp/portal"
 
-		balance.Init()
+	err = balance.Init()
+	// skip tests if failed to init
+	if err != nil {
+		return false
 	}
+	return true
 }

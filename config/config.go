@@ -28,6 +28,8 @@ var (
 	Log                lumber.Logger
 	RouteHttp          = "0.0.0.0:80"
 	RouteTls           = "0.0.0.0:443"
+	Balancer           = "lvs"
+	WorkDir            = "/var/db/portal"
 	JustProxy          = false
 	Server             = false
 	Version            = false
@@ -50,10 +52,13 @@ func AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&LogFile, "log-file", "L", LogFile, "Log file to write to")
 	cmd.Flags().StringVarP(&RouteHttp, "proxy-http", "x", RouteHttp, "Address to listen on for proxying http")
 	cmd.Flags().StringVarP(&RouteTls, "proxy-tls", "X", RouteTls, "Address to listen on for proxying https")
+	cmd.Flags().StringVarP(&Balancer, "balancer", "b", Balancer, "Load balancer to use (nginx|lvs)")
+	cmd.Flags().StringVarP(&WorkDir, "work-dir", "w", WorkDir, "Directory for portal to use (balancer config)")
 
 	cmd.Flags().BoolVarP(&Server, "server", "s", Server, "Run in server mode")
 	cmd.Flags().BoolVarP(&Version, "version", "v", Version, "Print version info and exit")
 	cmd.Flags().BoolVarP(&JustProxy, "just-proxy", "j", JustProxy, "Proxy only (no tcp/udp load balancing)")
+
 }
 
 func LoadConfigFile() error {
@@ -77,6 +82,8 @@ func LoadConfigFile() error {
 	viper.SetDefault("server", Server)
 	viper.SetDefault("proxy-http", RouteHttp)
 	viper.SetDefault("proxy-tls", RouteTls)
+	viper.SetDefault("balancer", Balancer)
+	viper.SetDefault("work-dir", WorkDir)
 
 	filename := filepath.Base(ConfigFile)
 	viper.SetConfigName(filename[:len(filename)-len(filepath.Ext(filename))])
@@ -104,6 +111,8 @@ func LoadConfigFile() error {
 	Server = viper.GetBool("server")
 	RouteHttp = viper.GetString("proxy-http")
 	RouteTls = viper.GetString("proxy-tls")
+	Balancer = viper.GetString("balancer")
+	WorkDir = viper.GetString("work-dir")
 
 	return nil
 }
