@@ -3,8 +3,11 @@ package balance
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/coreos/go-iptables/iptables"
 
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
@@ -14,6 +17,8 @@ var (
 	Balancer       core.Backender
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
+
+	tab *iptables.IPTables
 )
 
 func Init() error {
@@ -22,6 +27,29 @@ func Init() error {
 		return nil
 	}
 	Balancer = &Lvs{}
+
+	var err error
+	tab, err = iptables.New()
+	if err != nil {
+		tab = nil
+	}
+	if tab != nil {
+		tab.Delete("filter", "INPUT", "-j", "portal")
+		tab.ClearChain("filter", "portal")
+		tab.DeleteChain("filter", "portal")
+		err = tab.NewChain("filter", "portal")
+		if err != nil {
+			return fmt.Errorf("Failed to create new chain - %v", err)
+		}
+		err = tab.AppendUnique("filter", "portal", "-j", "RETURN")
+		if err != nil {
+			return fmt.Errorf("Failed to append to portal chain - %v", err)
+		}
+		err = tab.AppendUnique("filter", "INPUT", "-j", "portal")
+		if err != nil {
+			return fmt.Errorf("Failed to append to INPUT chain - %v", err)
+		}
+	}
 
 	return Balancer.Init()
 }
@@ -44,21 +72,70 @@ func SetServices(services []core.Service) error {
 	if Balancer == nil {
 		return nil
 	}
-	return Balancer.SetServices(services)
+	if tab != nil {
+		tab.RenameChain("filter", "portal", "portal-old")
+	}
+	err := Balancer.SetServices(services)
+	if err != nil && tab != nil {
+		tab.RenameChain("filter", "portal-old", "portal")
+	}
+	if err == nil && tab != nil {
+		tab.NewChain("filter", "portal")
+		tab.ClearChain("filter", "portal")
+		tab.AppendUnique("filter", "portal", "-j", "RETURN")
+		for i := range services {
+			err := tab.Insert("filter", "portal", 1, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
+			if err != nil {
+				tab.ClearChain("filter", "portal")
+				tab.DeleteChain("filter", "portal")
+				tab.RenameChain("filter", "portal-old", "portal")
+				return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
+			}
+		}
+		tab.AppendUnique("filter", "INPUT", "-j", "portal")
+		tab.Delete("filter", "INPUT", "-j", "portal-old")
+		tab.ClearChain("filter", "portal-old")
+		tab.DeleteChain("filter", "portal-old")
+	}
+
+	return err
 }
 
 func SetService(service *core.Service) error {
 	if Balancer == nil {
 		return nil
 	}
-	return Balancer.SetService(service)
+
+	err := Balancer.SetService(service)
+	// update iptables rules
+	if err == nil && tab != nil {
+		errTab := tab.Insert("filter", "portal", 1, "-p", service.Type, "-d", service.Host, "--dport", fmt.Sprintf("%d", service.Port), "-j", "ACCEPT")
+		if errTab != nil {
+			return err
+		}
+	}
+	return err
 }
 
 func DeleteService(id string) error {
 	if Balancer == nil {
 		return nil
 	}
-	return Balancer.DeleteService(id)
+	service, err := parseSvc(id)
+	if err != nil {
+		return err
+	}
+
+	err = Balancer.DeleteService(id)
+	if err == nil && tab != nil {
+		// update iptables rules
+		errTab := tab.Delete("filter", "portal", "-p", service.Type, "-d", service.Host, "--dport", fmt.Sprintf("%d", service.Port), "-j", "ACCEPT")
+		if errTab != nil {
+			return err
+		}
+	}
+
+	return err
 }
 
 func SetServers(svcId string, servers []core.Server) error {

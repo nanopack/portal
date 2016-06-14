@@ -57,6 +57,7 @@ Flags:
   -x, --proxy-http="0.0.0.0:80": Address to listen on for proxying http
   -X, --proxy-tls="0.0.0.0:443": Address to listen on for proxying https
   -s, --server[=false]: Run in server mode
+  -v, --version[=false]: Print version info and exit
 
 Use "portal [command] --help" for more information about a command.
 ```

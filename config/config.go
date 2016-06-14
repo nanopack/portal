@@ -30,6 +30,7 @@ var (
 	RouteTls           = "0.0.0.0:443"
 	JustProxy          = false
 	Server             = false
+	Version            = false
 )
 
 func AddFlags(cmd *cobra.Command) {
@@ -51,6 +52,7 @@ func AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&RouteTls, "proxy-tls", "X", RouteTls, "Address to listen on for proxying https")
 
 	cmd.Flags().BoolVarP(&Server, "server", "s", Server, "Run in server mode")
+	cmd.Flags().BoolVarP(&Version, "version", "v", Version, "Print version info and exit")
 	cmd.Flags().BoolVarP(&JustProxy, "just-proxy", "j", JustProxy, "Proxy only (no tcp/udp load balancing)")
 }
 
