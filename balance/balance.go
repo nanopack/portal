@@ -63,6 +63,16 @@ func Init() error {
 		if err != nil {
 			return fmt.Errorf("Failed to append to INPUT chain - %v", err)
 		}
+
+		// Allow router through by default (ports 80/443)
+		err = tab.Insert("filter", "portal", 1, "-p", "tcp", "--dport", "80", "-j", "ACCEPT")
+		if err != nil {
+			return err
+		}
+		err = tab.Insert("filter", "portal", 1, "-p", "tcp", "--dport", "443", "-j", "ACCEPT")
+		if err != nil {
+			return err
+		}
 	}
 
 	return Balancer.Init()
@@ -94,18 +104,35 @@ func SetServices(services []core.Service) error {
 		tab.RenameChain("filter", "portal-old", "portal")
 	}
 	if err == nil && tab != nil {
+		cleanup := func(error) error {
+			tab.ClearChain("filter", "portal")
+			tab.DeleteChain("filter", "portal")
+			tab.RenameChain("filter", "portal-old", "portal")
+			return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
+		}
+
 		tab.NewChain("filter", "portal")
 		tab.ClearChain("filter", "portal")
 		tab.AppendUnique("filter", "portal", "-j", "RETURN")
+
+		// rules for all services
 		for i := range services {
 			err := tab.Insert("filter", "portal", 1, "-p", services[i].Type, "-d", services[i].Host, "--dport", fmt.Sprintf("%d", services[i].Port), "-j", "ACCEPT")
 			if err != nil {
-				tab.ClearChain("filter", "portal")
-				tab.DeleteChain("filter", "portal")
-				tab.RenameChain("filter", "portal-old", "portal")
-				return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
+				return cleanup(err)
 			}
 		}
+
+		// Allow router through by default (ports 80/443)
+		err = tab.Insert("filter", "portal", 1, "-p", "tcp", "--dport", "80", "-j", "ACCEPT")
+		if err != nil {
+			return cleanup(err)
+		}
+		err = tab.Insert("filter", "portal", 1, "-p", "tcp", "--dport", "443", "-j", "ACCEPT")
+		if err != nil {
+			return cleanup(err)
+		}
+
 		tab.AppendUnique("filter", "INPUT", "-j", "portal")
 		tab.Delete("filter", "INPUT", "-j", "portal-old")
 		tab.ClearChain("filter", "portal-old")

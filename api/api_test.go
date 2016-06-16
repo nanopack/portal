@@ -221,7 +221,7 @@ func TestDeleteService(t *testing.T) {
 	}
 
 	// bad request test
-	resp, err = rest("DELETE", "/services/not-real", "")
+	resp, err = rest("DELETE", "/services/not-real-service", "")
 	if err != nil {
 		t.Error(err)
 	}
