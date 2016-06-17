@@ -70,10 +70,13 @@ type (
 )
 
 func StartApi() error {
+	auth.Header = "X-AUTH-TOKEN"
+
 	if config.Insecure {
 		config.Log.Info("Api listening at http://%s:%s...", config.ApiHost, config.ApiPort)
-		return http.ListenAndServe(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), routes())
+		return auth.ListenAndServe(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), config.ApiToken, routes())
 	}
+
 	var cert *tls.Certificate
 	var err error
 	if config.ApiCert == "" {
@@ -85,7 +88,6 @@ func StartApi() error {
 		return err
 	}
 	auth.Certificate = cert
-	auth.Header = "X-AUTH-TOKEN"
 
 	config.Log.Info("Api listening at https://%s:%s...", config.ApiHost, config.ApiPort)
 	return auth.ListenAndServeTLS(fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort), config.ApiToken, routes())

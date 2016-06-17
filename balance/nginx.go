@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path"
 	"sync"
-	"syscall"
 	"text/template"
 
 	"github.com/nanopack/portal/config"
@@ -297,7 +296,6 @@ stream {
 
 	// reload nginx
 	cmd := exec.Command("nginx", "-s", "reload")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Run()
 
 	return nil

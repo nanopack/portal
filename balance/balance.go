@@ -1,3 +1,5 @@
+// +build linux darwin
+
 // balance handles the load balancing portion of portal.
 package balance
 
