@@ -46,6 +46,7 @@ Flags:
   -p, --api-key-password="": Password for the SSL key
   -P, --api-port="8443": Listen address for the API
   -t, --api-token="": Token for API Access
+  -b, --balancer="lvs": Load balancer to use (nginx|lvs)
   -r, --cluster-connection="none://": Cluster connection string (redis://127.0.0.1:6379)
   -T, --cluster-token="": Cluster security token
   -c, --conf="": Configuration file to load
@@ -57,6 +58,8 @@ Flags:
   -x, --proxy-http="0.0.0.0:80": Address to listen on for proxying http
   -X, --proxy-tls="0.0.0.0:443": Address to listen on for proxying https
   -s, --server[=false]: Run in server mode
+  -v, --version[=false]: Print version info and exit
+  -w, --work-dir="/var/db/portal": Directory for portal to use (balancer config)
 
 Use "portal [command] --help" for more information about a command.
 ```
@@ -86,6 +89,8 @@ $ ./portal -c config.json
   "just-proxy": false,
   "proxy-http": "0.0.0.0:80",
   "proxy-tls": "0.0.0.0:443",
+  "balancer": "nginx",
+  "work-dir": "/var/db/portal",
   "log-level": "INFO",
   "log-file": "",
   "server": true

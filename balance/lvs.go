@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/coreos/go-iptables/iptables"
 	"github.com/nanobox-io/golang-lvs"
 
 	"github.com/nanopack/portal/core"
@@ -14,7 +13,6 @@ import (
 
 var (
 	ipvsLock = &sync.RWMutex{}
-	tab      *iptables.IPTables
 )
 
 type (
@@ -23,28 +21,6 @@ type (
 )
 
 func (l *Lvs) Init() error {
-	var err error
-	tab, err = iptables.New()
-	if err != nil {
-		tab = nil
-	}
-	if tab != nil {
-		tab.Delete("filter", "INPUT", "-j", "portal")
-		tab.ClearChain("filter", "portal")
-		tab.DeleteChain("filter", "portal")
-		err = tab.NewChain("filter", "portal")
-		if err != nil {
-			return fmt.Errorf("Failed to create new chain - %v", err)
-		}
-		err = tab.AppendUnique("filter", "portal", "-j", "RETURN")
-		if err != nil {
-			return fmt.Errorf("Failed to append to portal chain - %v", err)
-		}
-		err = tab.AppendUnique("filter", "INPUT", "-j", "portal")
-		if err != nil {
-			return fmt.Errorf("Failed to append to INPUT chain - %v", err)
-		}
-	}
 	return nil
 }
 
@@ -194,13 +170,6 @@ func (l *Lvs) SetService(service *core.Service) error {
 		return err
 	}
 
-	if tab != nil {
-		err := tab.Insert("filter", "portal", 1, "-p", lvsService.Type, "-d", lvsService.Host, "--dport", fmt.Sprintf("%d", lvsService.Port), "-j", "ACCEPT")
-		if err != nil {
-			return err
-		}
-	}
-
 	// add servers, if any
 	if len(lvsService.Servers) != 0 {
 		s := lvs.DefaultIpvs.FindService(service.Type, service.Host, service.Port)
@@ -239,12 +208,6 @@ func (l *Lvs) DeleteService(id string) error {
 		return err
 	}
 
-	if tab != nil {
-		err := tab.Delete("filter", "portal", "-p", service.Type, "-d", service.Host, "--dport", fmt.Sprintf("%d", service.Port), "-j", "ACCEPT")
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -269,83 +232,57 @@ func (l *Lvs) SetServices(services []core.Service) error {
 	}
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
-	if tab != nil {
-		tab.RenameChain("filter", "portal", "portal-old")
-	}
+
 	err := lvs.Clear()
 	if err != nil {
-		if tab != nil {
-			tab.RenameChain("filter", "portal-old", "portal")
-		}
 		return fmt.Errorf("Failed to lvs.Clear() - %v", err.Error())
 	}
 	err = lvs.Restore(lvsServices)
 	if err != nil {
-		if tab != nil {
-			tab.RenameChain("filter", "portal-old", "portal")
-		}
 		return fmt.Errorf("Failed to lvs.Restore() - %v", err.Error())
-	}
-	if tab != nil {
-		tab.NewChain("filter", "portal")
-		tab.ClearChain("filter", "portal")
-		tab.AppendUnique("filter", "portal", "-j", "RETURN")
-		for i := range lvsServices {
-			err := tab.Insert("filter", "portal", 1, "-p", lvsServices[i].Type, "-d", lvsServices[i].Host, "--dport", fmt.Sprintf("%d", lvsServices[i].Port), "-j", "ACCEPT")
-			if err != nil {
-				tab.ClearChain("filter", "portal")
-				tab.DeleteChain("filter", "portal")
-				tab.RenameChain("filter", "portal-old", "portal")
-				return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
-			}
-		}
-		tab.AppendUnique("filter", "INPUT", "-j", "portal")
-		tab.Delete("filter", "INPUT", "-j", "portal-old")
-		tab.ClearChain("filter", "portal-old")
-		tab.DeleteChain("filter", "portal-old")
 	}
 	return nil
 }
 
 // Sync - takes applies ipvsadm rules and save them to lvs.DefaultIpvs.Services
 // which should already have the same information
-// func (l *Lvs) Sync() error {
+// Deprecated: Use` SetServices(common.GetServices())` instead
 func Sync() error {
 	// why do we need to modify rules if we already updated backend with current rules?
 	ipvsLock.Lock()
 	defer ipvsLock.Unlock()
-	if tab != nil {
-		tab.RenameChain("filter", "portal", "portal-old")
-	}
+	// if tab != nil {
+	// 	tab.RenameChain("filter", "portal", "portal-old")
+	// }
 	// save reads the applied ipvsadm rules from the host and saves them as i.Services
 	err := lvs.Save()
 	if err != nil {
-		if tab != nil {
-			tab.RenameChain("filter", "portal-old", "portal")
-		}
+		// if tab != nil {
+		// 	tab.RenameChain("filter", "portal-old", "portal")
+		// }
 		return fmt.Errorf("Failed to lvs.Save() - %v", err.Error())
 	}
 
-	lvsServices := lvs.DefaultIpvs.Services
+	// lvsServices := lvs.DefaultIpvs.Services
 
-	if tab != nil {
-		tab.NewChain("filter", "portal")
-		tab.ClearChain("filter", "portal")
-		tab.AppendUnique("filter", "portal", "-j", "RETURN")
-		for i := range lvsServices {
-			err := tab.Insert("filter", "portal", 1, "-p", lvsServices[i].Type, "-d", lvsServices[i].Host, "--dport", fmt.Sprintf("%d", lvsServices[i].Port), "-j", "ACCEPT")
-			if err != nil {
-				tab.ClearChain("filter", "portal")
-				tab.DeleteChain("filter", "portal")
-				tab.RenameChain("filter", "portal-old", "portal")
-				return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
-			}
-		}
-		tab.AppendUnique("filter", "INPUT", "-j", "portal")
-		tab.Delete("filter", "INPUT", "-j", "portal-old")
-		tab.ClearChain("filter", "portal-old")
-		tab.DeleteChain("filter", "portal-old")
-	}
+	// if tab != nil {
+	// 	tab.NewChain("filter", "portal")
+	// 	tab.ClearChain("filter", "portal")
+	// 	tab.AppendUnique("filter", "portal", "-j", "RETURN")
+	// 	for i := range lvsServices {
+	// 		err := tab.Insert("filter", "portal", 1, "-p", lvsServices[i].Type, "-d", lvsServices[i].Host, "--dport", fmt.Sprintf("%d", lvsServices[i].Port), "-j", "ACCEPT")
+	// 		if err != nil {
+	// 			tab.ClearChain("filter", "portal")
+	// 			tab.DeleteChain("filter", "portal")
+	// 			tab.RenameChain("filter", "portal-old", "portal")
+	// 			return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
+	// 		}
+	// 	}
+	// 	tab.AppendUnique("filter", "INPUT", "-j", "portal")
+	// 	tab.Delete("filter", "INPUT", "-j", "portal-old")
+	// 	tab.ClearChain("filter", "portal-old")
+	// 	tab.DeleteChain("filter", "portal-old")
+	// }
 	return nil
 }
 

@@ -1,6 +1,6 @@
 sudo: required
 language: go
-go: 1.5
+go: 1.6
 
 addons:
   apt:

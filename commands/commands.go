@@ -24,13 +24,19 @@ import (
 )
 
 var (
-	runServer bool
-	Portal    = &cobra.Command{
-		Use:   "portal",
-		Short: "portal - load balancer/proxy",
-		Long:  ``,
+	// to be populated by linker
+	tag    string
+	commit string
 
-		Run: startPortal,
+	Portal = &cobra.Command{
+		Use:               "portal",
+		Short:             "portal - load balancer/proxy",
+		Long:              ``,
+		PersistentPreRunE: readConfig,
+		PreRunE:           preFlight,
+		RunE:              startPortal,
+		SilenceErrors:     true,
+		SilenceUsage:      true,
 	}
 )
 
@@ -65,17 +71,30 @@ func init() {
 	Portal.AddCommand(vipRemoveCmd)
 }
 
-func startPortal(ccmd *cobra.Command, args []string) {
-	if err := config.LoadConfigFile(); err != nil {
-		config.Log.Fatal("Failed to read config - %v", err)
-		os.Exit(1)
+func preFlight(ccmd *cobra.Command, args []string) error {
+	if config.Version {
+		fmt.Printf("portal %s (%s)\n", tag, commit)
+		return fmt.Errorf("") // no error, just exit
 	}
 
 	if !config.Server {
 		ccmd.HelpFunc()(ccmd, args)
-		return
+		return fmt.Errorf("") // no error, just exit
 	}
 
+	return nil
+}
+
+func readConfig(ccmd *cobra.Command, args []string) error {
+	if err := config.LoadConfigFile(); err != nil {
+		fmt.Printf("ERROR: Failed to read config - %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
+func startPortal(ccmd *cobra.Command, args []string) error {
 	if config.LogFile == "" {
 		config.Log = lumber.NewConsoleLogger(lumber.LvlInt(config.LogLevel))
 	} else {
@@ -83,38 +102,38 @@ func startPortal(ccmd *cobra.Command, args []string) {
 		config.Log, err = lumber.NewFileLogger(config.LogFile, lumber.LvlInt(config.LogLevel), lumber.ROTATE, 5000, 9, 100)
 		if err != nil {
 			config.Log.Fatal("File logger init failed - %v", err)
-			os.Exit(1)
+			return err
 		}
 	}
 	// initialize database
 	err := database.Init()
 	if err != nil {
 		config.Log.Fatal("Database init failed - %v", err)
-		os.Exit(1)
+		return err
 	}
 	// initialize balancer
 	err = balance.Init()
 	if err != nil {
 		config.Log.Fatal("Balancer init failed - %v", err)
-		os.Exit(1)
+		return err
 	}
 	// initialize proxymgr
 	err = proxymgr.Init()
 	if err != nil {
 		config.Log.Fatal("Proxymgr init failed - %v", err)
-		os.Exit(1)
+		return err
 	}
 	// initialize vipmgr
 	err = vipmgr.Init()
 	if err != nil {
 		config.Log.Fatal("Vipmgr init failed - %v", err)
-		os.Exit(1)
+		return err
 	}
 	// initialize cluster
 	err = cluster.Init()
 	if err != nil {
 		config.Log.Fatal("Cluster init failed - %v", err)
-		os.Exit(1)
+		return err
 	}
 
 	go sigHandle()
@@ -123,9 +142,9 @@ func startPortal(ccmd *cobra.Command, args []string) {
 	err = api.StartApi()
 	if err != nil {
 		config.Log.Fatal("Api start failed - %v", err)
-		os.Exit(1)
+		return err
 	}
-	return
+	return nil
 }
 
 func sigHandle() {
