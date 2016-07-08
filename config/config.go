@@ -84,6 +84,7 @@ func LoadConfigFile() error {
 	viper.SetDefault("server", Server)
 	viper.SetDefault("proxy-http", RouteHttp)
 	viper.SetDefault("proxy-tls", RouteTls)
+	viper.SetDefault("proxy-ignore-upstream", ProxyIgnore)
 	viper.SetDefault("balancer", Balancer)
 	viper.SetDefault("work-dir", WorkDir)
 
@@ -113,6 +114,7 @@ func LoadConfigFile() error {
 	Server = viper.GetBool("server")
 	RouteHttp = viper.GetString("proxy-http")
 	RouteTls = viper.GetString("proxy-tls")
+	ProxyIgnore = viper.GetString("proxy-ignore-upstream")
 	Balancer = viper.GetString("balancer")
 	WorkDir = viper.GetString("work-dir")
 
