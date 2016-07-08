@@ -16,6 +16,9 @@ func (self Nanobox) Init() error {
 	// we want to see nanobox-router logs
 	lumber.Level(lumber.LvlInt(config.LogLevel))
 
+	// configure upstream cert checks
+	router.IgnoreUpstreamCerts = config.ProxyIgnore
+
 	// start http proxy
 	err := router.StartHTTP(config.RouteHttp)
 	if err != nil {

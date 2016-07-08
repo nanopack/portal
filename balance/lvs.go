@@ -246,7 +246,7 @@ func (l *Lvs) SetServices(services []core.Service) error {
 
 // Sync - takes applies ipvsadm rules and save them to lvs.DefaultIpvs.Services
 // which should already have the same information
-// Deprecated: Use` SetServices(common.GetServices())` instead
+// Deprecated: Use `SetServices(common.GetServices())` instead
 func Sync() error {
 	// why do we need to modify rules if we already updated backend with current rules?
 	ipvsLock.Lock()
