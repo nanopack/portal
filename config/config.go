@@ -26,6 +26,7 @@ var (
 	LogLevel           = "INFO"
 	LogFile            = ""
 	Log                lumber.Logger
+	ProxyIgnore        = false
 	RouteHttp          = "0.0.0.0:80"
 	RouteTls           = "0.0.0.0:443"
 	Balancer           = "lvs"
@@ -50,6 +51,7 @@ func AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&ClusterToken, "cluster-token", "T", ClusterToken, "Cluster security token")
 	cmd.Flags().StringVarP(&LogLevel, "log-level", "l", LogLevel, "Log level to output")
 	cmd.Flags().StringVarP(&LogFile, "log-file", "L", LogFile, "Log file to write to")
+	cmd.Flags().BoolVarP(&ProxyIgnore, "proxy-ignore-upstream", "u", Server, "Ignore upstream's(target's) certs when routing")
 	cmd.Flags().StringVarP(&RouteHttp, "proxy-http", "x", RouteHttp, "Address to listen on for proxying http")
 	cmd.Flags().StringVarP(&RouteTls, "proxy-tls", "X", RouteTls, "Address to listen on for proxying https")
 	cmd.Flags().StringVarP(&Balancer, "balancer", "b", Balancer, "Load balancer to use (nginx|lvs)")
@@ -82,6 +84,7 @@ func LoadConfigFile() error {
 	viper.SetDefault("server", Server)
 	viper.SetDefault("proxy-http", RouteHttp)
 	viper.SetDefault("proxy-tls", RouteTls)
+	viper.SetDefault("proxy-ignore-upstream", ProxyIgnore)
 	viper.SetDefault("balancer", Balancer)
 	viper.SetDefault("work-dir", WorkDir)
 
@@ -111,6 +114,7 @@ func LoadConfigFile() error {
 	Server = viper.GetBool("server")
 	RouteHttp = viper.GetString("proxy-http")
 	RouteTls = viper.GetString("proxy-tls")
+	ProxyIgnore = viper.GetBool("proxy-ignore-upstream")
 	Balancer = viper.GetString("balancer")
 	WorkDir = viper.GetString("work-dir")
 
