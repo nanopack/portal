@@ -183,8 +183,8 @@ func (s ScribbleDatabase) GetRoutes() ([]core.Route, error) {
 func (s ScribbleDatabase) SetRoutes(routes []core.Route) error {
 	s.scribbleDb.Delete("routes", "")
 	for i := range routes {
-		// unique (as much as what we keep) key to store route by
-		ukey := fmt.Sprintf("%v-%v%v", strings.Replace(routes[i].SubDomain, ".", "-", -1), strings.Replace(routes[i].Domain, ".", "-", -1), strings.Replace(routes[i].Path, "/", "_", -1))
+		// unique key to store cert by
+		ukey := uuid.NewV4().String()
 		err := s.scribbleDb.Write("routes", ukey, routes[i])
 		if err != nil {
 			return err

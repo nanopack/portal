@@ -6,7 +6,7 @@ MD5=$(which md5 || which md5sum)
 
 # for versioning
 getCurrCommit() {
-  echo `git rev-parse HEAD | tr -d "[ \r\n\']"`
+  echo `git rev-parse --short HEAD| tr -d "[ \r\n\']"`
 }
 
 # for versioning
