@@ -26,14 +26,16 @@ func SetServices(services []core.Service) error {
 		return err
 	}
 
-	// save to backend
-	err = database.SetServices(services)
-	if err != nil {
-		// undo balance action
-		if uerr := balance.SetServices(oldServices); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetServices(services)
+		if err != nil {
+			// undo balance action
+			if uerr := balance.SetServices(oldServices); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -51,14 +53,16 @@ func SetService(service *core.Service) error {
 		return err
 	}
 
-	// save to backend
-	err = database.SetService(service)
-	if err != nil {
-		// undo balancer action
-		if uerr := balance.SetServices(oldServices); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetService(service)
+		if err != nil {
+			// undo balancer action
+			if uerr := balance.SetServices(oldServices); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -78,16 +82,18 @@ func DeleteService(svcId string) error {
 		return err
 	}
 
-	// remove from backend
-	err = database.DeleteService(svcId)
-	if err != nil {
-		// undo balance action
-		if oldService != nil {
-			if uerr := balance.SetService(oldService); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// remove from backend
+		err = database.DeleteService(svcId)
+		if err != nil {
+			// undo balance action
+			if oldService != nil {
+				if uerr := balance.SetService(oldService); uerr != nil {
+					err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				}
 			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -106,14 +112,16 @@ func SetServers(svcId string, servers []core.Server) error {
 		return err
 	}
 
-	// add to backend
-	err = database.SetServers(svcId, servers)
-	if err != nil {
-		// undo balance action
-		if uerr := balance.SetServers(svcId, oldServers); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// add to backend
+		err = database.SetServers(svcId, servers)
+		if err != nil {
+			// undo balance action
+			if uerr := balance.SetServers(svcId, oldServers); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -130,14 +138,16 @@ func SetServer(svcId string, server *core.Server) error {
 		return err
 	}
 
-	// save to backend
-	err = database.SetServer(svcId, server)
-	if err != nil {
-		// undo balance action
-		if uerr := balance.DeleteServer(svcId, server.Id); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetServer(svcId, server)
+		if err != nil {
+			// undo balance action
+			if uerr := balance.DeleteServer(svcId, server.Id); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -158,13 +168,15 @@ func DeleteServer(svcId, srvId string) error {
 		}
 	}
 
-	// remove from backend
-	if err = database.DeleteServer(svcId, srvId); err != nil && !strings.Contains(err.Error(), "No Server Found") {
-		// undo balance action
-		if uerr := balance.SetServer(svcId, srv); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// remove from backend
+		if err = database.DeleteServer(svcId, srvId); err != nil && !strings.Contains(err.Error(), "No Server Found") {
+			// undo balance action
+			if uerr := balance.SetServer(svcId, srv); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -191,14 +203,17 @@ func SetRoutes(routes []core.Route) error {
 	if err != nil {
 		return err
 	}
-	// save to backend
-	err = database.SetRoutes(routes)
-	if err != nil {
-		// undo proxymgr action
-		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetRoutes(routes)
+		if err != nil {
+			// undo proxymgr action
+			if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -216,14 +231,16 @@ func SetRoute(route core.Route) error {
 		return err
 	}
 
-	// save to backend
-	err = database.SetRoute(route)
-	if err != nil {
-		// undo proxymgr action
-		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetRoute(route)
+		if err != nil {
+			// undo proxymgr action
+			if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -241,14 +258,16 @@ func DeleteRoute(route core.Route) error {
 		return err
 	}
 
-	// save to backend
-	err = database.DeleteRoute(route)
-	if err != nil {
-		// undo proxymgr action
-		if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.DeleteRoute(route)
+		if err != nil {
+			// undo proxymgr action
+			if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -269,14 +288,17 @@ func SetCerts(certs []core.CertBundle) error {
 	if err != nil {
 		return err
 	}
-	// save to backend
-	err = database.SetCerts(certs)
-	if err != nil {
-		// undo proxymgr action
-		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetCerts(certs)
+		if err != nil {
+			// undo proxymgr action
+			if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -294,14 +316,16 @@ func SetCert(cert core.CertBundle) error {
 		return err
 	}
 
-	// save to backend
-	err = database.SetCert(cert)
-	if err != nil {
-		// undo proxymgr action
-		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetCert(cert)
+		if err != nil {
+			// undo proxymgr action
+			if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -319,14 +343,16 @@ func DeleteCert(cert core.CertBundle) error {
 		return err
 	}
 
-	// save to backend
-	err = database.DeleteCert(cert)
-	if err != nil {
-		// undo proxymgr action
-		if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.DeleteCert(cert)
+		if err != nil {
+			// undo proxymgr action
+			if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -347,14 +373,17 @@ func SetVips(vips []core.Vip) error {
 	if err != nil {
 		return err
 	}
-	// save to backend
-	err = database.SetVips(vips)
-	if err != nil {
-		// undo vipmgr action
-		if uerr := vipmgr.SetVips(oldVips); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetVips(vips)
+		if err != nil {
+			// undo vipmgr action
+			if uerr := vipmgr.SetVips(oldVips); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -372,14 +401,16 @@ func SetVip(vip core.Vip) error {
 		return err
 	}
 
-	// save to backend
-	err = database.SetVip(vip)
-	if err != nil {
-		// undo vipmgr action
-		if uerr := vipmgr.SetVips(oldVips); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.SetVip(vip)
+		if err != nil {
+			// undo vipmgr action
+			if uerr := vipmgr.SetVips(oldVips); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -397,14 +428,16 @@ func DeleteVip(vip core.Vip) error {
 		return err
 	}
 
-	// save to backend
-	err = database.DeleteVip(vip)
-	if err != nil {
-		// undo vipmgr action
-		if uerr := vipmgr.SetVips(oldVips); uerr != nil {
-			err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+	if !database.CentralStore {
+		// save to backend
+		err = database.DeleteVip(vip)
+		if err != nil {
+			// undo vipmgr action
+			if uerr := vipmgr.SetVips(oldVips); uerr != nil {
+				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+			}
+			return err
 		}
-		return err
 	}
 	return nil
 }

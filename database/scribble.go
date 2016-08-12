@@ -265,6 +265,7 @@ func (s ScribbleDatabase) SetCert(cert core.CertBundle) error {
 	if err != nil {
 		return err
 	}
+	// todo: update cert if key is different
 	// for idempotency
 	for i := 0; i < len(certs); i++ {
 		if certs[i].Cert == cert.Cert && certs[i].Key == cert.Key {
