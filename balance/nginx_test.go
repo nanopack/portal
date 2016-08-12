@@ -299,7 +299,7 @@ func TestDeleteServerNginx(t *testing.T) {
 // PRIVS
 ////////////////////////////////////////////////////////////////////////////////
 func nginxPrep() bool {
-	nginx, err := exec.Command("echo", "nginx").CombinedOutput()
+	nginx, err := exec.Command("which", "nginx").CombinedOutput()
 	// nginx, err := exec.Command("nginx", "-v").CombinedOutput()
 	if err != nil {
 		fmt.Printf("Failed to run nginx - %s%v\n", nginx, err.Error())
@@ -311,9 +311,12 @@ func nginxPrep() bool {
 	config.Balancer = "nginx"
 	config.WorkDir = "/tmp/portal"
 
+	// todo: write config file for tests to /tmp/portal/portal-nginx.conf
+
 	err = balance.Init()
 	// skip tests if failed to init
 	if err != nil {
+		fmt.Printf("Failed to initialize nginx - %s%v\n", nginx, err.Error())
 		return false
 	}
 	return true

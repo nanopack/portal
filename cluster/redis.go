@@ -64,7 +64,33 @@ func (r *Redis) Init() error {
 		}
 	}
 
-	// todo: load certs and vips too
+	// get certs
+	certs, err := r.GetCerts()
+	if err != nil {
+		return fmt.Errorf("Failed to get certs - %v", err)
+	}
+	// write certs
+	if certs != nil {
+		config.Log.Trace("[cluster] - Setting certs...")
+		err = common.SetCerts(certs)
+		if err != nil {
+			return fmt.Errorf("Failed to set certs - %v", err)
+		}
+	}
+
+	// get vips
+	vips, err := r.GetVips()
+	if err != nil {
+		return fmt.Errorf("Failed to get vips - %v", err)
+	}
+	// write vips
+	if vips != nil {
+		config.Log.Trace("[cluster] - Setting vips...")
+		err = common.SetVips(vips)
+		if err != nil {
+			return fmt.Errorf("Failed to set vips - %v", err)
+		}
+	}
 
 	// note: keep subconn connection initialization out here or sleep after `go r.subscribe()`
 	// don't set read timeout on subscriber - it dies if no 'updates' within that time
