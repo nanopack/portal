@@ -57,6 +57,13 @@ func (self ip) SetVip(vip core.Vip) error {
 	mutex.Unlock()
 	config.Log.Trace("Vip '%v' added", vip.Ip)
 
+	// arp vip to neighbors
+	err = exec.Command("arping", "-A", "-c", "10", "-I", vip.Interface, vip.Ip).Run()
+	if err != nil {
+		// log rather than return
+		config.Log.Error("Failed to arp vip '%v' - %v", vip.Ip, err)
+	}
+
 	return nil
 }
 

@@ -272,7 +272,7 @@ stream {
 		proxy_pass    {{.Id}};
 		{{if ne .Persistence 0 -}}
 		proxy_timeout {{.Persistence}}s;
-		{{- end -}}
+		{{- end }}
 		proxy_connect_timeout 1s;
 	}
 {{end}}
