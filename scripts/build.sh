@@ -21,7 +21,7 @@ getCurrTag() {
 
 # build portal
 echo "Building portal..."
-gox -ldflags="-X github.com/nanopack/portal/commands.tag=$(getCurrTag)
+gox -ldflags="-s -X github.com/nanopack/portal/commands.tag=$(getCurrTag)
   -X github.com/nanopack/portal/commands.commit=$(getCurrCommit)" \
   -osarch "darwin/amd64 linux/amd64 windows/amd64" -output="./build/{{.OS}}/{{.Arch}}/portal"
 

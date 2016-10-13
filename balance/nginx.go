@@ -55,6 +55,9 @@ func (n *Nginx) Init() error {
 	// store primer config
 	n.originalConfig = string(cfg)
 
+	// reload nginx - don't return (in the event nginx is not running before portal)
+	n.regenerloadConfig()
+
 	return nil
 }
 
