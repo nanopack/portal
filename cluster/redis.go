@@ -15,6 +15,7 @@ import (
 	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/core/common"
+	"github.com/nanopack/portal/database"
 )
 
 var (
@@ -60,6 +61,34 @@ func (r *Redis) Init() error {
 		err = common.SetRoutes(routes)
 		if err != nil {
 			return fmt.Errorf("Failed to set routes - %v", err)
+		}
+	}
+
+	// get certs
+	certs, err := r.GetCerts()
+	if err != nil {
+		return fmt.Errorf("Failed to get certs - %v", err)
+	}
+	// write certs
+	if certs != nil {
+		config.Log.Trace("[cluster] - Setting certs...")
+		err = common.SetCerts(certs)
+		if err != nil {
+			return fmt.Errorf("Failed to set certs - %v", err)
+		}
+	}
+
+	// get vips
+	vips, err := r.GetVips()
+	if err != nil {
+		return fmt.Errorf("Failed to get vips - %v", err)
+	}
+	// write vips
+	if vips != nil {
+		config.Log.Trace("[cluster] - Setting vips...")
+		err = common.SetVips(vips)
+		if err != nil {
+			return fmt.Errorf("Failed to set vips - %v", err)
 		}
 	}
 
@@ -127,6 +156,10 @@ func (r *Redis) SetServices(services []core.Service) error {
 		return err
 	}
 
+	if database.CentralStore {
+		return database.SetServices(services)
+	}
+
 	return nil
 }
 
@@ -157,6 +190,10 @@ func (r *Redis) SetService(service *core.Service) error {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
 		return err
+	}
+
+	if database.CentralStore {
+		return database.SetService(service)
 	}
 
 	return nil
@@ -195,6 +232,10 @@ func (r *Redis) DeleteService(id string) error {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
 		return err
+	}
+
+	if database.CentralStore {
+		return database.DeleteService(id)
 	}
 
 	return nil
@@ -238,6 +279,10 @@ func (r *Redis) SetServers(svcId string, servers []core.Server) error {
 		return err
 	}
 
+	if database.CentralStore {
+		return database.SetServers(svcId, servers)
+	}
+
 	return nil
 }
 
@@ -267,6 +312,10 @@ func (r *Redis) SetServer(svcId string, server *core.Server) error {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
 		return err
+	}
+
+	if database.CentralStore {
+		return database.SetServer(svcId, server)
 	}
 
 	return nil
@@ -305,6 +354,10 @@ func (r *Redis) DeleteServer(svcId, srvId string) error {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
 		return err
+	}
+
+	if database.CentralStore {
+		return database.DeleteServer(svcId, srvId)
 	}
 
 	return nil
@@ -348,6 +401,10 @@ func (r Redis) SetRoutes(routes []core.Route) error {
 		return err
 	}
 
+	if database.CentralStore {
+		return database.SetRoutes(routes)
+	}
+
 	return nil
 }
 
@@ -378,6 +435,10 @@ func (r Redis) SetRoute(route core.Route) error {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
 		return err
+	}
+
+	if database.CentralStore {
+		return database.SetRoute(route)
 	}
 
 	return nil
@@ -416,6 +477,10 @@ func (r Redis) DeleteRoute(route core.Route) error {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
 		return err
+	}
+
+	if database.CentralStore {
+		return database.DeleteRoute(route)
 	}
 
 	return nil
@@ -459,6 +524,10 @@ func (r Redis) SetCerts(certs []core.CertBundle) error {
 		return err
 	}
 
+	if database.CentralStore {
+		return database.SetCerts(certs)
+	}
+
 	return nil
 }
 
@@ -489,6 +558,10 @@ func (r Redis) SetCert(cert core.CertBundle) error {
 			err = fmt.Errorf("%v - %v", err, uerr)
 		}
 		return err
+	}
+
+	if database.CentralStore {
+		return database.SetCert(cert)
 	}
 
 	return nil
@@ -529,6 +602,10 @@ func (r Redis) DeleteCert(cert core.CertBundle) error {
 		return err
 	}
 
+	if database.CentralStore {
+		return database.DeleteCert(cert)
+	}
+
 	return nil
 }
 
@@ -536,6 +613,7 @@ func (r Redis) DeleteCert(cert core.CertBundle) error {
 // VIPS
 ////////////////////////////////////////////////////////////////////////////////
 
+// todo: clustered
 func (r Redis) SetVips(vips []core.Vip) error {
 	return common.SetVips(vips)
 }
@@ -560,6 +638,10 @@ func (r *Redis) GetService(id string) (*core.Service, error) {
 
 // GetServices gets a list of services from the database, or another cluster member.
 func (r *Redis) GetServices() ([]core.Service, error) {
+	if database.CentralStore {
+		return database.GetServices()
+	}
+
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -657,6 +739,10 @@ func (r *Redis) GetServer(svcId, srvId string) (*core.Server, error) {
 
 // GetRoutes gets a list of routes from the database, or another cluster member.
 func (r *Redis) GetRoutes() ([]core.Route, error) {
+	if database.CentralStore {
+		return database.GetRoutes()
+	}
+
 	conn := pool.Get()
 	defer conn.Close()
 
@@ -750,6 +836,10 @@ func (r *Redis) GetRoutes() ([]core.Route, error) {
 
 // GetCerts gets a list of certs from the database, or another cluster member.
 func (r *Redis) GetCerts() ([]core.CertBundle, error) {
+	if database.CentralStore {
+		return database.GetCerts()
+	}
+
 	conn := pool.Get()
 	defer conn.Close()
 

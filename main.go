@@ -134,9 +134,14 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/nanopack/portal/commands"
 )
 
 func main() {
-	commands.Portal.Execute()
+	err := commands.Portal.Execute()
+	if err != nil && err.Error() != "" {
+		fmt.Println(err)
+	}
 }

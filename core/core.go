@@ -82,9 +82,9 @@ type (
 	}
 
 	Vip struct {
-		Ip        string `json:"ip"` // ip/cidr
-		Interface string `json:"interface"`
-		Alias     string `json:"alias"`
+		Ip        string `json:"ip"`        // ip/cidr
+		Interface string `json:"interface"` // interface to bind to
+		Alias     string `json:"alias"`     // label for ip
 	}
 )
 

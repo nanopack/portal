@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	CentralStore   bool
 	Backend        Storable
 	NoServiceError = errors.New("No Service Found")
 	NoServerError  = errors.New("No Server Found")
@@ -31,8 +32,16 @@ func Init() error {
 	}
 	switch u.Scheme {
 	case "scribble":
+		CentralStore = false
 		Backend = &ScribbleDatabase{}
+	case "postgres":
+		CentralStore = true
+		Backend = &PostgresDb{}
+	case "postgresql":
+		CentralStore = true
+		Backend = &PostgresDb{}
 	default:
+		CentralStore = false
 		Backend = &ScribbleDatabase{}
 	}
 	err = Backend.Init()

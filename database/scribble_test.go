@@ -29,12 +29,6 @@ func TestMain(m *testing.M) {
 	// clean test dir
 	os.RemoveAll("/tmp/scribbleTest")
 
-	config.DatabaseConnection = "scribble:///tmp/scribbleTest"
-	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
-
-	// Backend = &database.ScribbleDatabase{}
-	database.Init()
-
 	rtn := m.Run()
 
 	// clean test dir
@@ -44,6 +38,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestSetService(t *testing.T) {
+	config.DatabaseConnection = "scribble:///tmp/scribbleTest"
+	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
+
+	// Backend = &database.ScribbleDatabase{}
+	database.Init()
+
 	if err := database.SetService(&testService1); err != nil {
 		t.Errorf("Failed to SET service - %v", err)
 	}

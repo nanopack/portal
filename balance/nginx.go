@@ -55,6 +55,9 @@ func (n *Nginx) Init() error {
 	// store primer config
 	n.originalConfig = string(cfg)
 
+	// reload nginx - don't return (in the event nginx is not running before portal)
+	n.regenerloadConfig()
+
 	return nil
 }
 
@@ -272,7 +275,7 @@ stream {
 		proxy_pass    {{.Id}};
 		{{if ne .Persistence 0 -}}
 		proxy_timeout {{.Persistence}}s;
-		{{- end -}}
+		{{- end }}
 		proxy_connect_timeout 1s;
 	}
 {{end}}

@@ -3,6 +3,7 @@ package cluster
 import (
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/core/common"
+	"github.com/nanopack/portal/database"
 )
 
 type (
@@ -65,58 +66,163 @@ func (n None) GetService(id string) (*core.Service, error) {
 	return common.GetService(id)
 }
 func (n None) SetServices(services []core.Service) error {
-	return common.SetServices(services)
+	err := common.SetServices(services)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetServices(services)
+	}
+	return nil
 }
 func (n None) SetService(service *core.Service) error {
-	return common.SetService(service)
+	err := common.SetService(service)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetService(service)
+	}
+	return nil
 }
 func (n None) DeleteService(id string) error {
-	return common.DeleteService(id)
+	err := common.DeleteService(id)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.DeleteService(id)
+	}
+	return nil
 }
 func (n None) SetServers(svcId string, servers []core.Server) error {
-	return common.SetServers(svcId, servers)
+	err := common.SetServers(svcId, servers)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetServers(svcId, servers)
+	}
+	return nil
 }
 func (n None) SetServer(svcId string, server *core.Server) error {
-	return common.SetServer(svcId, server)
+	err := common.SetServer(svcId, server)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetServer(svcId, server)
+	}
+	return nil
 }
 func (n None) DeleteServer(svcId, srvId string) error {
-	return common.DeleteServer(svcId, srvId)
+	err := common.DeleteServer(svcId, srvId)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.DeleteServer(svcId, srvId)
+	}
+	return nil
 }
 func (n None) GetServer(svcId, srvId string) (*core.Server, error) {
 	return common.GetServer(svcId, srvId)
 }
 func (n None) SetRoutes(routes []core.Route) error {
-	return common.SetRoutes(routes)
+	err := common.SetRoutes(routes)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetRoutes(routes)
+	}
+	return nil
 }
 func (n None) SetRoute(route core.Route) error {
-	return common.SetRoute(route)
+	err := common.SetRoute(route)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetRoute(route)
+	}
+	return nil
 }
 func (n None) DeleteRoute(route core.Route) error {
-	return common.DeleteRoute(route)
+	err := common.DeleteRoute(route)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.DeleteRoute(route)
+	}
+	return nil
 }
 func (n None) GetRoutes() ([]core.Route, error) {
 	return common.GetRoutes()
 }
 func (n None) SetCerts(certs []core.CertBundle) error {
-	return common.SetCerts(certs)
+	err := common.SetCerts(certs)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetCerts(certs)
+	}
+	return nil
 }
 func (n None) SetCert(cert core.CertBundle) error {
-	return common.SetCert(cert)
+	err := common.SetCert(cert)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetCert(cert)
+	}
+	return nil
 }
 func (n None) DeleteCert(cert core.CertBundle) error {
-	return common.DeleteCert(cert)
+	err := common.DeleteCert(cert)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.DeleteCert(cert)
+	}
+	return nil
 }
 func (n None) GetCerts() ([]core.CertBundle, error) {
 	return common.GetCerts()
 }
 func (n None) SetVips(vips []core.Vip) error {
-	return common.SetVips(vips)
+	err := common.SetVips(vips)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetVips(vips)
+	}
+	return nil
 }
 func (n None) SetVip(vip core.Vip) error {
-	return common.SetVip(vip)
+	err := common.SetVip(vip)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.SetVip(vip)
+	}
+	return nil
 }
 func (n None) DeleteVip(vip core.Vip) error {
-	return common.DeleteVip(vip)
+	err := common.DeleteVip(vip)
+	if err != nil {
+		return err
+	}
+	if database.CentralStore {
+		return database.DeleteVip(vip)
+	}
+	return nil
 }
 func (n None) GetVips() ([]core.Vip, error) {
 	return common.GetVips()
