@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/nanopack/portal/cluster"
@@ -37,6 +38,11 @@ func parseReqService(req *http.Request) (*core.Service, error) {
 		return nil, NoServiceError
 	}
 
+	err = checkPort(svc)
+	if err != nil {
+		return nil, err
+	}
+
 	for i := range svc.Servers {
 		svc.Servers[i].GenId()
 
@@ -48,6 +54,28 @@ func parseReqService(req *http.Request) (*core.Service, error) {
 
 	config.Log.Trace("SERVICE: %+v", svc)
 	return &svc, nil
+}
+
+// ensure port is not in use by portal
+func checkPort(svc core.Service) error {
+	// split address/port
+	listenHttp := strings.Split(config.RouteHttp, ":")
+	listenTls := strings.Split(config.RouteTls, ":")
+
+	hPort, _ := strconv.Atoi(listenHttp[1])
+	tPort, _ := strconv.Atoi(listenTls[1])
+	aPort, _ := strconv.Atoi(config.ApiPort)
+
+	// assume tls/http listening same ip. if listen on all interfaces, break on ports
+	if svc.Port == hPort || svc.Port == tPort || svc.Port == aPort {
+		if listenHttp[0] == "" || listenHttp[0] == "0.0.0.0" {
+			return BadListenAddr
+		}
+		if svc.Host == listenHttp[0] || svc.Host == listenTls[0] || svc.Host == config.ApiHost {
+			return BadListenAddr
+		}
+	}
+	return nil
 }
 
 // Get information about a service
@@ -86,6 +114,12 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 			writeError(rw, req, NoServiceError, http.StatusBadRequest)
 			return
 		}
+
+		if err := checkPort(services[i]); err != nil {
+			writeError(rw, req, err, http.StatusBadRequest)
+			return
+		}
+
 		for j := range services[i].Servers {
 			services[i].Servers[j].GenId()
 			if services[i].Servers[j].Id == "-0" {
