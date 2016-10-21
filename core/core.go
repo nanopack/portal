@@ -89,6 +89,9 @@ type (
 )
 
 func (s *Service) GenId() {
+	if s.Type == "" { // default to tcp
+		s.Type = "tcp"
+	}
 	s.Id = fmt.Sprintf("%v-%v-%d", s.Type, strings.Replace(s.Host, ".", "_", -1), s.Port)
 }
 
