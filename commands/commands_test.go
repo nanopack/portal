@@ -27,8 +27,9 @@ type (
 	execable func() error
 
 	testString struct {
-		stringed string
-		returned string
+		stringed  string
+		returned  string
+		returned2 string
 	}
 )
 
@@ -42,8 +43,9 @@ var (
 		returned: "{\"id\":\"tcp-192_168_0_15-80\",\"host\":\"192.168.0.15\",\"port\":80,\"type\":\"tcp\",\"scheduler\":\"wrr\",\"persistence\":0,\"netmask\":\"\"}\n",
 	}
 	testServices = testString{
-		stringed: `[{"host":"192.168.0.15","port":80,"type":"tcp","scheduler":"wrr","persistence":0,"netmask":""},{"host":"192.168.0.16","port":443,"type":"tcp","scheduler":"wrr"}]`,
-		returned: "[{\"id\":\"tcp-192_168_0_15-80\",\"host\":\"192.168.0.15\",\"port\":80,\"type\":\"tcp\",\"scheduler\":\"wrr\",\"persistence\":0,\"netmask\":\"\"},{\"id\":\"tcp-192_168_0_16-443\",\"host\":\"192.168.0.16\",\"port\":443,\"type\":\"tcp\",\"scheduler\":\"wrr\",\"persistence\":0,\"netmask\":\"\"}]\n",
+		stringed:  `[{"host":"192.168.0.15","port":80,"type":"tcp","scheduler":"wrr","persistence":0,"netmask":""},{"host":"192.168.0.16","port":443,"type":"tcp","scheduler":"wrr"}]`,
+		returned:  "[{\"id\":\"tcp-192_168_0_15-80\",\"host\":\"192.168.0.15\",\"port\":80,\"type\":\"tcp\",\"scheduler\":\"wrr\",\"persistence\":0,\"netmask\":\"\"},{\"id\":\"tcp-192_168_0_16-443\",\"host\":\"192.168.0.16\",\"port\":443,\"type\":\"tcp\",\"scheduler\":\"wrr\",\"persistence\":0,\"netmask\":\"\"}]\n",
+		returned2: "[{\"id\":\"tcp-192_168_0_16-443\",\"host\":\"192.168.0.16\",\"port\":443,\"type\":\"tcp\",\"scheduler\":\"wrr\",\"persistence\":0,\"netmask\":\"\"},{\"id\":\"tcp-192_168_0_15-80\",\"host\":\"192.168.0.15\",\"port\":80,\"type\":\"tcp\",\"scheduler\":\"wrr\",\"persistence\":0,\"netmask\":\"\"}]\n",
 	}
 	testServer1 = testString{
 		stringed: `{"host":"127.0.0.11","port":8080,"forwarder":"m","weight":5,"upper_threshold":10,"lower_threshold":1}`,
@@ -167,7 +169,7 @@ func TestAddServices(t *testing.T) {
 		t.Errorf("Failed to execute - %v", err.Error())
 	}
 
-	if string(out) != testServices.returned {
+	if string(out) != testServices.returned && string(out) != testServices.returned2 {
 		t.Errorf("Unexpected output: %q", string(out))
 	}
 }

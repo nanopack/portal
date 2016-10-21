@@ -134,6 +134,18 @@ func putServices(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	// ensure no duplicate services
+	svcs := map[string]core.Service{}
+	for i := range services {
+		svcs[services[i].Id] = services[i]
+	}
+
+	services = []core.Service{}
+
+	for _, v := range svcs {
+		services = append(services, v)
+	}
+
 	// save to cluster
 	err := cluster.SetServices(services)
 	if err != nil {
