@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/jcelliott/lumber"
@@ -103,6 +104,20 @@ func startPortal(ccmd *cobra.Command, args []string) error {
 			return fmt.Errorf("")
 		}
 	}
+
+	// ensure proxy ports are unique. we need to check because tls will not listen
+	// until a cert is added. we want it to break sooner.
+	if config.RouteHttp == config.RouteTls {
+		config.Log.Fatal("Proxy addresses must be unique")
+		return fmt.Errorf("")
+	}
+	// need ':' in case tls is double apiport (8080, 80)
+	apiPort := fmt.Sprintf(":%s", config.ApiPort)
+	if strings.HasSuffix(config.RouteTls, apiPort) {
+		config.Log.Fatal("TLS proxy address must be unique")
+		return fmt.Errorf("")
+	}
+
 	// initialize database
 	err := database.Init()
 	if err != nil {
