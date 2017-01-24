@@ -52,6 +52,7 @@ func (n None) Init() error {
 	if err != nil {
 		return err
 	}
+
 	// apply vips
 	err = common.SetVips(vips)
 	if err != nil {

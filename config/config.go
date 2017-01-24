@@ -60,7 +60,6 @@ func AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&Server, "server", "s", Server, "Run in server mode")
 	cmd.Flags().BoolVarP(&Version, "version", "v", Version, "Print version info and exit")
 	cmd.Flags().BoolVarP(&JustProxy, "just-proxy", "j", JustProxy, "Proxy only (no tcp/udp load balancing)")
-
 }
 
 func LoadConfigFile() error {
