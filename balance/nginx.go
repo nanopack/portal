@@ -291,6 +291,8 @@ stream {
 		return fmt.Errorf("Failed to create config file - %s", err)
 	}
 
+	config.Log.Trace("Regenerating nginx config - %+q", n.Services)
+
 	// execute the template
 	err = t.ExecuteTemplate(cfgFile, "nginxConfig", n.Services)
 	if err != nil {
@@ -298,8 +300,10 @@ stream {
 	}
 
 	// reload nginx
-	cmd := exec.Command("nginx", "-s", "reload")
-	cmd.Run()
+	out, err := exec.Command("nginx", "-s", "reload").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("Failed to reload nginx - %s", out)
+	}
 
 	return nil
 }

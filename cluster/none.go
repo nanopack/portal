@@ -14,6 +14,17 @@ func (n None) UnInit() error {
 	return nil
 }
 func (n None) Init() error {
+	// load vips
+	vips, err := common.GetVips()
+	if err != nil {
+		return err
+	}
+	// apply vips
+	err = common.SetVips(vips)
+	if err != nil {
+		return err
+	}
+
 	// load services
 	services, err := common.GetServices()
 	if err != nil {
@@ -47,17 +58,6 @@ func (n None) Init() error {
 		return err
 	}
 
-	// load vips
-	vips, err := common.GetVips()
-	if err != nil {
-		return err
-	}
-
-	// apply vips
-	err = common.SetVips(vips)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 func (n None) GetServices() ([]core.Service, error) {

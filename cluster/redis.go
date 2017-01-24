@@ -36,6 +36,20 @@ func (r *Redis) Init() error {
 	self = fmt.Sprintf("%s:%s", hostname, config.ApiPort)
 	pool = r.newPool(config.ClusterConnection, config.ClusterToken)
 
+	// get vips
+	vips, err := r.GetVips()
+	if err != nil {
+		return fmt.Errorf("Failed to get vips - %s", err)
+	}
+	// write vips
+	if vips != nil {
+		config.Log.Trace("[cluster] - Setting vips...")
+		err = common.SetVips(vips)
+		if err != nil {
+			return fmt.Errorf("Failed to set vips - %s", err)
+		}
+	}
+
 	// get services
 	services, err := r.GetServices()
 	if err != nil {
@@ -75,20 +89,6 @@ func (r *Redis) Init() error {
 		err = common.SetCerts(certs)
 		if err != nil {
 			return fmt.Errorf("Failed to set certs - %s", err)
-		}
-	}
-
-	// get vips
-	vips, err := r.GetVips()
-	if err != nil {
-		return fmt.Errorf("Failed to get vips - %s", err)
-	}
-	// write vips
-	if vips != nil {
-		config.Log.Trace("[cluster] - Setting vips...")
-		err = common.SetVips(vips)
-		if err != nil {
-			return fmt.Errorf("Failed to set vips - %s", err)
 		}
 	}
 

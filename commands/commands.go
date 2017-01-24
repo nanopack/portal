@@ -170,7 +170,6 @@ func sigHandle() {
 			balance.SetServices(make([]core.Service, 0, 0))
 			// clear vips
 			vipmgr.SetVips(make([]core.Vip, 0, 0))
-			fmt.Println()
 			os.Exit(0)
 		}
 	}()
