@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 		return
 	}
 	hostname, _ := os.Hostname()
-	self := fmt.Sprintf("%v:%v", hostname, config.ApiPort)
+	self := fmt.Sprintf("%s:%s", hostname, config.ApiPort)
 	defer conn.Do("SREM", "members", self)
 	defer conn.Close()
 
@@ -70,7 +70,7 @@ func TestSetService(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := cluster.SetService(&testService1); err != nil {
-		t.Errorf("Failed to SET service - %v", err)
+		t.Errorf("Failed to SET service - %s", err)
 		t.FailNow()
 	}
 
@@ -92,12 +92,12 @@ func TestSetServices(t *testing.T) {
 	services = append(services, testService2)
 
 	if err := cluster.SetServices(services); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 		t.FailNow()
 	}
 
 	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json"); !os.IsNotExist(err) {
-		t.Errorf("Failed to clear old services on PUT - %v", err)
+		t.Errorf("Failed to clear old services on PUT - %s", err)
 	}
 
 	service, err := cluster.GetService(testService2.Id)
@@ -117,7 +117,7 @@ func TestGetServices(t *testing.T) {
 	// don't use cluster.GetServices()
 	services, err := database.GetServices()
 	if err != nil {
-		t.Errorf("Failed to GET services - %v", err)
+		t.Errorf("Failed to GET services - %s", err)
 		t.FailNow()
 	}
 
@@ -132,7 +132,7 @@ func TestGetService(t *testing.T) {
 	}
 	service, err := cluster.GetService(testService2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 		t.FailNow()
 	}
 
@@ -146,7 +146,7 @@ func TestDeleteService(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := cluster.DeleteService(testService2.Id); err != nil {
-		t.Errorf("Failed to DELETE service - %v", err)
+		t.Errorf("Failed to DELETE service - %s", err)
 		t.FailNow()
 	}
 
@@ -165,7 +165,7 @@ func TestSetServer(t *testing.T) {
 	}
 	cluster.SetService(&testService1)
 	if err := cluster.SetServer(testService1.Id, &testServer1); err != nil {
-		t.Errorf("Failed to SET server - %v", err)
+		t.Errorf("Failed to SET server - %s", err)
 		t.FailNow()
 	}
 
@@ -189,7 +189,7 @@ func TestSetServers(t *testing.T) {
 	servers := []core.Server{}
 	servers = append(servers, testServer2)
 	if err := cluster.SetServers(testService1.Id, servers); err != nil {
-		t.Errorf("Failed to SET servers - %v", err)
+		t.Errorf("Failed to SET servers - %s", err)
 		t.FailNow()
 	}
 
@@ -212,7 +212,7 @@ func TestGetServers(t *testing.T) {
 	}
 	service, err := cluster.GetService(testService1.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 		t.FailNow()
 	}
 
@@ -232,7 +232,7 @@ func TestGetServer(t *testing.T) {
 	}
 	server, err := cluster.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET server - %v", err)
+		t.Errorf("Failed to GET server - %s", err)
 		t.FailNow()
 	}
 
@@ -247,7 +247,7 @@ func TestDeleteServer(t *testing.T) {
 	}
 	err := cluster.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to DELETE server - %v", err)
+		t.Errorf("Failed to DELETE server - %s", err)
 	}
 
 	service, err := cluster.GetService(testService1.Id)
@@ -269,7 +269,7 @@ func TestSetRoute(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := cluster.SetRoute(testRoute); err != nil {
-		t.Errorf("Failed to SET route - %v", err)
+		t.Errorf("Failed to SET route - %s", err)
 		t.FailNow()
 	}
 
@@ -290,7 +290,7 @@ func TestSetRoutes(t *testing.T) {
 	routes := []core.Route{testRoute}
 
 	if err := cluster.SetRoutes(routes); err != nil {
-		t.Errorf("Failed to SET routes - %v", err)
+		t.Errorf("Failed to SET routes - %s", err)
 		t.FailNow()
 	}
 
@@ -313,7 +313,7 @@ func TestGetRoutes(t *testing.T) {
 	// don't use cluster.GetRoutes() // todo:?
 	routes, err := cluster.GetRoutes()
 	if err != nil {
-		t.Errorf("Failed to GET routes - %v", err)
+		t.Errorf("Failed to GET routes - %s", err)
 		t.FailNow()
 	}
 
@@ -327,14 +327,14 @@ func TestDeleteRoute(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := cluster.DeleteRoute(testRoute); err != nil {
-		t.Errorf("Failed to DELETE route - %v", err)
+		t.Errorf("Failed to DELETE route - %s", err)
 		t.FailNow()
 	}
 
 	// don't use cluster.GetRoutes()
 	routes, err := database.GetRoutes()
 	if len(routes) != 0 {
-		t.Error("Failed to DELETE route - %v", err)
+		t.Error("Failed to DELETE route - %s", err)
 	}
 }
 
@@ -346,7 +346,7 @@ func TestSetCert(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := cluster.SetCert(testCert); err != nil {
-		t.Errorf("Failed to SET cert - %v", err)
+		t.Errorf("Failed to SET cert - %s", err)
 		t.FailNow()
 	}
 
@@ -367,7 +367,7 @@ func TestSetCerts(t *testing.T) {
 	certs := []core.CertBundle{testCert}
 
 	if err := cluster.SetCerts(certs); err != nil {
-		t.Errorf("Failed to SET certs - %v", err)
+		t.Errorf("Failed to SET certs - %s", err)
 		t.FailNow()
 	}
 
@@ -390,7 +390,7 @@ func TestGetCerts(t *testing.T) {
 	// don't use cluster.GetCerts() // todo:?
 	certs, err := cluster.GetCerts()
 	if err != nil {
-		t.Errorf("Failed to GET certs - %v", err)
+		t.Errorf("Failed to GET certs - %s", err)
 		t.FailNow()
 	}
 
@@ -404,14 +404,14 @@ func TestDeleteCert(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := cluster.DeleteCert(testCert); err != nil {
-		t.Errorf("Failed to DELETE cert - %v", err)
+		t.Errorf("Failed to DELETE cert - %s", err)
 		t.FailNow()
 	}
 
 	// don't use cluster.GetCerts()
 	certs, err := database.GetCerts()
 	if len(certs) != 0 {
-		t.Error("Failed to DELETE cert - %v", err)
+		t.Error("Failed to DELETE cert - %s", err)
 	}
 }
 
@@ -424,7 +424,7 @@ func TestNoneSetService(t *testing.T) {
 	cluster.Init()
 
 	if err := cluster.SetService(&testService1); err != nil {
-		t.Errorf("Failed to SET service - %v", err)
+		t.Errorf("Failed to SET service - %s", err)
 		t.FailNow()
 	}
 
@@ -443,12 +443,12 @@ func TestNoneSetServices(t *testing.T) {
 	services = append(services, testService2)
 
 	if err := cluster.SetServices(services); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 		t.FailNow()
 	}
 
 	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json"); !os.IsNotExist(err) {
-		t.Errorf("Failed to clear old services on PUT - %v", err)
+		t.Errorf("Failed to clear old services on PUT - %s", err)
 	}
 
 	service, err := cluster.GetService(testService2.Id)
@@ -465,7 +465,7 @@ func TestNoneGetServices(t *testing.T) {
 	// don't use cluster.GetServices()
 	services, err := database.GetServices()
 	if err != nil {
-		t.Errorf("Failed to GET services - %v", err)
+		t.Errorf("Failed to GET services - %s", err)
 		t.FailNow()
 	}
 
@@ -477,7 +477,7 @@ func TestNoneGetServices(t *testing.T) {
 func TestNoneGetService(t *testing.T) {
 	service, err := cluster.GetService(testService2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 		t.FailNow()
 	}
 
@@ -488,7 +488,7 @@ func TestNoneGetService(t *testing.T) {
 
 func TestNoneDeleteService(t *testing.T) {
 	if err := cluster.DeleteService(testService2.Id); err != nil {
-		t.Errorf("Failed to DELETE service - %v", err)
+		t.Errorf("Failed to DELETE service - %s", err)
 		t.FailNow()
 	}
 
@@ -504,7 +504,7 @@ func TestNoneDeleteService(t *testing.T) {
 func TestNoneSetServer(t *testing.T) {
 	cluster.SetService(&testService1)
 	if err := cluster.SetServer(testService1.Id, &testServer1); err != nil {
-		t.Errorf("Failed to SET server - %v", err)
+		t.Errorf("Failed to SET server - %s", err)
 		t.FailNow()
 	}
 
@@ -525,7 +525,7 @@ func TestNoneSetServers(t *testing.T) {
 	servers := []core.Server{}
 	servers = append(servers, testServer2)
 	if err := cluster.SetServers(testService1.Id, servers); err != nil {
-		t.Errorf("Failed to SET servers - %v", err)
+		t.Errorf("Failed to SET servers - %s", err)
 		t.FailNow()
 	}
 
@@ -545,7 +545,7 @@ func TestNoneSetServers(t *testing.T) {
 func TestNoneGetServers(t *testing.T) {
 	service, err := cluster.GetService(testService1.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 		t.FailNow()
 	}
 
@@ -562,7 +562,7 @@ func TestNoneGetServers(t *testing.T) {
 func TestNoneGetServer(t *testing.T) {
 	server, err := cluster.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET server - %v", err)
+		t.Errorf("Failed to GET server - %s", err)
 		t.FailNow()
 	}
 
@@ -574,7 +574,7 @@ func TestNoneGetServer(t *testing.T) {
 func TestNoneDeleteServer(t *testing.T) {
 	err := cluster.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to DELETE server - %v", err)
+		t.Errorf("Failed to DELETE server - %s", err)
 	}
 
 	service, err := cluster.GetService(testService1.Id)
@@ -593,7 +593,7 @@ func TestNoneDeleteServer(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 func TestNoneSetRoute(t *testing.T) {
 	if err := cluster.SetRoute(testRoute); err != nil {
-		t.Errorf("Failed to SET route - %v", err)
+		t.Errorf("Failed to SET route - %s", err)
 		t.FailNow()
 	}
 
@@ -611,7 +611,7 @@ func TestNoneSetRoutes(t *testing.T) {
 	routes := []core.Route{testRoute}
 
 	if err := cluster.SetRoutes(routes); err != nil {
-		t.Errorf("Failed to SET routes - %v", err)
+		t.Errorf("Failed to SET routes - %s", err)
 		t.FailNow()
 	}
 
@@ -631,7 +631,7 @@ func TestNoneGetRoutes(t *testing.T) {
 	// don't use cluster.GetRoutes() // todo:?
 	routes, err := cluster.GetRoutes()
 	if err != nil {
-		t.Errorf("Failed to GET routes - %v", err)
+		t.Errorf("Failed to GET routes - %s", err)
 		t.FailNow()
 	}
 
@@ -642,14 +642,14 @@ func TestNoneGetRoutes(t *testing.T) {
 
 func TestNoneDeleteRoute(t *testing.T) {
 	if err := cluster.DeleteRoute(testRoute); err != nil {
-		t.Errorf("Failed to DELETE route - %v", err)
+		t.Errorf("Failed to DELETE route - %s", err)
 		t.FailNow()
 	}
 
 	// don't use cluster.GetRoutes()
 	routes, err := database.GetRoutes()
 	if len(routes) != 0 {
-		t.Error("Failed to DELETE route - %v", err)
+		t.Error("Failed to DELETE route - %s", err)
 	}
 }
 
@@ -658,7 +658,7 @@ func TestNoneDeleteRoute(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 func TestNoneSetCert(t *testing.T) {
 	if err := cluster.SetCert(testCert); err != nil {
-		t.Errorf("Failed to SET cert - %v", err)
+		t.Errorf("Failed to SET cert - %s", err)
 		t.FailNow()
 	}
 
@@ -676,7 +676,7 @@ func TestNoneSetCerts(t *testing.T) {
 	certs := []core.CertBundle{testCert}
 
 	if err := cluster.SetCerts(certs); err != nil {
-		t.Errorf("Failed to SET certs - %v", err)
+		t.Errorf("Failed to SET certs - %s", err)
 		t.FailNow()
 	}
 
@@ -696,7 +696,7 @@ func TestNoneGetCerts(t *testing.T) {
 	// don't use cluster.GetCerts() // todo:?
 	certs, err := cluster.GetCerts()
 	if err != nil {
-		t.Errorf("Failed to GET certs - %v", err)
+		t.Errorf("Failed to GET certs - %s", err)
 		t.FailNow()
 	}
 
@@ -707,14 +707,14 @@ func TestNoneGetCerts(t *testing.T) {
 
 func TestNoneDeleteCert(t *testing.T) {
 	if err := cluster.DeleteCert(testCert); err != nil {
-		t.Errorf("Failed to DELETE cert - %v", err)
+		t.Errorf("Failed to DELETE cert - %s", err)
 		t.FailNow()
 	}
 
 	// don't use cluster.GetCerts()
 	certs, err := database.GetCerts()
 	if len(certs) != 0 {
-		t.Error("Failed to DELETE cert - %v", err)
+		t.Error("Failed to DELETE cert - %s", err)
 	}
 }
 
@@ -732,7 +732,7 @@ func toJson(v interface{}) ([]byte, error) {
 func initialize() {
 	rExec, err := exec.Command("redis-server", "-v").CombinedOutput()
 	if err != nil {
-		fmt.Printf("Failed to run redis-server - %s%v\n", rExec, err.Error())
+		fmt.Printf("Failed to run redis-server - %s%s\n", rExec, err)
 		skip = true
 	}
 
@@ -747,34 +747,34 @@ func initialize() {
 
 		err = database.Init()
 		if err != nil {
-			fmt.Printf("database init failed - %v\n", err)
+			fmt.Printf("database init failed - %s\n", err)
 			os.Exit(1)
 		}
 
 		balance.Balancer = &database.ScribbleDatabase{}
 		err = balance.Balancer.Init()
 		if err != nil {
-			fmt.Printf("balance init failed - %v\n", err)
+			fmt.Printf("balance init failed - %s\n", err)
 			os.Exit(1)
 		}
 
 		// initialize proxymgr
 		err = proxymgr.Init()
 		if err != nil {
-			fmt.Printf("Proxymgr init failed - %v\n", err)
+			fmt.Printf("Proxymgr init failed - %s\n", err)
 			os.Exit(1)
 		}
 
 		// initialize vipmgr
 		err = vipmgr.Init()
 		if err != nil {
-			fmt.Printf("Vipmgr init failed - %v\n", err)
+			fmt.Printf("Vipmgr init failed - %s\n", err)
 			os.Exit(1)
 		}
 
 		err = cluster.Init()
 		if err != nil {
-			fmt.Printf("Cluster init failed - %v\n", err)
+			fmt.Printf("Cluster init failed - %s\n", err)
 			os.Exit(1)
 		}
 	}

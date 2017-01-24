@@ -12,11 +12,11 @@ import (
 func (s *Service) GenHost() error {
 	iface, err := net.InterfaceByName(s.Interface)
 	if err != nil {
-		return fmt.Errorf("No interface found '%v' - %v", s.Interface, err)
+		return fmt.Errorf("No interface found '%s' - %s", s.Interface, err)
 	}
 	addrs, err := iface.Addrs()
 	if err != nil {
-		return fmt.Errorf("Failed to get address for '%v' - %v", s.Interface, err)
+		return fmt.Errorf("Failed to get address for '%s' - %s", s.Interface, err)
 	}
 	if len(addrs) < 1 {
 		s.Host = "127.0.0.1"

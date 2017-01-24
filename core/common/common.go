@@ -32,7 +32,7 @@ func SetServices(services []core.Service) error {
 		if err != nil {
 			// undo balance action
 			if uerr := balance.SetServices(oldServices); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -59,7 +59,7 @@ func SetService(service *core.Service) error {
 		if err != nil {
 			// undo balancer action
 			if uerr := balance.SetServices(oldServices); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -89,7 +89,7 @@ func DeleteService(svcId string) error {
 			// undo balance action
 			if oldService != nil {
 				if uerr := balance.SetService(oldService); uerr != nil {
-					err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+					err = fmt.Errorf("%s - %s", err, uerr)
 				}
 			}
 			return err
@@ -118,7 +118,7 @@ func SetServers(svcId string, servers []core.Server) error {
 		if err != nil {
 			// undo balance action
 			if uerr := balance.SetServers(svcId, oldServers); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -144,7 +144,7 @@ func SetServer(svcId string, server *core.Server) error {
 		if err != nil {
 			// undo balance action
 			if uerr := balance.DeleteServer(svcId, server.Id); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -173,7 +173,7 @@ func DeleteServer(svcId, srvId string) error {
 		if err = database.DeleteServer(svcId, srvId); err != nil && !strings.Contains(err.Error(), "No Server Found") {
 			// undo balance action
 			if uerr := balance.SetServer(svcId, srv); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -210,7 +210,7 @@ func SetRoutes(routes []core.Route) error {
 		if err != nil {
 			// undo proxymgr action
 			if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -237,7 +237,7 @@ func SetRoute(route core.Route) error {
 		if err != nil {
 			// undo proxymgr action
 			if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -264,7 +264,7 @@ func DeleteRoute(route core.Route) error {
 		if err != nil {
 			// undo proxymgr action
 			if uerr := proxymgr.SetRoutes(oldRoutes); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -295,7 +295,7 @@ func SetCerts(certs []core.CertBundle) error {
 		if err != nil {
 			// undo proxymgr action
 			if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -322,7 +322,7 @@ func SetCert(cert core.CertBundle) error {
 		if err != nil {
 			// undo proxymgr action
 			if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -349,7 +349,7 @@ func DeleteCert(cert core.CertBundle) error {
 		if err != nil {
 			// undo proxymgr action
 			if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -373,14 +373,13 @@ func SetVips(vips []core.Vip) error {
 	if err != nil {
 		return err
 	}
-
 	if !database.CentralStore {
 		// save to backend
 		err = database.SetVips(vips)
 		if err != nil {
 			// undo vipmgr action
 			if uerr := vipmgr.SetVips(oldVips); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -407,7 +406,7 @@ func SetVip(vip core.Vip) error {
 		if err != nil {
 			// undo vipmgr action
 			if uerr := vipmgr.SetVips(oldVips); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}
@@ -434,7 +433,7 @@ func DeleteVip(vip core.Vip) error {
 		if err != nil {
 			// undo vipmgr action
 			if uerr := vipmgr.SetVips(oldVips); uerr != nil {
-				err = fmt.Errorf("%v - %v", err.Error(), uerr.Error())
+				err = fmt.Errorf("%s - %s", err, uerr)
 			}
 			return err
 		}

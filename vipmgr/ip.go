@@ -32,6 +32,7 @@ func (self ip) Init() error {
 // SetVip adds a vip to the host and updates the cached vips
 func (self ip) SetVip(vip core.Vip) error {
 	// for idempotency
+	// todo: readlock
 	for i := range virtIps {
 		// if ip or alias is already added...
 		if virtIps[i].Ip == vip.Ip || virtIps[i].Alias == vip.Alias {
@@ -46,23 +47,30 @@ func (self ip) SetVip(vip core.Vip) error {
 	}
 
 	// add vip to host
-	err := exec.Command("ip", "addr", "add", vip.Ip, "dev", vip.Interface, "label", vip.Alias).Run()
+	out, err := exec.Command("ip", "addr", "add", vip.Ip, "dev", vip.Interface, "label", vip.Alias).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("Failed to add vip '%v' - %v", vip.Ip, err)
+		// if portal exited uncleanly and interface is still up, "change" addr
+		out2, err2 := exec.Command("ip", "addr", "change", vip.Ip, "dev", vip.Interface, "label", vip.Alias).CombinedOutput()
+		if err2 != nil {
+			return fmt.Errorf("Failed to add vip '%s' - %s - %s", vip.Ip, out, out2)
+		}
 	}
 
 	// update vip cache
 	mutex.Lock()
 	virtIps = append(virtIps, vip)
 	mutex.Unlock()
-	config.Log.Trace("Vip '%v' added", vip.Ip)
+	config.Log.Trace("Vip '%s' added", vip.Ip)
 
-	// arp vip to neighbors
-	err = exec.Command("arping", "-A", "-c", "10", "-I", vip.Interface, vip.Ip).Run()
-	if err != nil {
-		// log rather than return
-		config.Log.Error("Failed to arp vip '%v' - %v", vip.Ip, err)
-	}
+	// arp vip to neighbors, takes time goroutine
+	go func() {
+		out, err = exec.Command("arping", "-A", "-c", "10", "-I", vip.Interface, vip.Ip).CombinedOutput()
+		if err != nil {
+			// log rather than return
+			config.Log.Error("Failed to arp vip '%s' - %s", vip.Ip, out)
+		}
+		config.Log.Trace("Arped vip - '%s'", vip.Ip)
+	}()
 
 	return nil
 }
@@ -75,19 +83,19 @@ func (self ip) DeleteVip(vip core.Vip) error {
 		// check if the vip exists...
 		if vips[i].Ip == vip.Ip && vips[i].Interface == vip.Interface {
 			// and go delete it...
-			config.Log.Trace("Vip '%v' found to remove", vip.Ip)
+			config.Log.Trace("Vip '%s' found to remove", vip.Ip)
 			goto deleteIt
 		}
 	}
 	// otherwise, be idempotent and report it was deleted...
-	config.Log.Trace("Vip '%v' not found, reporting success", vip.Ip)
+	config.Log.Trace("Vip '%s' not found, reporting success", vip.Ip)
 	return nil
 
 deleteIt:
 	// remove vip from host
-	err := exec.Command("ip", "addr", "del", vip.Ip, "dev", vip.Interface).Run()
+	err := exec.Command("ip", "addr", "del", vip.Ip+"/32", "dev", vip.Interface).Run()
 	if err != nil {
-		return fmt.Errorf("Failed to remove vip '%v' - %v", vip.Ip, err)
+		return fmt.Errorf("Failed to remove vip '%s' - %s", vip.Ip, err)
 	}
 
 	// remove from cache
@@ -102,7 +110,7 @@ deleteIt:
 	mutex.Lock()
 	virtIps = vips
 	mutex.Unlock()
-	config.Log.Trace("Vip '%v' removed", vip.Ip)
+	config.Log.Trace("Vip '%s' removed", vip.Ip)
 
 	return nil
 }
@@ -116,20 +124,20 @@ func (self ip) SetVips(vips []core.Vip) error {
 		err := self.DeleteVip(oldVips[i])
 		if err != nil {
 			// try rolling back
-			config.Log.Trace("Trying to roll back for old vip - %v...", err)
+			config.Log.Trace("Trying to roll back for old vip - %s...", err)
 			err2 := self.SetVip(oldVips[i])
-			return fmt.Errorf("Failed to remove old vip - %v %v", err, err2)
+			return fmt.Errorf("Failed to remove old vip - %s %s", err, err2)
 		}
-		config.Log.Trace("Removed old vip '%v'", oldVips[i].Ip)
+		config.Log.Trace("Removed old vip '%s'", oldVips[i].Ip)
 	}
 
 	for i := range vips {
 		err := self.SetVip(vips[i])
 		if err != nil {
 			// rather than attempting to roll back, avoid loop issues and just return the error
-			return fmt.Errorf("Failed to add new vip - %v", err)
+			return fmt.Errorf("Failed to add new vip - %s", err)
 		}
-		config.Log.Trace("Added new vip '%v'", vips[i].Ip)
+		config.Log.Trace("Added new vip '%s'", vips[i].Ip)
 	}
 
 	mutex.Lock()

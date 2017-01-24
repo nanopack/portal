@@ -84,7 +84,7 @@ func TestShowServices(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != "[]\n" {
@@ -97,7 +97,7 @@ func TestAddServiceFlags(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testService1.returned {
@@ -111,7 +111,7 @@ func TestAddServiceJson(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testService1.returned {
@@ -125,7 +125,7 @@ func TestRemoveServiceHost(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != successMsg {
@@ -139,7 +139,7 @@ func TestRemoveServiceId(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != successMsg {
@@ -152,7 +152,7 @@ func TestSetService(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != ifaceReturned {
@@ -166,7 +166,7 @@ func TestAddServices(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testServices.returned && string(out) != testServices.returned2 {
@@ -180,7 +180,7 @@ func TestShowServiceHost(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testService1.returned {
@@ -194,7 +194,7 @@ func TestShowServiceId(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testService1.returned {
@@ -210,7 +210,7 @@ func TestShowServersHost(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != "[]\n" {
@@ -223,7 +223,7 @@ func TestShowServersId(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != "[]\n" {
@@ -237,7 +237,7 @@ func TestAddServerFlags(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testServer1.returned {
@@ -251,7 +251,7 @@ func TestAddServerJson(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testServer1.returned {
@@ -265,7 +265,7 @@ func TestRemoveServerHost(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != successMsg {
@@ -279,7 +279,7 @@ func TestRemoveServerId(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != successMsg {
@@ -293,7 +293,7 @@ func TestSetServers(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testServers.returned {
@@ -307,7 +307,7 @@ func TestShowServerHost(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testServer1.returned {
@@ -321,7 +321,7 @@ func TestShowServerId(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != testServer1.returned {
@@ -337,7 +337,7 @@ func TestShowRoutes(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != "[]\n" {
@@ -350,7 +350,7 @@ func TestAddRoute(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != "{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\"}\n" {
@@ -364,7 +364,7 @@ func TestRemoveRoute(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != successMsg {
@@ -377,7 +377,7 @@ func TestSetRoutes(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != "[{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\"}]\n" {
@@ -393,7 +393,7 @@ func TestShowCerts(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != "[]\n" {
@@ -406,7 +406,7 @@ func TestAddCert(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if !strings.Contains(string(out), "error") {
@@ -420,7 +420,7 @@ func TestRemoveCert(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if string(out) != successMsg {
@@ -433,7 +433,7 @@ func TestSetCerts(t *testing.T) {
 
 	out, err := capture(Portal.Execute)
 	if err != nil {
-		t.Errorf("Failed to execute - %v", err.Error())
+		t.Errorf("Failed to execute - %s", err)
 	}
 
 	if !strings.Contains(string(out), "error") {
@@ -482,37 +482,37 @@ func initialize() {
 	config.RouteTls = "0.0.0.0:9444"
 	config.LogLevel = "FATAL"
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt(config.LogLevel))
-	apiAddr = fmt.Sprintf("%v:%v", config.ApiHost, config.ApiPort)
+	apiAddr = fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort)
 
 	// initialize database
 	err := database.Init()
 	if err != nil {
-		fmt.Printf("Database init failed - %v\n", err)
+		fmt.Printf("Database init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// initialize balancer
 	balance.Balancer = &database.ScribbleDatabase{}
 	err = balance.Balancer.Init()
 	if err != nil {
-		fmt.Printf("Balancer init failed - %v\n", err)
+		fmt.Printf("Balancer init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// initialize proxymgr
 	err = proxymgr.Init()
 	if err != nil {
-		fmt.Printf("Proxymgr init failed - %v\n", err)
+		fmt.Printf("Proxymgr init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// initialize vipmgr
 	err = vipmgr.Init()
 	if err != nil {
-		fmt.Printf("Vipmgr init failed - %v\n", err)
+		fmt.Printf("Vipmgr init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// initialize clusterer
 	err = cluster.Init()
 	if err != nil {
-		fmt.Printf("Clusterer init failed - %v\n", err)
+		fmt.Printf("Clusterer init failed - %s\n", err)
 		os.Exit(1)
 	}
 }

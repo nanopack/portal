@@ -28,7 +28,7 @@ func Init() error {
 	var u *url.URL
 	u, err = url.Parse(config.DatabaseConnection)
 	if err != nil {
-		return fmt.Errorf("Failed to parse db connection - %v", err)
+		return fmt.Errorf("Failed to parse db connection - %s", err)
 	}
 	switch u.Scheme {
 	case "scribble":

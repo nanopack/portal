@@ -19,6 +19,8 @@ type (
 	}
 )
 
+// todo: prepare statements
+
 func (p *PostgresDb) connect() error {
 	// todo: example: config.DatabaseConnection = "postgres://postgres@127.0.0.1?sslmode=disable"
 	db, err := sql.Open("postgres", config.DatabaseConnection)

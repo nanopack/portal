@@ -31,7 +31,7 @@ func (n *Nginx) Init() error {
 	// ensure config location exists
 	err := os.MkdirAll(config.WorkDir, 0755)
 	if err != nil {
-		return fmt.Errorf("Failed to create working directory - %v", err)
+		return fmt.Errorf("Failed to create working directory - %s", err)
 	}
 	n.configFile = path.Join(config.WorkDir, "portal-nginx.conf")
 	primerConfig := path.Join(config.WorkDir, "portal-nginx-primer.conf")
@@ -42,13 +42,13 @@ func (n *Nginx) Init() error {
 		// read config file and save as primer (first run generally)
 		cfg, err = ioutil.ReadFile(n.configFile)
 		if err != nil {
-			return fmt.Errorf("Failed to read a config file - %v", err)
+			return fmt.Errorf("Failed to read a config file - %s", err)
 		}
 
 		// persist primer config
 		err = ioutil.WriteFile(primerConfig, cfg, 0644)
 		if err != nil {
-			return fmt.Errorf("Failed to write primer config - %v", err)
+			return fmt.Errorf("Failed to write primer config - %s", err)
 		}
 	}
 
@@ -288,18 +288,22 @@ stream {
 	cfgFile, err := os.Create(n.configFile)
 	defer cfgFile.Close()
 	if err != nil {
-		return fmt.Errorf("Failed to create config file - %v", err)
+		return fmt.Errorf("Failed to create config file - %s", err)
 	}
+
+	config.Log.Trace("Regenerating nginx config - %+q", n.Services)
 
 	// execute the template
 	err = t.ExecuteTemplate(cfgFile, "nginxConfig", n.Services)
 	if err != nil {
-		return fmt.Errorf("Failed to generate config file - %v", err)
+		return fmt.Errorf("Failed to generate config file - %s", err)
 	}
 
 	// reload nginx
-	cmd := exec.Command("nginx", "-s", "reload")
-	cmd.Run()
+	out, err := exec.Command("nginx", "-s", "reload").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("Failed to reload nginx - %s", out)
+	}
 
 	return nil
 }

@@ -45,7 +45,7 @@ func TestSetService(t *testing.T) {
 	database.Init()
 
 	if err := database.SetService(&testService1); err != nil {
-		t.Errorf("Failed to SET service - %v", err)
+		t.Errorf("Failed to SET service - %s", err)
 	}
 
 	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json")
@@ -68,11 +68,11 @@ func TestSetServices(t *testing.T) {
 	services = append(services, testService2)
 
 	if err := database.SetServices(services); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 	}
 
 	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json"); !os.IsNotExist(err) {
-		t.Errorf("Failed to clear old services on PUT - %v", err)
+		t.Errorf("Failed to clear old services on PUT - %s", err)
 	}
 
 	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_16-80.json")
@@ -93,7 +93,7 @@ func TestSetServices(t *testing.T) {
 func TestGetServices(t *testing.T) {
 	services, err := database.GetServices()
 	if err != nil {
-		t.Errorf("Failed to GET services - %v", err)
+		t.Errorf("Failed to GET services - %s", err)
 	}
 
 	if services[0].Id != testService2.Id {
@@ -104,7 +104,7 @@ func TestGetServices(t *testing.T) {
 func TestGetService(t *testing.T) {
 	service, err := database.GetService(testService2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 	}
 
 	if service.Id != testService2.Id {
@@ -114,18 +114,18 @@ func TestGetService(t *testing.T) {
 
 func TestDeleteService(t *testing.T) {
 	if err := database.DeleteService(testService2.Id); err != nil {
-		t.Errorf("Failed to DELETE service - %v", err)
+		t.Errorf("Failed to DELETE service - %s", err)
 	}
 
 	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_16-80.json"); !os.IsNotExist(err) {
-		t.Errorf("Failed to DELETE service - %v", err)
+		t.Errorf("Failed to DELETE service - %s", err)
 	}
 }
 
 func TestSetServer(t *testing.T) {
 	database.SetService(&testService1)
 	if err := database.SetServer(testService1.Id, &testServer1); err != nil {
-		t.Errorf("Failed to SET server - %v", err)
+		t.Errorf("Failed to SET server - %s", err)
 	}
 
 	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json")
@@ -149,7 +149,7 @@ func TestSetServers(t *testing.T) {
 	servers := []core.Server{}
 	servers = append(servers, testServer2)
 	if err := database.SetServers(testService1.Id, servers); err != nil {
-		t.Errorf("Failed to SET servers - %v", err)
+		t.Errorf("Failed to SET servers - %s", err)
 	}
 
 	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json")
@@ -172,7 +172,7 @@ func TestSetServers(t *testing.T) {
 func TestGetServers(t *testing.T) {
 	service, err := database.GetService(testService1.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 	}
 
 	if service.Servers[0].Id != testServer2.Id {
@@ -183,7 +183,7 @@ func TestGetServers(t *testing.T) {
 func TestGetServer(t *testing.T) {
 	server, err := database.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET server - %v", err)
+		t.Errorf("Failed to GET server - %s", err)
 	}
 
 	if server.Id != testServer2.Id {
@@ -194,7 +194,7 @@ func TestGetServer(t *testing.T) {
 func TestDeleteServer(t *testing.T) {
 	err := database.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to DELETE server - %v", err)
+		t.Errorf("Failed to DELETE server - %s", err)
 	}
 
 	service, err := ioutil.ReadFile("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json")
@@ -214,11 +214,11 @@ func TestDeleteServer(t *testing.T) {
 
 func TestSetRoute(t *testing.T) {
 	if err := database.SetRoute(testRoute); err != nil {
-		t.Errorf("Failed to SET route - %v", err)
+		t.Errorf("Failed to SET route - %s", err)
 	}
 
 	if err := database.SetRoute(testRoute); err != nil {
-		t.Errorf("Failed to SET route - %v", err)
+		t.Errorf("Failed to SET route - %s", err)
 	}
 
 	routes, err := database.GetRoutes()
@@ -235,7 +235,7 @@ func TestSetRoutes(t *testing.T) {
 	routes := []core.Route{testRoute}
 
 	if err := database.SetRoutes(routes); err != nil {
-		t.Errorf("Failed to SET routes - %v", err)
+		t.Errorf("Failed to SET routes - %s", err)
 	}
 
 	routes, err := database.GetRoutes()
@@ -250,7 +250,7 @@ func TestSetRoutes(t *testing.T) {
 
 func TestDeleteRoute(t *testing.T) {
 	if err := database.DeleteRoute(testRoute); err != nil {
-		t.Errorf("Failed to DELETE route - %v", err)
+		t.Errorf("Failed to DELETE route - %s", err)
 	}
 
 	routes, err := database.GetRoutes()
@@ -265,11 +265,11 @@ func TestDeleteRoute(t *testing.T) {
 
 func TestSetCert(t *testing.T) {
 	if err := database.SetCert(testCert); err != nil {
-		t.Errorf("Failed to SET cert - %v", err)
+		t.Errorf("Failed to SET cert - %s", err)
 	}
 
 	if err := database.SetCert(testCert); err != nil {
-		t.Errorf("Failed to SET cert - %v", err)
+		t.Errorf("Failed to SET cert - %s", err)
 	}
 
 	certs, err := database.GetCerts()
@@ -286,7 +286,7 @@ func TestSetCerts(t *testing.T) {
 	certs := []core.CertBundle{testCert}
 
 	if err := database.SetCerts(certs); err != nil {
-		t.Errorf("Failed to SET certs - %v", err)
+		t.Errorf("Failed to SET certs - %s", err)
 	}
 
 	certs, err := database.GetCerts()
@@ -301,7 +301,7 @@ func TestSetCerts(t *testing.T) {
 
 func TestDeleteCert(t *testing.T) {
 	if err := database.DeleteCert(testCert); err != nil {
-		t.Errorf("Failed to DELETE cert - %v", err)
+		t.Errorf("Failed to DELETE cert - %s", err)
 	}
 
 	certs, err := database.GetCerts()

@@ -129,12 +129,12 @@ func (l *Lvs) SetServers(svcId string, servers []core.Server) error {
 
 	for _, isrv := range s.Servers {
 		if err = s.RemoveServer(isrv.Host, isrv.Port); err != nil {
-			return fmt.Errorf("[ipvsadm] Failed to remove server - %v:%v; %v", isrv.Host, isrv.Port, err.Error())
+			return fmt.Errorf("[ipvsadm] Failed to remove server - %s:%d; %s", isrv.Host, isrv.Port, err)
 		}
 	}
 	for _, lsrv := range lvsServers {
 		if err = s.AddServer(lsrv); err != nil {
-			return fmt.Errorf("[ipvsadm] Failed to add server - %v:%v; %v", lsrv.Host, lsrv.Port, err.Error())
+			return fmt.Errorf("[ipvsadm] Failed to add server - %s:%d; %s", lsrv.Host, lsrv.Port, err)
 		}
 	}
 	return nil
@@ -235,11 +235,11 @@ func (l *Lvs) SetServices(services []core.Service) error {
 
 	err := lvs.Clear()
 	if err != nil {
-		return fmt.Errorf("Failed to lvs.Clear() - %v", err.Error())
+		return fmt.Errorf("Failed to lvs.Clear() - %s", err)
 	}
 	err = lvs.Restore(lvsServices)
 	if err != nil {
-		return fmt.Errorf("Failed to lvs.Restore() - %v", err.Error())
+		return fmt.Errorf("Failed to lvs.Restore() - %s", err)
 	}
 	return nil
 }
@@ -260,7 +260,7 @@ func Sync() error {
 		// if tab != nil {
 		// 	tab.RenameChain("filter", "portal-old", "portal")
 		// }
-		return fmt.Errorf("Failed to lvs.Save() - %v", err.Error())
+		return fmt.Errorf("Failed to lvs.Save() - %s", err)
 	}
 
 	// lvsServices := lvs.DefaultIpvs.Services
@@ -275,7 +275,7 @@ func Sync() error {
 	// 			tab.ClearChain("filter", "portal")
 	// 			tab.DeleteChain("filter", "portal")
 	// 			tab.RenameChain("filter", "portal-old", "portal")
-	// 			return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
+	// 			return fmt.Errorf("Failed to tab.Insert() - %s", err)
 	// 		}
 	// 	}
 	// 	tab.AppendUnique("filter", "INPUT", "-j", "portal")

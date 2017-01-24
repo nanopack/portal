@@ -80,11 +80,11 @@ func routeAdd(ccmd *cobra.Command, args []string) {
 	}
 	res, err := rest("routes", "POST", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -103,11 +103,11 @@ func routeRemove(ccmd *cobra.Command, args []string) {
 	}
 	res, err := rest("routes", "DELETE", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -115,11 +115,11 @@ func routeRemove(ccmd *cobra.Command, args []string) {
 func routesShow(ccmd *cobra.Command, args []string) {
 	res, err := rest("routes", "GET", nil)
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -137,11 +137,11 @@ func routesSet(ccmd *cobra.Command, args []string) {
 	}
 	res, err := rest("routes", "PUT", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }

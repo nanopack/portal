@@ -92,11 +92,11 @@ func (s *Service) GenId() {
 	if s.Type == "" { // default to tcp
 		s.Type = "tcp"
 	}
-	s.Id = fmt.Sprintf("%v-%v-%d", s.Type, strings.Replace(s.Host, ".", "_", -1), s.Port)
+	s.Id = fmt.Sprintf("%s-%s-%d", s.Type, strings.Replace(s.Host, ".", "_", -1), s.Port)
 }
 
 func (s *Server) GenId() {
-	s.Id = fmt.Sprintf("%v-%d", strings.Replace(s.Host, ".", "_", -1), s.Port)
+	s.Id = fmt.Sprintf("%s-%d", strings.Replace(s.Host, ".", "_", -1), s.Port)
 }
 
 // GenHost resets the server's Host it's service's Host if "127.0.0.1" was detected
