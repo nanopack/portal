@@ -46,7 +46,7 @@ func Init() error {
 	}
 	// don't break if we can't use iptables
 	if _, err = tab.List("filter", "INPUT"); err != nil {
-		config.Log.Error("Could not use iptables, continuing without - %v", err)
+		config.Log.Error("Could not use iptables, continuing without - %s", err)
 		tab = nil
 	}
 	if tab != nil {
@@ -55,15 +55,15 @@ func Init() error {
 		tab.DeleteChain("filter", "portal")
 		err = tab.NewChain("filter", "portal")
 		if err != nil {
-			return fmt.Errorf("Failed to create new chain - %v", err)
+			return fmt.Errorf("Failed to create new chain - %s", err)
 		}
 		err = tab.AppendUnique("filter", "portal", "-j", "RETURN")
 		if err != nil {
-			return fmt.Errorf("Failed to append to portal chain - %v", err)
+			return fmt.Errorf("Failed to append to portal chain - %s", err)
 		}
 		err = tab.AppendUnique("filter", "INPUT", "-j", "portal")
 		if err != nil {
-			return fmt.Errorf("Failed to append to INPUT chain - %v", err)
+			return fmt.Errorf("Failed to append to INPUT chain - %s", err)
 		}
 
 		// Allow router through by default (ports 80/443)
@@ -110,7 +110,7 @@ func SetServices(services []core.Service) error {
 			tab.ClearChain("filter", "portal")
 			tab.DeleteChain("filter", "portal")
 			tab.RenameChain("filter", "portal-old", "portal")
-			return fmt.Errorf("Failed to tab.Insert() - %v", err.Error())
+			return fmt.Errorf("Failed to tab.Insert() - %s", err)
 		}
 
 		tab.NewChain("filter", "portal")

@@ -25,7 +25,7 @@ func TestSetServicePg(t *testing.T) {
 	pgbackend = &database.PostgresDb{}
 	err := pgbackend.Init()
 	if err != nil {
-		fmt.Printf("Failed to connect, skipping - %s\n", err.Error())
+		fmt.Printf("Failed to connect, skipping - %s\n", err)
 		pgskip = true
 	}
 
@@ -34,7 +34,7 @@ func TestSetServicePg(t *testing.T) {
 	}
 
 	if err := pgbackend.SetService(&testService1); err != nil {
-		t.Errorf("Failed to SET service - %v", err)
+		t.Errorf("Failed to SET service - %s", err)
 	}
 
 	svc, err := pgbackend.GetService("tcp-192_168_0_15-80")
@@ -66,11 +66,11 @@ func TestSetServicesPg(t *testing.T) {
 	services = append(services, testService2)
 
 	if err := pgbackend.SetServices(services); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 	}
 
 	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json"); !os.IsNotExist(err) {
-		t.Errorf("Failed to clear old services on PUT - %v", err)
+		t.Errorf("Failed to clear old services on PUT - %s", err)
 	}
 
 	svc, err := pgbackend.GetService("tcp-192_168_0_16-80")
@@ -100,7 +100,7 @@ func TestGetServicesPg(t *testing.T) {
 
 	services, err := pgbackend.GetServices()
 	if err != nil {
-		t.Errorf("Failed to GET services - %v", err)
+		t.Errorf("Failed to GET services - %s", err)
 	}
 
 	if services[0].Id != testService2.Id {
@@ -115,7 +115,7 @@ func TestGetServicePg(t *testing.T) {
 
 	service, err := pgbackend.GetService(testService2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 	}
 
 	if service.Id != testService2.Id {
@@ -129,7 +129,7 @@ func TestDeleteServicePg(t *testing.T) {
 	}
 
 	if err := pgbackend.DeleteService(testService2.Id); err != nil {
-		t.Errorf("Failed to DELETE service - %v", err)
+		t.Errorf("Failed to DELETE service - %s", err)
 	}
 
 	_, err := pgbackend.GetService(testService2.Id)
@@ -145,7 +145,7 @@ func TestSetServerPg(t *testing.T) {
 
 	pgbackend.SetService(&testService1)
 	if err := pgbackend.SetServer(testService1.Id, &testServer1); err != nil {
-		t.Errorf("Failed to SET server - %v", err)
+		t.Errorf("Failed to SET server - %s", err)
 	}
 
 	tSvc, err := pgbackend.GetService("tcp-192_168_0_15-80")
@@ -178,7 +178,7 @@ func TestSetServersPg(t *testing.T) {
 	servers := []core.Server{}
 	servers = append(servers, testServer2)
 	if err := pgbackend.SetServers(testService1.Id, servers); err != nil {
-		t.Errorf("Failed to SET servers - %v", err)
+		t.Errorf("Failed to SET servers - %s", err)
 	}
 
 	tSvc, err := pgbackend.GetService("tcp-192_168_0_15-80")
@@ -210,7 +210,7 @@ func TestGetServersPg(t *testing.T) {
 
 	service, err := pgbackend.GetService(testService1.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 	}
 
 	if service.Servers[0].Id != testServer2.Id {
@@ -225,7 +225,7 @@ func TestGetServerPg(t *testing.T) {
 
 	server, err := pgbackend.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET server - %v", err)
+		t.Errorf("Failed to GET server - %s", err)
 	}
 
 	if server.Id != testServer2.Id {
@@ -240,7 +240,7 @@ func TestDeleteServerPg(t *testing.T) {
 
 	err := pgbackend.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to DELETE server - %v", err)
+		t.Errorf("Failed to DELETE server - %s", err)
 	}
 
 	svc, err := pgbackend.GetService("tcp-192_168_0_15-80")
@@ -269,11 +269,11 @@ func TestSetRoutePg(t *testing.T) {
 	}
 
 	if err := pgbackend.SetRoute(testRoute); err != nil {
-		t.Errorf("Failed to SET route - %v", err)
+		t.Errorf("Failed to SET route - %s", err)
 	}
 
 	if err := pgbackend.SetRoute(testRoute); err != nil {
-		t.Errorf("Failed to SET route - %v", err)
+		t.Errorf("Failed to SET route - %s", err)
 	}
 
 	routes, err := pgbackend.GetRoutes()
@@ -294,7 +294,7 @@ func TestSetRoutesPg(t *testing.T) {
 	routes := []core.Route{testRoute}
 
 	if err := pgbackend.SetRoutes(routes); err != nil {
-		t.Errorf("Failed to SET routes - %v", err)
+		t.Errorf("Failed to SET routes - %s", err)
 	}
 
 	routes, err := pgbackend.GetRoutes()
@@ -313,7 +313,7 @@ func TestDeleteRoutePg(t *testing.T) {
 	}
 
 	if err := pgbackend.DeleteRoute(testRoute); err != nil {
-		t.Errorf("Failed to DELETE route - %v", err)
+		t.Errorf("Failed to DELETE route - %s", err)
 	}
 
 	routes, err := pgbackend.GetRoutes()
@@ -332,11 +332,11 @@ func TestSetCertPg(t *testing.T) {
 	}
 
 	if err := pgbackend.SetCert(testCert); err != nil {
-		t.Errorf("Failed to SET cert - %v", err)
+		t.Errorf("Failed to SET cert - %s", err)
 	}
 
 	if err := pgbackend.SetCert(testCert); err != nil {
-		t.Errorf("Failed to SET cert - %v", err)
+		t.Errorf("Failed to SET cert - %s", err)
 	}
 
 	certs, err := pgbackend.GetCerts()
@@ -357,7 +357,7 @@ func TestSetCertsPg(t *testing.T) {
 	certs := []core.CertBundle{testCert}
 
 	if err := pgbackend.SetCerts(certs); err != nil {
-		t.Errorf("Failed to SET certs - %v", err)
+		t.Errorf("Failed to SET certs - %s", err)
 	}
 
 	certs, err := pgbackend.GetCerts()
@@ -376,7 +376,7 @@ func TestDeleteCertPg(t *testing.T) {
 	}
 
 	if err := pgbackend.DeleteCert(testCert); err != nil {
-		t.Errorf("Failed to DELETE cert - %v", err)
+		t.Errorf("Failed to DELETE cert - %s", err)
 	}
 
 	certs, err := pgbackend.GetCerts()

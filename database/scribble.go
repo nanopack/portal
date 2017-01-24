@@ -128,7 +128,7 @@ func (s ScribbleDatabase) DeleteServer(svcId, srvId string) error {
 		}
 		return err
 	}
-	config.Log.Trace("Deleting %v from %v", srvId, svcId)
+	config.Log.Trace("Deleting %s from %s", srvId, svcId)
 checkRemove:
 	for i, srv := range service.Servers {
 		if srv.Id == srvId {
@@ -323,7 +323,7 @@ func (s ScribbleDatabase) SetVips(vips []core.Vip) error {
 	s.scribbleDb.Delete("vips", "")
 	for i := range vips {
 		// unique (as much as what we keep) key to store vip by
-		ukey := fmt.Sprintf("%v-%v", strings.Replace(vips[i].Ip, ".", "_", -1), vips[i].Interface)
+		ukey := fmt.Sprintf("%s-%s", strings.Replace(vips[i].Ip, ".", "_", -1), vips[i].Interface)
 		err := s.scribbleDb.Write("vips", ukey, vips[i])
 		if err != nil {
 			return err

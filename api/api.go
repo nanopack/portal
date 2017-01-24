@@ -164,7 +164,7 @@ func parseBody(req *http.Request, v interface{}) error {
 	// read the body
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		config.Log.Error(err.Error())
+		config.Log.Error("Failed to read body - %s", err)
 		return BodyReadFail
 	}
 	defer req.Body.Close()

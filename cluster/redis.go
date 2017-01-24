@@ -33,62 +33,62 @@ type (
 
 func (r *Redis) Init() error {
 	hostname, _ := os.Hostname()
-	self = fmt.Sprintf("%v:%v", hostname, config.ApiPort)
+	self = fmt.Sprintf("%s:%s", hostname, config.ApiPort)
 	pool = r.newPool(config.ClusterConnection, config.ClusterToken)
 
 	// get services
 	services, err := r.GetServices()
 	if err != nil {
-		return fmt.Errorf("Failed to get services - %v", err)
+		return fmt.Errorf("Failed to get services - %s", err)
 	}
 	// write services
 	if services != nil {
 		config.Log.Trace("[cluster] - Setting services...")
 		err = common.SetServices(services)
 		if err != nil {
-			return fmt.Errorf("Failed to set services - %v", err)
+			return fmt.Errorf("Failed to set services - %s", err)
 		}
 	}
 
 	// get routes
 	routes, err := r.GetRoutes()
 	if err != nil {
-		return fmt.Errorf("Failed to get routes - %v", err)
+		return fmt.Errorf("Failed to get routes - %s", err)
 	}
 	// write routes
 	if routes != nil {
 		config.Log.Trace("[cluster] - Setting routes...")
 		err = common.SetRoutes(routes)
 		if err != nil {
-			return fmt.Errorf("Failed to set routes - %v", err)
+			return fmt.Errorf("Failed to set routes - %s", err)
 		}
 	}
 
 	// get certs
 	certs, err := r.GetCerts()
 	if err != nil {
-		return fmt.Errorf("Failed to get certs - %v", err)
+		return fmt.Errorf("Failed to get certs - %s", err)
 	}
 	// write certs
 	if certs != nil {
 		config.Log.Trace("[cluster] - Setting certs...")
 		err = common.SetCerts(certs)
 		if err != nil {
-			return fmt.Errorf("Failed to set certs - %v", err)
+			return fmt.Errorf("Failed to set certs - %s", err)
 		}
 	}
 
 	// get vips
 	vips, err := r.GetVips()
 	if err != nil {
-		return fmt.Errorf("Failed to get vips - %v", err)
+		return fmt.Errorf("Failed to get vips - %s", err)
 	}
 	// write vips
 	if vips != nil {
 		config.Log.Trace("[cluster] - Setting vips...")
 		err = common.SetVips(vips)
 		if err != nil {
-			return fmt.Errorf("Failed to set vips - %v", err)
+			return fmt.Errorf("Failed to set vips - %s", err)
 		}
 	}
 
@@ -96,7 +96,7 @@ func (r *Redis) Init() error {
 	// don't set read timeout on subscriber - it dies if no 'updates' within that time
 	s, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(30*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
-		return fmt.Errorf("Failed to reach redis for subconn - %v", err)
+		return fmt.Errorf("Failed to reach redis for subconn - %s", err)
 	}
 
 	r.subconn = redis.PubSubConn{s}
@@ -108,7 +108,7 @@ func (r *Redis) Init() error {
 	p.Do("SET", self, "alive", "EX", ttl)
 	_, err = p.Do("SADD", "members", self)
 	if err != nil {
-		return fmt.Errorf("Failed to add myself to list of members - %v", err)
+		return fmt.Errorf("Failed to add myself to list of members - %s", err)
 	}
 
 	go r.subscribe()
@@ -151,7 +151,7 @@ func (r *Redis) SetServices(services []core.Service) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishJson(conn, "set-services", oldServices)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -187,7 +187,7 @@ func (r *Redis) SetService(service *core.Service) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishString(conn, "delete-service", service.Id)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -229,7 +229,7 @@ func (r *Redis) DeleteService(id string) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishJson(conn, "set-service", oldService)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -274,7 +274,7 @@ func (r *Redis) SetServers(svcId string, servers []core.Server) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishStringJson(conn, "set-servers", svcId, oldServers)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -309,7 +309,7 @@ func (r *Redis) SetServer(svcId string, server *core.Server) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishStringJson(conn, "delete-server", server.Id, svcId)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -351,7 +351,7 @@ func (r *Redis) DeleteServer(svcId, srvId string) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishStringJson(conn, "set-server", svcId, oldServer)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -396,7 +396,7 @@ func (r Redis) SetRoutes(routes []core.Route) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishJson(conn, "set-routes", oldRoutes)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -432,7 +432,7 @@ func (r Redis) SetRoute(route core.Route) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishJson(conn, "delete-route", route)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -474,7 +474,7 @@ func (r Redis) DeleteRoute(route core.Route) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishJson(conn, "set-routes", oldRoutes)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -519,7 +519,7 @@ func (r Redis) SetCerts(certs []core.CertBundle) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishJson(conn, "set-certs", oldCerts)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -555,7 +555,7 @@ func (r Redis) SetCert(cert core.CertBundle) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishJson(conn, "delete-cert", cert)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -597,7 +597,7 @@ func (r Redis) DeleteCert(cert core.CertBundle) error {
 		// attempt rollback - no need to waitForMembers here
 		uerr := r.publishJson(conn, "set-certs", oldCerts)
 		if uerr != nil {
-			err = fmt.Errorf("%v - %v", err, uerr)
+			err = fmt.Errorf("%s - %s", err, uerr)
 		}
 		return err
 	}
@@ -663,7 +663,7 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 
 	c, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(15*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to reach redis for services subscriber - %v", err)
+		return nil, fmt.Errorf("Failed to reach redis for services subscriber - %s", err)
 	}
 	defer c.Close()
 
@@ -672,7 +672,7 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 
 	// subscribe to channel that services will be published on
 	if err := subconn.Subscribe("services"); err != nil {
-		return nil, fmt.Errorf("Failed to reach redis for services subscriber - %v", err)
+		return nil, fmt.Errorf("Failed to reach redis for services subscriber - %s", err)
 	}
 	defer subconn.Close()
 
@@ -691,7 +691,7 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 	for {
 		select {
 		case <-timeout:
-			return nil, fmt.Errorf("Timed out waiting for services from %v", strings.Join(members, ", "))
+			return nil, fmt.Errorf("Timed out waiting for services from %s", strings.Join(members, ", "))
 		default:
 			// request services from each member until successful
 			for _, member := range members {
@@ -699,7 +699,7 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 				memberTimeout := time.After(3 * time.Second)
 
 				// ask a member for its services
-				config.Log.Trace("[cluster] - Attempting to request services from %v...", member)
+				config.Log.Trace("[cluster] - Attempting to request services from %s...", member)
 				_, err := conn.Do("PUBLISH", "portal", fmt.Sprintf("get-services %s", member))
 				if err != nil {
 					return nil, err
@@ -709,7 +709,7 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 				for {
 					select {
 					case <-memberTimeout:
-						config.Log.Debug("[cluster] - Timed out waiting for services from %v", member)
+						config.Log.Debug("[cluster] - Timed out waiting for services from %s", member)
 						goto nextMember
 					case msg := <-message:
 						switch v := msg.(type) {
@@ -717,12 +717,12 @@ func (r *Redis) GetServices() ([]core.Service, error) {
 							config.Log.Trace("[cluster] - Received message on 'services' channel")
 							services, err := marshalSvcs(v.Data)
 							if err != nil {
-								return nil, fmt.Errorf("Failed to marshal services - %v", err.Error())
+								return nil, fmt.Errorf("Failed to marshal services - %s", err)
 							}
 							config.Log.Trace("[cluster] - Services from cluster: %#v\n", *services)
 							return *services, nil
 						case error:
-							return nil, fmt.Errorf("Subscriber failed to receive services - %v", v.Error())
+							return nil, fmt.Errorf("Subscriber failed to receive services - %s", v.Error())
 						}
 					}
 				}
@@ -764,7 +764,7 @@ func (r *Redis) GetRoutes() ([]core.Route, error) {
 
 	c, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(15*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to reach redis for routes subscriber - %v", err)
+		return nil, fmt.Errorf("Failed to reach redis for routes subscriber - %s", err)
 	}
 	defer c.Close()
 
@@ -773,7 +773,7 @@ func (r *Redis) GetRoutes() ([]core.Route, error) {
 
 	// subscribe to channel that routes will be published on
 	if err := subconn.Subscribe("routes"); err != nil {
-		return nil, fmt.Errorf("Failed to reach redis for routes subscriber - %v", err)
+		return nil, fmt.Errorf("Failed to reach redis for routes subscriber - %s", err)
 	}
 	defer subconn.Close()
 
@@ -792,7 +792,7 @@ func (r *Redis) GetRoutes() ([]core.Route, error) {
 	for {
 		select {
 		case <-timeout:
-			return nil, fmt.Errorf("Timed out waiting for routes from %v", strings.Join(members, ", "))
+			return nil, fmt.Errorf("Timed out waiting for routes from %s", strings.Join(members, ", "))
 		default:
 			// request routes from each member until successful
 			for _, member := range members {
@@ -800,7 +800,7 @@ func (r *Redis) GetRoutes() ([]core.Route, error) {
 				memberTimeout := time.After(3 * time.Second)
 
 				// ask a member for its routes
-				config.Log.Trace("[cluster] - Attempting to request routes from %v...", member)
+				config.Log.Trace("[cluster] - Attempting to request routes from %s...", member)
 				_, err := conn.Do("PUBLISH", "portal", fmt.Sprintf("get-routes %s", member))
 				if err != nil {
 					return nil, err
@@ -810,7 +810,7 @@ func (r *Redis) GetRoutes() ([]core.Route, error) {
 				for {
 					select {
 					case <-memberTimeout:
-						config.Log.Debug("[cluster] - Timed out waiting for routes from %v", member)
+						config.Log.Debug("[cluster] - Timed out waiting for routes from %s", member)
 						goto nextRouteMember
 					case msg := <-message:
 						switch v := msg.(type) {
@@ -819,12 +819,12 @@ func (r *Redis) GetRoutes() ([]core.Route, error) {
 							var routes []core.Route
 							err = parseBody(v.Data, &routes)
 							if err != nil {
-								return nil, fmt.Errorf("Failed to marshal routes - %v", err.Error())
+								return nil, fmt.Errorf("Failed to marshal routes - %s", err)
 							}
 							config.Log.Trace("[cluster] - Routes from cluster: %#v\n", routes)
 							return routes, nil
 						case error:
-							return nil, fmt.Errorf("Subscriber failed to receive routes - %v", v.Error())
+							return nil, fmt.Errorf("Subscriber failed to receive routes - %s", v.Error())
 						}
 					}
 				}
@@ -861,7 +861,7 @@ func (r *Redis) GetCerts() ([]core.CertBundle, error) {
 
 	c, err := redis.DialURL(config.ClusterConnection, redis.DialConnectTimeout(15*time.Second), redis.DialPassword(config.ClusterToken))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to reach redis for certs subscriber - %v", err)
+		return nil, fmt.Errorf("Failed to reach redis for certs subscriber - %s", err)
 	}
 	defer c.Close()
 
@@ -870,7 +870,7 @@ func (r *Redis) GetCerts() ([]core.CertBundle, error) {
 
 	// subscribe to channel that certs will be published on
 	if err := subconn.Subscribe("certs"); err != nil {
-		return nil, fmt.Errorf("Failed to reach redis for certs subscriber - %v", err)
+		return nil, fmt.Errorf("Failed to reach redis for certs subscriber - %s", err)
 	}
 	defer subconn.Close()
 
@@ -889,7 +889,7 @@ func (r *Redis) GetCerts() ([]core.CertBundle, error) {
 	for {
 		select {
 		case <-timeout:
-			return nil, fmt.Errorf("Timed out waiting for certs from %v", strings.Join(members, ", "))
+			return nil, fmt.Errorf("Timed out waiting for certs from %s", strings.Join(members, ", "))
 		default:
 			// request certs from each member until successful
 			for _, member := range members {
@@ -897,7 +897,7 @@ func (r *Redis) GetCerts() ([]core.CertBundle, error) {
 				memberTimeout := time.After(3 * time.Second)
 
 				// ask a member for its certs
-				config.Log.Trace("[cluster] - Attempting to request certs from %v...", member)
+				config.Log.Trace("[cluster] - Attempting to request certs from %s...", member)
 				_, err := conn.Do("PUBLISH", "portal", fmt.Sprintf("get-certs %s", member))
 				if err != nil {
 					return nil, err
@@ -907,7 +907,7 @@ func (r *Redis) GetCerts() ([]core.CertBundle, error) {
 				for {
 					select {
 					case <-memberTimeout:
-						config.Log.Debug("[cluster] - Timed out waiting for certs from %v", member)
+						config.Log.Debug("[cluster] - Timed out waiting for certs from %s", member)
 						goto nextCertMember
 					case msg := <-message:
 						switch v := msg.(type) {
@@ -916,12 +916,12 @@ func (r *Redis) GetCerts() ([]core.CertBundle, error) {
 							var certs []core.CertBundle
 							err = parseBody(v.Data, &certs)
 							if err != nil {
-								return nil, fmt.Errorf("Failed to marshal certs - %v", err.Error())
+								return nil, fmt.Errorf("Failed to marshal certs - %s", err)
 							}
 							config.Log.Trace("[cluster] - Certs from cluster: %#v\n", certs)
 							return certs, nil
 						case error:
-							return nil, fmt.Errorf("Subscriber failed to receive certs - %v", v.Error())
+							return nil, fmt.Errorf("Subscriber failed to receive certs - %s", v.Error())
 						}
 					}
 				}
@@ -946,7 +946,7 @@ func (r Redis) cleanup() {
 		// get list of members that should be alive
 		members, err := redis.Strings(conn.Do("SMEMBERS", "members"))
 		if err != nil {
-			config.Log.Error("[cluster] - Failed to reach redis for cleanup - %v", err)
+			config.Log.Error("[cluster] - Failed to reach redis for cleanup - %s", err)
 			// clear balancer rules ("stop balancing if we are 'dead'")
 			balance.SetServices(make([]core.Service, 0, 0))
 			os.Exit(1)
@@ -956,7 +956,7 @@ func (r Redis) cleanup() {
 			exist, _ := redis.Int(conn.Do("EXISTS", member))
 			if exist == 0 {
 				conn.Do("SREM", "members", member)
-				config.Log.Info("[cluster] - Member '%v' assumed dead. Removed.", member)
+				config.Log.Info("[cluster] - Member '%s' assumed dead. Removed.", member)
 			}
 		}
 	}
@@ -975,7 +975,7 @@ func (r Redis) heartbeat() {
 		_, err := conn.Do("SET", self, "alive", "EX", ttl)
 		if err != nil {
 			conn.Close()
-			config.Log.Error("[cluster] - Failed to heartbeat - %v", err)
+			config.Log.Error("[cluster] - Failed to heartbeat - %s", err)
 			// clear balancer rules ("stop balancing if we are 'dead'")
 			balance.SetServices(make([]core.Service, 0, 0))
 			os.Exit(1)
@@ -984,7 +984,7 @@ func (r Redis) heartbeat() {
 		_, err = conn.Do("SADD", "members", self)
 		if err != nil {
 			conn.Close()
-			config.Log.Error("[cluster] - Failed to add myself to list of members - %v", err)
+			config.Log.Error("[cluster] - Failed to add myself to list of members - %s", err)
 			// clear balancer rules ("stop balancing if we are 'dead'")
 			balance.SetServices(make([]core.Service, 0, 0))
 			os.Exit(1)
@@ -1002,7 +1002,7 @@ func (r Redis) newPool(server, password string) *redis.Pool {
 				redis.DialWriteTimeout(10*time.Second), redis.DialPassword(password))
 
 			if err != nil {
-				return nil, fmt.Errorf("Failed to reach redis - %v", err)
+				return nil, fmt.Errorf("Failed to reach redis - %s", err)
 			}
 			return c, err
 		},
@@ -1033,12 +1033,12 @@ func (r Redis) subscribe() {
 				if member == self {
 					svcs, err := common.GetServices()
 					if err != nil {
-						config.Log.Error("[cluster] - Failed to get services - %v", err.Error())
+						config.Log.Error("[cluster] - Failed to get services - %s", err)
 						break
 					}
 					services, err := json.Marshal(svcs)
 					if err != nil {
-						config.Log.Error("[cluster] - Failed to marshal services - %v", err.Error())
+						config.Log.Error("[cluster] - Failed to marshal services - %s", err)
 						break
 					}
 					config.Log.Debug("[cluster] - get-services requested, publishing my services")
@@ -1053,16 +1053,16 @@ func (r Redis) subscribe() {
 				}
 				services, err := marshalSvcs([]byte(pdata[1]))
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal services - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal services - %s", err)
 					break
 				}
 				err = common.SetServices(*services)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to set services - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to set services - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", *services))))
-				config.Log.Trace("[cluster] - set-services hash - %v", actionHash)
+				config.Log.Trace("[cluster] - set-services hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1075,16 +1075,16 @@ func (r Redis) subscribe() {
 				}
 				svc, err := marshalSvc([]byte(pdata[1]))
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal service - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal service - %s", err)
 					break
 				}
 				err = common.SetService(svc)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to set service - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to set service - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", *svc))))
-				config.Log.Trace("[cluster] - set-service hash - %v", actionHash)
+				config.Log.Trace("[cluster] - set-service hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1097,11 +1097,11 @@ func (r Redis) subscribe() {
 				svcId := pdata[1]
 				err := common.DeleteService(svcId)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to delete service - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to delete service - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-service %s", svcId))))
-				config.Log.Trace("[cluster] - delete-service hash - %v", actionHash)
+				config.Log.Trace("[cluster] - delete-service hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1115,16 +1115,16 @@ func (r Redis) subscribe() {
 				svcId := pdata[2]
 				servers, err := marshalSrvs([]byte(pdata[1]))
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal server - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal server - %s", err)
 					break
 				}
 				err = common.SetServers(svcId, *servers)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to set servers - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to set servers - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", *servers, svcId))))
-				config.Log.Trace("[cluster] - set-servers hash - %v", actionHash)
+				config.Log.Trace("[cluster] - set-servers hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1138,16 +1138,16 @@ func (r Redis) subscribe() {
 				svcId := pdata[2]
 				server, err := marshalSrv([]byte(pdata[1]))
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal server - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal server - %s", err)
 					break
 				}
 				err = common.SetServer(svcId, server)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to set server - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to set server - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *server, svcId))))
-				config.Log.Trace("[cluster] - set-server hash - %v", actionHash)
+				config.Log.Trace("[cluster] - set-server hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1161,11 +1161,11 @@ func (r Redis) subscribe() {
 				svcId := pdata[2]
 				err := common.DeleteServer(svcId, srvId)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to delete server - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to delete server - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-server %s %s", srvId, svcId))))
-				config.Log.Trace("[cluster] - delete-server hash - %v", actionHash)
+				config.Log.Trace("[cluster] - delete-server hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1182,12 +1182,12 @@ func (r Redis) subscribe() {
 				if member == self {
 					rts, err := common.GetRoutes()
 					if err != nil {
-						config.Log.Error("[cluster] - Failed to get routes - %v", err.Error())
+						config.Log.Error("[cluster] - Failed to get routes - %s", err)
 						break
 					}
 					routes, err := json.Marshal(rts)
 					if err != nil {
-						config.Log.Error("[cluster] - Failed to marshal routes - %v", err.Error())
+						config.Log.Error("[cluster] - Failed to marshal routes - %s", err)
 						break
 					}
 					config.Log.Debug("[cluster] - get-routes requested, publishing my routes")
@@ -1204,16 +1204,16 @@ func (r Redis) subscribe() {
 				var routes []core.Route
 				err := parseBody([]byte(pdata[1]), &routes)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal routes - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal routes - %s", err)
 					break
 				}
 				err = common.SetRoutes(routes)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to set routes - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to set routes - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes %s", routes))))
-				config.Log.Trace("[cluster] - set-routes hash - %v", actionHash)
+				config.Log.Trace("[cluster] - set-routes hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1227,16 +1227,16 @@ func (r Redis) subscribe() {
 				var rte core.Route
 				err := parseBody([]byte(pdata[1]), &rte)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal route - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal route - %s", err)
 					break
 				}
 				err = common.SetRoute(rte)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to set route - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to set route - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-route %s", rte))))
-				config.Log.Trace("[cluster] - set-route hash - %v", actionHash)
+				config.Log.Trace("[cluster] - set-route hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1249,16 +1249,16 @@ func (r Redis) subscribe() {
 				var rte core.Route
 				err := parseBody([]byte(pdata[1]), &rte)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal route - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal route - %s", err)
 					break
 				}
 				err = common.DeleteRoute(rte)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to delete route - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to delete route - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-route %s", rte))))
-				config.Log.Trace("[cluster] - delete-route hash - %v", actionHash)
+				config.Log.Trace("[cluster] - delete-route hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1275,12 +1275,12 @@ func (r Redis) subscribe() {
 				if member == self {
 					rts, err := common.GetCerts()
 					if err != nil {
-						config.Log.Error("[cluster] - Failed to get certs - %v", err.Error())
+						config.Log.Error("[cluster] - Failed to get certs - %s", err)
 						break
 					}
 					certs, err := json.Marshal(rts)
 					if err != nil {
-						config.Log.Error("[cluster] - Failed to marshal certs - %v", err.Error())
+						config.Log.Error("[cluster] - Failed to marshal certs - %s", err)
 						break
 					}
 					config.Log.Debug("[cluster] - get-certs requested, publishing my certs")
@@ -1296,16 +1296,16 @@ func (r Redis) subscribe() {
 				var certs []core.CertBundle
 				err := parseBody([]byte(pdata[1]), &certs)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal certs - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal certs - %s", err)
 					break
 				}
 				err = common.SetCerts(certs)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to set certs - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to set certs - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-certs %s", certs))))
-				config.Log.Trace("[cluster] - set-certs hash - %v", actionHash)
+				config.Log.Trace("[cluster] - set-certs hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1319,16 +1319,16 @@ func (r Redis) subscribe() {
 				var crt core.CertBundle
 				err := parseBody([]byte(pdata[1]), &crt)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal cert - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal cert - %s", err)
 					break
 				}
 				err = common.SetCert(crt)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to set cert - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to set cert - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-cert %s", crt))))
-				config.Log.Trace("[cluster] - set-cert hash - %v", actionHash)
+				config.Log.Trace("[cluster] - set-cert hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
@@ -1341,25 +1341,25 @@ func (r Redis) subscribe() {
 				var crt core.CertBundle
 				err := parseBody([]byte(pdata[1]), &crt)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to marshal cert - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to marshal cert - %s", err)
 					break
 				}
 				err = common.DeleteCert(crt)
 				if err != nil {
-					config.Log.Error("[cluster] - Failed to delete cert - %v", err.Error())
+					config.Log.Error("[cluster] - Failed to delete cert - %s", err)
 					break
 				}
 				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-cert %s", crt))))
-				config.Log.Trace("[cluster] - delete-cert hash - %v", actionHash)
+				config.Log.Trace("[cluster] - delete-cert hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
 				conn.Close()
 				config.Log.Debug("[cluster] - delete-cert successful")
 			default:
-				config.Log.Error("[cluster] - Recieved unknown data on %v: %v", v.Channel, string(v.Data))
+				config.Log.Error("[cluster] - Recieved unknown data on %s: %s", v.Channel, string(v.Data))
 			}
 		case error:
-			config.Log.Error("[cluster] - Subscriber failed to receive - %v", v.Error())
+			config.Log.Error("[cluster] - Subscriber failed to receive - %s", v.Error())
 			if strings.Contains(v.Error(), "closed network connection") {
 				// clear balancer rules ("stop balancing if we are 'dead'")
 				balance.SetServices(make([]core.Service, 0, 0))

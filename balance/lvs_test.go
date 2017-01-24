@@ -42,7 +42,7 @@ func TestSetService(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := balance.SetService(&testService1); err != nil {
-		t.Errorf("Failed to SET service - %v", err)
+		t.Errorf("Failed to SET service - %s", err)
 		t.FailNow()
 	}
 
@@ -65,12 +65,12 @@ func TestSetServices(t *testing.T) {
 	services = append(services, testService2)
 
 	if err := balance.SetServices(services); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 		t.FailNow()
 	}
 
 	if _, err := os.Stat("/tmp/scribbleTest/services/tcp-192_168_0_15-80.json"); !os.IsNotExist(err) {
-		t.Errorf("Failed to clear old services on PUT - %v", err)
+		t.Errorf("Failed to clear old services on PUT - %s", err)
 	}
 
 	// todo: read from ipvsadm
@@ -90,7 +90,7 @@ func TestGetServices(t *testing.T) {
 	}
 	services, err := balance.GetServices()
 	if err != nil {
-		t.Errorf("Failed to GET services - %v", err)
+		t.Errorf("Failed to GET services - %s", err)
 		t.FailNow()
 	}
 
@@ -105,7 +105,7 @@ func TestGetService(t *testing.T) {
 	}
 	service, err := balance.GetService(testService2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 		t.FailNow()
 	}
 
@@ -119,7 +119,7 @@ func TestDeleteService(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := balance.DeleteService(testService2.Id); err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 	}
 
 	// todo: read from ipvsadm
@@ -138,7 +138,7 @@ func TestSetServer(t *testing.T) {
 	}
 	balance.SetService(&testService1)
 	if err := balance.SetServer(testService1.Id, &testServer1); err != nil {
-		t.Errorf("Failed to SET server - %v", err)
+		t.Errorf("Failed to SET server - %s", err)
 		t.FailNow()
 	}
 
@@ -163,7 +163,7 @@ func TestSetServers(t *testing.T) {
 	servers := []core.Server{}
 	servers = append(servers, testServer2)
 	if err := balance.SetServers(testService1.Id, servers); err != nil {
-		t.Errorf("Failed to SET servers - %v", err)
+		t.Errorf("Failed to SET servers - %s", err)
 		t.FailNow()
 	}
 
@@ -187,7 +187,7 @@ func TestGetServers(t *testing.T) {
 	}
 	service, err := balance.GetService(testService1.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 		t.FailNow()
 	}
 
@@ -202,7 +202,7 @@ func TestGetServer(t *testing.T) {
 	}
 	server, err := balance.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET server - %v", err)
+		t.Errorf("Failed to GET server - %s", err)
 		t.FailNow()
 	}
 
@@ -217,7 +217,7 @@ func TestDeleteServer(t *testing.T) {
 	}
 	err := balance.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to DELETE server - %v", err)
+		t.Errorf("Failed to DELETE server - %s", err)
 	}
 
 	// todo: read from ipvsadm
@@ -246,12 +246,12 @@ func toJson(v interface{}) ([]byte, error) {
 func initialize() {
 	ifIptables, err := exec.Command("iptables", "-S").CombinedOutput()
 	if err != nil {
-		fmt.Printf("Failed to run iptables - %s%v\n", ifIptables, err.Error())
+		fmt.Printf("Failed to run iptables - %s%s\n", ifIptables, err)
 		skip = true
 	}
 	ifIpvsadm, err := exec.Command("ipvsadm", "--version").CombinedOutput()
 	if err != nil {
-		fmt.Printf("Failed to run ipvsadm - %s%v\n", ifIpvsadm, err.Error())
+		fmt.Printf("Failed to run ipvsadm - %s%s\n", ifIpvsadm, err)
 		skip = true
 	}
 
@@ -261,12 +261,12 @@ func initialize() {
 		// todo: find more friendly way to clear crufty rules only
 		err = exec.Command("iptables", "-F", "portal").Run()
 		if err != nil {
-			fmt.Printf("Failed to clear iptables - %v\n", err.Error())
+			fmt.Printf("Failed to clear iptables - %s\n", err)
 			os.Exit(1)
 		}
 		err = exec.Command("ipvsadm", "-C").Run()
 		if err != nil {
-			fmt.Printf("Failed to clear ipvsadm - %v\n", err.Error())
+			fmt.Printf("Failed to clear ipvsadm - %s\n", err)
 			os.Exit(1)
 		}
 

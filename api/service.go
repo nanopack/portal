@@ -16,7 +16,7 @@ import (
 func parseReqService(req *http.Request) (*core.Service, error) {
 	b, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		config.Log.Error(err.Error())
+		config.Log.Error("Failed to read body - %s", err)
 		return nil, BodyReadFail
 	}
 

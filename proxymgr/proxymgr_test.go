@@ -30,13 +30,13 @@ func TestMain(m *testing.M) {
 ////////////////////////////////////////////////////////////////////////////////
 func TestSetRoute(t *testing.T) {
 	if err := proxymgr.SetRoute(testRoute); err != nil {
-		t.Errorf("Failed to SET route - %v", err)
+		t.Errorf("Failed to SET route - %s", err)
 		t.FailNow()
 	}
 
 	// test idempotency
 	if err := proxymgr.SetRoute(testRoute); err != nil {
-		t.Errorf("Failed to SET route - %v", err)
+		t.Errorf("Failed to SET route - %s", err)
 		t.FailNow()
 	}
 
@@ -52,7 +52,7 @@ func TestSetRoute(t *testing.T) {
 
 func TestSetRoutes(t *testing.T) {
 	if err := proxymgr.SetRoutes([]core.Route{testRoute}); err != nil {
-		t.Errorf("Failed to SET routes - %v", err)
+		t.Errorf("Failed to SET routes - %s", err)
 		t.FailNow()
 	}
 
@@ -69,7 +69,7 @@ func TestSetRoutes(t *testing.T) {
 func TestGetRoutes(t *testing.T) {
 	routes, err := proxymgr.GetRoutes()
 	if err != nil {
-		t.Errorf("Failed to GET routes - %v", err)
+		t.Errorf("Failed to GET routes - %s", err)
 		t.FailNow()
 	}
 
@@ -80,7 +80,7 @@ func TestGetRoutes(t *testing.T) {
 
 func TestDeleteRoute(t *testing.T) {
 	if err := proxymgr.DeleteRoute(testRoute); err != nil {
-		t.Errorf("Failed to DELETE route - %v", err)
+		t.Errorf("Failed to DELETE route - %s", err)
 	}
 
 	routes, err := proxymgr.GetRoutes()
@@ -98,13 +98,13 @@ func TestDeleteRoute(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 func TestSetCert(t *testing.T) {
 	if err := proxymgr.SetCert(testCert); err != nil {
-		t.Errorf("Failed to SET cert - %v", err)
+		t.Errorf("Failed to SET cert - %s", err)
 		t.FailNow()
 	}
 
 	// test idempotency
 	if err := proxymgr.SetCert(testCert); err != nil {
-		t.Errorf("Failed to SET cert - %v", err)
+		t.Errorf("Failed to SET cert - %s", err)
 		t.FailNow()
 	}
 
@@ -120,7 +120,7 @@ func TestSetCert(t *testing.T) {
 
 func TestSetCerts(t *testing.T) {
 	if err := proxymgr.SetCerts([]core.CertBundle{testCert}); err != nil {
-		t.Errorf("Failed to SET certs - %v", err)
+		t.Errorf("Failed to SET certs - %s", err)
 		t.FailNow()
 	}
 
@@ -146,7 +146,7 @@ func TestSetCerts(t *testing.T) {
 func TestGetCerts(t *testing.T) {
 	certs, err := proxymgr.GetCerts()
 	if err != nil {
-		t.Errorf("Failed to GET certs - %v", err)
+		t.Errorf("Failed to GET certs - %s", err)
 		t.FailNow()
 	}
 
@@ -157,7 +157,7 @@ func TestGetCerts(t *testing.T) {
 
 func TestDeleteCert(t *testing.T) {
 	if err := proxymgr.DeleteCert(testCert); err != nil {
-		t.Errorf("Failed to DELETE cert - %v", err)
+		t.Errorf("Failed to DELETE cert - %s", err)
 	}
 
 	certs, err := proxymgr.GetCerts()
@@ -188,7 +188,7 @@ func initialize() {
 	config.RouteTls = "0.0.0.0:9446"
 	err = proxymgr.Init()
 	if err != nil {
-		fmt.Printf("Proxymgr init failed - %v\n", err)
+		fmt.Printf("Proxymgr init failed - %s\n", err)
 		os.Exit(1)
 	}
 }

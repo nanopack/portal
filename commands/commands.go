@@ -87,7 +87,7 @@ func preFlight(ccmd *cobra.Command, args []string) error {
 
 func readConfig(ccmd *cobra.Command, args []string) error {
 	if err := config.LoadConfigFile(); err != nil {
-		return fmt.Errorf("ERROR: Failed to read config - %v", err)
+		return fmt.Errorf("ERROR: Failed to read config - %s", err)
 	}
 
 	return nil
@@ -100,7 +100,7 @@ func startPortal(ccmd *cobra.Command, args []string) error {
 		var err error
 		config.Log, err = lumber.NewFileLogger(config.LogFile, lumber.LvlInt(config.LogLevel), lumber.ROTATE, 5000, 9, 100)
 		if err != nil {
-			config.Log.Fatal("File logger init failed - %v", err)
+			config.Log.Fatal("File logger init failed - %s", err)
 			return fmt.Errorf("")
 		}
 	}
@@ -121,31 +121,31 @@ func startPortal(ccmd *cobra.Command, args []string) error {
 	// initialize database
 	err := database.Init()
 	if err != nil {
-		config.Log.Fatal("Database init failed - %v", err)
+		config.Log.Fatal("Database init failed - %s", err)
 		return fmt.Errorf("")
 	}
 	// initialize balancer
 	err = balance.Init()
 	if err != nil {
-		config.Log.Fatal("Balancer init failed - %v", err)
+		config.Log.Fatal("Balancer init failed - %s", err)
 		return fmt.Errorf("")
 	}
 	// initialize proxymgr
 	err = proxymgr.Init()
 	if err != nil {
-		config.Log.Fatal("Proxymgr init failed - %v", err)
+		config.Log.Fatal("Proxymgr init failed - %s", err)
 		return fmt.Errorf("")
 	}
 	// initialize vipmgr
 	err = vipmgr.Init()
 	if err != nil {
-		config.Log.Fatal("Vipmgr init failed - %v", err)
+		config.Log.Fatal("Vipmgr init failed - %s", err)
 		return fmt.Errorf("")
 	}
 	// initialize cluster
 	err = cluster.Init()
 	if err != nil {
-		config.Log.Fatal("Cluster init failed - %v", err)
+		config.Log.Fatal("Cluster init failed - %s", err)
 		return fmt.Errorf("")
 	}
 
@@ -154,7 +154,7 @@ func startPortal(ccmd *cobra.Command, args []string) error {
 	// start api
 	err = api.StartApi()
 	if err != nil {
-		config.Log.Fatal("Api start failed - %v", err)
+		config.Log.Fatal("Api start failed - %s", err)
 		return fmt.Errorf("")
 	}
 	return nil
@@ -187,7 +187,7 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 
 	req, err := http.NewRequest(method, uri, body)
 	if err != nil {
-		fmt.Printf("Failted to create request - %v\n", err.Error())
+		fmt.Printf("Failed to create request - %s\n", err)
 	}
 	req.Header.Add("X-AUTH-TOKEN", config.ApiToken)
 	res, err := client.Do(req)
@@ -196,7 +196,7 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 		uri = fmt.Sprintf("http://%s:%s/%s", config.ApiHost, config.ApiPort, path)
 		req, er := http.NewRequest(method, uri, body)
 		if er != nil {
-			fmt.Printf("Failted to create request - %v\n", er.Error())
+			fmt.Printf("Failed to create request - %s\n", er)
 		}
 		req.Header.Add("X-AUTH-TOKEN", config.ApiToken)
 		var err2 error
@@ -213,6 +213,6 @@ func rest(path string, method string, body io.Reader) (*http.Response, error) {
 }
 
 func fail(format string, args ...interface{}) {
-	fmt.Printf(fmt.Sprintf("%v\n", format), args...)
+	fmt.Printf(fmt.Sprintf("%s\n", format), args...)
 	os.Exit(1)
 }

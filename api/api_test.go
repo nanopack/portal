@@ -499,7 +499,7 @@ func TestPostCert(t *testing.T) {
 	var cert core.CertBundle
 	err = json.Unmarshal(resp, &cert)
 	if err != nil {
-		t.Errorf("Failed to POST cert - %v", err)
+		t.Errorf("Failed to POST cert - %s", err)
 	}
 	// bad request test
 	resp, err = rest("POST", "/certs", "[{\"key\":\"test.comma\", \"cert\": 1}]")
@@ -547,7 +547,7 @@ func rest(method, route, data string) ([]byte, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to %v %v - %v", method, route, err)
+		return nil, fmt.Errorf("Unable to %s %s - %s", method, route, err)
 	}
 	defer res.Body.Close()
 
@@ -568,37 +568,37 @@ func initialize() {
 	config.RouteTls = "0.0.0.0:9443"
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 	config.LogLevel = "FATAL"
-	apiAddr = fmt.Sprintf("%v:%v", config.ApiHost, config.ApiPort)
+	apiAddr = fmt.Sprintf("%s:%s", config.ApiHost, config.ApiPort)
 
 	// initialize database
 	err := database.Init()
 	if err != nil {
-		fmt.Printf("Database init failed - %v\n", err)
+		fmt.Printf("Database init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// initialize balancer
 	balance.Balancer = &database.ScribbleDatabase{}
 	err = balance.Balancer.Init()
 	if err != nil {
-		fmt.Printf("Balancer init failed - %v\n", err)
+		fmt.Printf("Balancer init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// initialize proxymgr
 	err = proxymgr.Init()
 	if err != nil {
-		fmt.Printf("Proxymgr init failed - %v\n", err)
+		fmt.Printf("Proxymgr init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// initialize vipmgr
 	err = vipmgr.Init()
 	if err != nil {
-		fmt.Printf("Vipmgr init failed - %v\n", err)
+		fmt.Printf("Vipmgr init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// initialize clusterer
 	err = cluster.Init()
 	if err != nil {
-		fmt.Printf("Clusterer init failed - %v\n", err)
+		fmt.Printf("Clusterer init failed - %s\n", err)
 		os.Exit(1)
 	}
 	// load saved rules
@@ -607,14 +607,14 @@ func initialize() {
 		// if error is not about a missing db, continue
 		if !strings.Contains(err.Error(), "Found") {
 			// todo: this requires backends to return NoServiceError in GetServices
-			fmt.Printf("Get services from backend failed - %v\n", err)
+			fmt.Printf("Get services from backend failed - %s\n", err)
 			os.Exit(1)
 		}
 	}
 	// apply saved rules
 	err = balance.Balancer.SetServices(services)
 	if err != nil {
-		fmt.Printf("Balancer sync failed - %v\n", err)
+		fmt.Printf("Balancer sync failed - %s\n", err)
 		os.Exit(1)
 	}
 }

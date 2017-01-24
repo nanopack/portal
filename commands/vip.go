@@ -77,11 +77,11 @@ func vipAdd(ccmd *cobra.Command, args []string) {
 	}
 	res, err := rest("vips", "POST", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -100,11 +100,11 @@ func vipRemove(ccmd *cobra.Command, args []string) {
 	}
 	res, err := rest("vips", "DELETE", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -112,11 +112,11 @@ func vipRemove(ccmd *cobra.Command, args []string) {
 func vipsShow(ccmd *cobra.Command, args []string) {
 	res, err := rest("vips", "GET", nil)
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -134,11 +134,11 @@ func vipsSet(ccmd *cobra.Command, args []string) {
 	}
 	res, err := rest("vips", "PUT", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }

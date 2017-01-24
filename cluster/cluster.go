@@ -28,7 +28,7 @@ type Clusterable interface {
 func Init() error {
 	url, err := url.Parse(config.ClusterConnection)
 	if err != nil {
-		return fmt.Errorf("Failed to parse db connection - %v", err)
+		return fmt.Errorf("Failed to parse db connection - %s", err)
 	}
 
 	switch url.Scheme {

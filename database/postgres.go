@@ -17,15 +17,17 @@ type (
 	}
 )
 
+// todo: prepare statements
+
 func (p *PostgresDb) connect() error {
 	// todo: example: config.DatabaseConnection = "postgres://postgres@127.0.0.1?sslmode=disable"
 	db, err := sql.Open("postgres", config.DatabaseConnection)
 	if err != nil {
-		return fmt.Errorf("Failed to connect to postgres - %v", err)
+		return fmt.Errorf("Failed to connect to postgres - %s", err)
 	}
 	err = db.Ping()
 	if err != nil {
-		return fmt.Errorf("Failed to ping postgres on connect - %v", err)
+		return fmt.Errorf("Failed to ping postgres on connect - %s", err)
 	}
 
 	p.pg = db
@@ -47,7 +49,7 @@ CREATE TABLE IF NOT EXISTS services (
 	netmask        TEXT
 )`)
 	if err != nil {
-		return fmt.Errorf("Failed to create services table - %v", err)
+		return fmt.Errorf("Failed to create services table - %s", err)
 	}
 
 	// create servers table
@@ -64,7 +66,7 @@ CREATE TABLE IF NOT EXISTS servers (
 	lowerThreshold TEXT
 )`)
 	if err != nil {
-		return fmt.Errorf("Failed to create servers table - %v", err)
+		return fmt.Errorf("Failed to create servers table - %s", err)
 	}
 
 	// create routes table
@@ -79,7 +81,7 @@ CREATE TABLE IF NOT EXISTS routes (
 	page      TEXT
 )`)
 	if err != nil {
-		return fmt.Errorf("Failed to create routes table - %v", err)
+		return fmt.Errorf("Failed to create routes table - %s", err)
 	}
 
 	// create certs table
@@ -90,7 +92,7 @@ CREATE TABLE IF NOT EXISTS certs (
 	key    TEXT NOT NULL
 )`)
 	if err != nil {
-		return fmt.Errorf("Failed to create cert table - %v", err)
+		return fmt.Errorf("Failed to create cert table - %s", err)
 	}
 
 	// create vips table
@@ -102,7 +104,7 @@ CREATE TABLE IF NOT EXISTS vips (
 	alias     TEXT
 )`)
 	if err != nil {
-		return fmt.Errorf("Failed to create vips table - %v", err)
+		return fmt.Errorf("Failed to create vips table - %s", err)
 	}
 
 	return nil
@@ -111,13 +113,13 @@ CREATE TABLE IF NOT EXISTS vips (
 func (p *PostgresDb) Init() error {
 	err := p.connect()
 	if err != nil {
-		return fmt.Errorf("Failed to create new connection - %v", err)
+		return fmt.Errorf("Failed to create new connection - %s", err)
 	}
 
 	// create tables
 	err = p.createTables()
 	if err != nil {
-		return fmt.Errorf("Failed to create tables - %v", err)
+		return fmt.Errorf("Failed to create tables - %s", err)
 	}
 
 	return nil
@@ -127,7 +129,7 @@ func (p PostgresDb) GetServices() ([]core.Service, error) {
 	// read from services table
 	rows, err := p.pg.Query("SELECT id, host, interface, port, type, scheduler, persistence, netmask FROM services")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to select from services table - %v", err)
+		return nil, fmt.Errorf("Failed to select from services table - %s", err)
 	}
 	defer rows.Close()
 
@@ -138,7 +140,7 @@ func (p PostgresDb) GetServices() ([]core.Service, error) {
 		svc := core.Service{}
 		err = rows.Scan(&svc.Id, &svc.Host, &svc.Interface, &svc.Port, &svc.Type, &svc.Scheduler, &svc.Persistence, &svc.Netmask)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to save results into service - %v", err)
+			return nil, fmt.Errorf("Failed to save results into service - %s", err)
 		}
 
 		// get service's servers
@@ -153,16 +155,16 @@ func (p PostgresDb) GetServices() ([]core.Service, error) {
 
 	// check for errors
 	if err = rows.Err(); err != nil {
-		return services, fmt.Errorf("Error with results - %v", err)
+		return services, fmt.Errorf("Error with results - %s", err)
 	}
 	return services, nil
 }
 
 func (p PostgresDb) GetService(id string) (*core.Service, error) {
 	// read from services table
-	rows, err := p.pg.Query(fmt.Sprintf("SELECT id, host, interface, port, type, scheduler, persistence, netmask FROM services WHERE id = '%v'", id))
+	rows, err := p.pg.Query(fmt.Sprintf("SELECT id, host, interface, port, type, scheduler, persistence, netmask FROM services WHERE id = '%s'", id))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to select from services table - %v", err)
+		return nil, fmt.Errorf("Failed to select from services table - %s", err)
 	}
 	defer rows.Close()
 
@@ -173,7 +175,7 @@ func (p PostgresDb) GetService(id string) (*core.Service, error) {
 		svc := core.Service{}
 		err = rows.Scan(&svc.Id, &svc.Host, &svc.Interface, &svc.Port, &svc.Type, &svc.Scheduler, &svc.Persistence, &svc.Netmask)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to save results into service - %v", err)
+			return nil, fmt.Errorf("Failed to save results into service - %s", err)
 		}
 
 		// get service's servers
@@ -188,7 +190,7 @@ func (p PostgresDb) GetService(id string) (*core.Service, error) {
 
 	// check for errors
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("Error with results - %v", err)
+		return nil, fmt.Errorf("Error with results - %s", err)
 	}
 
 	if len(services) == 0 {
@@ -202,7 +204,7 @@ func (p PostgresDb) SetServices(services []core.Service) error {
 	// truncate services table
 	_, err := p.pg.Exec("TRUNCATE services CASCADE")
 	if err != nil {
-		return fmt.Errorf("Failed to truncate services table - %v", err)
+		return fmt.Errorf("Failed to truncate services table - %s", err)
 	}
 	for i := range services {
 		err = p.SetService(&services[i]) // prevents duplicates
@@ -230,7 +232,7 @@ WHERE id = '%v'`,
 				service.Type, service.Scheduler, service.Persistence,
 				service.Netmask, service.Id))
 			if err != nil {
-				return fmt.Errorf("Failed to update services table - %v", err)
+				return fmt.Errorf("Failed to update services table - %s", err)
 			}
 
 			// reset servers
@@ -250,7 +252,7 @@ VALUES('%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v')`,
 		service.Id, service.Host, service.Interface, service.Port,
 		service.Type, service.Scheduler, service.Persistence, service.Netmask))
 	if err != nil {
-		return fmt.Errorf("Failed to insert into services table - %v", err)
+		return fmt.Errorf("Failed to insert into services table - %s", err)
 	}
 
 	// reset servers
@@ -266,7 +268,7 @@ func (p PostgresDb) DeleteService(id string) error {
 	// delete from services table
 	_, err := p.pg.Exec(fmt.Sprintf(`DELETE FROM services WHERE id = '%v'`, id))
 	if err != nil {
-		return fmt.Errorf("Failed to delete from services table - %v", err)
+		return fmt.Errorf("Failed to delete from services table - %s", err)
 	}
 	return nil
 }
@@ -276,7 +278,7 @@ func (p PostgresDb) SetServers(svcId string, servers []core.Server) error {
 	// delete servers from service
 	_, err := p.pg.Exec(fmt.Sprintf(`DELETE FROM servers WHERE serviceId = '%v'`, svcId))
 	if err != nil {
-		return fmt.Errorf("Failed to remove old servers - %v", err)
+		return fmt.Errorf("Failed to remove old servers - %s", err)
 	}
 
 	for i := range servers {
@@ -305,7 +307,7 @@ WHERE id = '%v' AND serviceId = '%v'`,
 				server.Host, server.Port, server.Forwarder, server.Weight,
 				server.UpperThreshold, server.LowerThreshold, server.Id, svcId))
 			if err != nil {
-				return fmt.Errorf("Failed to update servers table - %v", err)
+				return fmt.Errorf("Failed to update servers table - %s", err)
 			}
 			return nil
 		}
@@ -318,7 +320,7 @@ VALUES('%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v')`,
 		svcId, server.Id, server.Host, server.Port, server.Forwarder,
 		server.Weight, server.UpperThreshold, server.LowerThreshold))
 	if err != nil {
-		return fmt.Errorf("Failed to insert into servers table - %v", err)
+		return fmt.Errorf("Failed to insert into servers table - %s", err)
 	}
 	return nil
 }
@@ -327,7 +329,7 @@ func (p PostgresDb) DeleteServer(svcId, srvId string) error {
 	// delete from servers table
 	_, err := p.pg.Exec(fmt.Sprintf(`DELETE FROM servers WHERE id = '%v' AND serviceId = '%v'`, srvId, svcId))
 	if err != nil {
-		return fmt.Errorf("Failed to delete from servers table - %v", err)
+		return fmt.Errorf("Failed to delete from servers table - %s", err)
 	}
 	return nil
 }
@@ -336,7 +338,7 @@ func (p PostgresDb) GetServer(svcId, srvId string) (*core.Server, error) {
 	// read from servers table
 	rows, err := p.pg.Query(fmt.Sprintf("SELECT id, host, port, forwarder, weight, upperThreshold, lowerThreshold FROM servers WHERE id = '%v' AND serviceId = '%v'", srvId, svcId))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to select from servers table - %v", err)
+		return nil, fmt.Errorf("Failed to select from servers table - %s", err)
 	}
 	defer rows.Close()
 
@@ -347,7 +349,7 @@ func (p PostgresDb) GetServer(svcId, srvId string) (*core.Server, error) {
 		srv := core.Server{}
 		err = rows.Scan(&srv.Id, &srv.Host, &srv.Port, &srv.Forwarder, &srv.Weight, &srv.UpperThreshold, &srv.LowerThreshold)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to save results into server - %v", err)
+			return nil, fmt.Errorf("Failed to save results into server - %s", err)
 		}
 
 		servers = append(servers, srv)
@@ -355,7 +357,7 @@ func (p PostgresDb) GetServer(svcId, srvId string) (*core.Server, error) {
 
 	// check for errors
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("Error with results - %v", err)
+		return nil, fmt.Errorf("Error with results - %s", err)
 	}
 
 	if len(servers) == 0 {
@@ -369,7 +371,7 @@ func (p PostgresDb) GetServers(svcId string) ([]core.Server, error) {
 	// read from servers table
 	rows, err := p.pg.Query(fmt.Sprintf("SELECT id, host, port, forwarder, weight, upperThreshold, lowerThreshold FROM servers WHERE serviceId = '%v'", svcId))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to select from servers table - %v", err)
+		return nil, fmt.Errorf("Failed to select from servers table - %s", err)
 	}
 	defer rows.Close()
 
@@ -380,7 +382,7 @@ func (p PostgresDb) GetServers(svcId string) ([]core.Server, error) {
 		srv := core.Server{}
 		err = rows.Scan(&srv.Id, &srv.Host, &srv.Port, &srv.Forwarder, &srv.Weight, &srv.UpperThreshold, &srv.LowerThreshold)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to save results into server - %v", err)
+			return nil, fmt.Errorf("Failed to save results into server - %s", err)
 		}
 
 		servers = append(servers, srv)
@@ -388,7 +390,7 @@ func (p PostgresDb) GetServers(svcId string) ([]core.Server, error) {
 
 	// check for errors
 	if err = rows.Err(); err != nil {
-		return servers, fmt.Errorf("Error with results - %v", err)
+		return servers, fmt.Errorf("Error with results - %s", err)
 	}
 
 	return servers, nil
@@ -402,7 +404,7 @@ func (p PostgresDb) GetRoutes() ([]core.Route, error) {
 	// read from routes table
 	rows, err := p.pg.Query("SELECT subdomain, domain, path, targets, fwdPath, page FROM routes")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to select from routes table - %v", err)
+		return nil, fmt.Errorf("Failed to select from routes table - %s", err)
 	}
 	defer rows.Close()
 
@@ -414,7 +416,7 @@ func (p PostgresDb) GetRoutes() ([]core.Route, error) {
 		var tmpTargets string
 		err = rows.Scan(&route.SubDomain, &route.Domain, &route.Path, &tmpTargets, &route.FwdPath, &route.Page)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to save results into route - %v", err)
+			return nil, fmt.Errorf("Failed to save results into route - %s", err)
 		}
 		route.Targets = strings.Split(tmpTargets, ",")
 
@@ -423,7 +425,7 @@ func (p PostgresDb) GetRoutes() ([]core.Route, error) {
 
 	// check for errors
 	if err = rows.Err(); err != nil {
-		return routes, fmt.Errorf("Error with results - %v", err)
+		return routes, fmt.Errorf("Error with results - %s", err)
 	}
 	return routes, nil
 }
@@ -432,7 +434,7 @@ func (p PostgresDb) SetRoutes(routes []core.Route) error {
 	// truncate routes table
 	_, err := p.pg.Exec("TRUNCATE routes")
 	if err != nil {
-		return fmt.Errorf("Failed to truncate routes table - %v", err)
+		return fmt.Errorf("Failed to truncate routes table - %s", err)
 	}
 	for i := range routes {
 		err = p.SetRoute(routes[i]) // prevents duplicates
@@ -459,7 +461,7 @@ WHERE subdomain = '%v' AND domain = '%v' AND path = '%v'`,
 				route.FwdPath, route.Page, route.SubDomain, route.Domain,
 				route.Path))
 			if err != nil {
-				return fmt.Errorf("Failed to update routes table - %v", err)
+				return fmt.Errorf("Failed to update routes table - %s", err)
 			}
 			return nil
 		}
@@ -473,7 +475,7 @@ VALUES('%v', '%v', '%v', '%v', '%v', '%v')`,
 		strings.Join(route.Targets, ","),
 		route.FwdPath, route.Page))
 	if err != nil {
-		return fmt.Errorf("Failed to insert into routes table - %v", err)
+		return fmt.Errorf("Failed to insert into routes table - %s", err)
 	}
 	return nil
 }
@@ -483,7 +485,7 @@ func (p PostgresDb) DeleteRoute(route core.Route) error {
 	_, err := p.pg.Exec(fmt.Sprintf(`DELETE FROM routes WHERE subdomain = '%v' AND domain = '%v' AND path = '%v'`,
 		route.SubDomain, route.Domain, route.Path))
 	if err != nil {
-		return fmt.Errorf("Failed to delete from routes table - %v", err)
+		return fmt.Errorf("Failed to delete from routes table - %s", err)
 	}
 	return nil
 }
@@ -496,7 +498,7 @@ func (p PostgresDb) GetCerts() ([]core.CertBundle, error) {
 	// read from certs table
 	rows, err := p.pg.Query("SELECT cert, key FROM certs")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to select from certs table - %v", err)
+		return nil, fmt.Errorf("Failed to select from certs table - %s", err)
 	}
 	defer rows.Close()
 
@@ -507,7 +509,7 @@ func (p PostgresDb) GetCerts() ([]core.CertBundle, error) {
 		cert := core.CertBundle{}
 		err = rows.Scan(&cert.Cert, &cert.Key)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to save results into certbundle - %v", err)
+			return nil, fmt.Errorf("Failed to save results into certbundle - %s", err)
 		}
 
 		certs = append(certs, cert)
@@ -515,7 +517,7 @@ func (p PostgresDb) GetCerts() ([]core.CertBundle, error) {
 
 	// check for errors
 	if err = rows.Err(); err != nil {
-		return certs, fmt.Errorf("Error with results - %v", err)
+		return certs, fmt.Errorf("Error with results - %s", err)
 	}
 	return certs, nil
 }
@@ -524,7 +526,7 @@ func (p PostgresDb) SetCerts(certs []core.CertBundle) error {
 	// truncate certs table
 	_, err := p.pg.Exec("TRUNCATE certs")
 	if err != nil {
-		return fmt.Errorf("Failed to truncate certs table - %v", err)
+		return fmt.Errorf("Failed to truncate certs table - %s", err)
 	}
 	for i := range certs {
 		err = p.SetCert(certs[i])
@@ -549,7 +551,7 @@ func (p PostgresDb) SetCert(cert core.CertBundle) error {
 		if certs[i].Cert == cert.Cert {
 			_, err = p.pg.Exec(fmt.Sprintf(`UPDATE certs SET key = '%v' WHERE cert = '%v'`, cert.Key, cert.Cert))
 			if err != nil {
-				return fmt.Errorf("Failed to update certs table - %v", err)
+				return fmt.Errorf("Failed to update certs table - %s", err)
 			}
 			return nil
 		}
@@ -558,7 +560,7 @@ func (p PostgresDb) SetCert(cert core.CertBundle) error {
 	// insert into certs table
 	_, err = p.pg.Exec(fmt.Sprintf(`INSERT INTO certs(cert, key) VALUES('%v', '%v')`, cert.Cert, cert.Key))
 	if err != nil {
-		return fmt.Errorf("Failed to insert into certs table - %v", err)
+		return fmt.Errorf("Failed to insert into certs table - %s", err)
 	}
 	return nil
 }
@@ -570,7 +572,7 @@ func (p PostgresDb) DeleteCert(cert core.CertBundle) error {
 	// delete from certs table
 	_, err := p.pg.Exec(fmt.Sprintf(`DELETE FROM certs WHERE cert = '%v'`, cert.Cert))
 	if err != nil {
-		return fmt.Errorf("Failed to delete from certs table - %v", err)
+		return fmt.Errorf("Failed to delete from certs table - %s", err)
 	}
 	return nil
 }
@@ -583,7 +585,7 @@ func (p PostgresDb) GetVips() ([]core.Vip, error) {
 	// read from vips table
 	rows, err := p.pg.Query("SELECT ip, interface, alias FROM vips")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to select from vips table - %v", err)
+		return nil, fmt.Errorf("Failed to select from vips table - %s", err)
 	}
 	defer rows.Close()
 
@@ -594,7 +596,7 @@ func (p PostgresDb) GetVips() ([]core.Vip, error) {
 		vip := core.Vip{}
 		err = rows.Scan(&vip.Ip, &vip.Interface, &vip.Alias)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to save results into vip - %v", err)
+			return nil, fmt.Errorf("Failed to save results into vip - %s", err)
 		}
 
 		vips = append(vips, vip)
@@ -602,7 +604,7 @@ func (p PostgresDb) GetVips() ([]core.Vip, error) {
 
 	// check for errors
 	if err = rows.Err(); err != nil {
-		return vips, fmt.Errorf("Error with results - %v", err)
+		return vips, fmt.Errorf("Error with results - %s", err)
 	}
 	return vips, nil
 }
@@ -611,7 +613,7 @@ func (p PostgresDb) SetVips(vips []core.Vip) error {
 	// truncate vips table
 	_, err := p.pg.Exec("TRUNCATE vips")
 	if err != nil {
-		return fmt.Errorf("Failed to truncate vips table - %v", err)
+		return fmt.Errorf("Failed to truncate vips table - %s", err)
 	}
 	for i := range vips {
 		err = p.SetVip(vips[i])
@@ -633,7 +635,7 @@ func (p PostgresDb) SetVip(vip core.Vip) error {
 		if vips[i].Ip == vip.Ip {
 			_, err = p.pg.Exec(fmt.Sprintf(`UPDATE vips SET interface = '%v', alias = '%v' WHERE ip = '%v'`, vip.Interface, vip.Alias, vip.Ip))
 			if err != nil {
-				return fmt.Errorf("Failed to update vips table - %v", err)
+				return fmt.Errorf("Failed to update vips table - %s", err)
 			}
 			return nil
 		}
@@ -642,7 +644,7 @@ func (p PostgresDb) SetVip(vip core.Vip) error {
 	// insert into vips table
 	_, err = p.pg.Exec(fmt.Sprintf(`INSERT INTO vips(ip, interface, alias) VALUES('%v', '%v', '%v')`, vip.Ip, vip.Interface, vip.Alias))
 	if err != nil {
-		return fmt.Errorf("Failed to insert into vips table - %v", err)
+		return fmt.Errorf("Failed to insert into vips table - %s", err)
 	}
 	return nil
 }
@@ -651,7 +653,7 @@ func (p PostgresDb) DeleteVip(vip core.Vip) error {
 	// delete from vips table
 	_, err := p.pg.Exec(fmt.Sprintf(`DELETE FROM vips WHERE ip = '%v'`, vip.Ip))
 	if err != nil {
-		return fmt.Errorf("Failed to delete from vips table - %v", err)
+		return fmt.Errorf("Failed to delete from vips table - %s", err)
 	}
 	return nil
 }

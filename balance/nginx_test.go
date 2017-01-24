@@ -20,12 +20,12 @@ func TestSetServiceNginx(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := balance.SetService(&testService1); err != nil {
-		t.Errorf("Failed to SET service - %v", err)
+		t.Errorf("Failed to SET service - %s", err)
 		t.FailNow()
 	}
 
 	if err := balance.SetService(&testService1); err != nil {
-		t.Errorf("Failed to SET service - %v", err)
+		t.Errorf("Failed to SET service - %s", err)
 		t.FailNow()
 	}
 
@@ -46,18 +46,18 @@ func TestSetServicesNginx(t *testing.T) {
 	}
 
 	if err := balance.SetService(&testService1); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 		t.FailNow()
 	}
 
 	if err := balance.SetServices([]core.Service{testService2}); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 		t.FailNow()
 	}
 
 	_, err := balance.GetService(testService1.Id)
 	if err == nil {
-		t.Errorf("Failed to clear old services on PUT - %v", err)
+		t.Errorf("Failed to clear old services on PUT - %s", err)
 		t.FailNow()
 	}
 
@@ -78,13 +78,13 @@ func TestGetServicesNginx(t *testing.T) {
 	}
 
 	if err := balance.SetServices([]core.Service{testService2}); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 		t.FailNow()
 	}
 
 	services, err := balance.GetServices()
 	if err != nil {
-		t.Errorf("Failed to GET services - %v", err)
+		t.Errorf("Failed to GET services - %s", err)
 		t.FailNow()
 	}
 
@@ -100,18 +100,18 @@ func TestGetServiceNginx(t *testing.T) {
 
 	service, err := balance.GetService(testService2.Id)
 	if err == nil {
-		t.Errorf("Failed to fail GETTING service - %v", err)
+		t.Errorf("Failed to fail GETTING service - %s", err)
 		t.FailNow()
 	}
 
 	if err := balance.SetServices([]core.Service{testService2}); err != nil {
-		t.Errorf("Failed to SET services - %v", err)
+		t.Errorf("Failed to SET services - %s", err)
 		t.FailNow()
 	}
 
 	service, err = balance.GetService(testService2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET service - %v", err)
+		t.Errorf("Failed to GET service - %s", err)
 		t.FailNow()
 	}
 
@@ -125,13 +125,13 @@ func TestDeleteServiceNginx(t *testing.T) {
 		t.SkipNow()
 	}
 	if err := balance.DeleteService(testService2.Id); err != nil {
-		t.Errorf("Failed to DELETE nonexistant service - %v", err)
+		t.Errorf("Failed to DELETE nonexistant service - %s", err)
 	}
 
 	balance.SetService(&testService2)
 
 	if err := balance.DeleteService(testService2.Id); err != nil {
-		t.Errorf("Failed to DELETE service - %v", err)
+		t.Errorf("Failed to DELETE service - %s", err)
 	}
 
 	_, err := balance.GetService(testService2.Id)
@@ -152,12 +152,12 @@ func TestSetServerNginx(t *testing.T) {
 	balance.SetService(&testService1)
 
 	if err := balance.SetServer(testService1.Id, &testServer1); err != nil {
-		t.Errorf("Failed to SET server - %v", err)
+		t.Errorf("Failed to SET server - %s", err)
 		t.FailNow()
 	}
 
 	if err := balance.SetServer(testService1.Id, &testServer1); err != nil {
-		t.Errorf("Failed to SET server - %v", err)
+		t.Errorf("Failed to SET server - %s", err)
 		t.FailNow()
 	}
 
@@ -181,14 +181,14 @@ func TestSetServersNginx(t *testing.T) {
 
 	servers := []core.Server{testServer2}
 	if err := balance.SetServers(testService1.Id, servers); err == nil {
-		t.Errorf("Failed to fail SETTING servers - %v", err)
+		t.Errorf("Failed to fail SETTING servers - %s", err)
 		t.FailNow()
 	}
 
 	balance.SetService(&testService1)
 
 	if err := balance.SetServers(testService1.Id, servers); err != nil {
-		t.Errorf("Failed to SET servers - %v", err)
+		t.Errorf("Failed to SET servers - %s", err)
 		t.FailNow()
 	}
 
@@ -216,7 +216,7 @@ func TestGetServersNginx(t *testing.T) {
 
 	service, err := balance.GetService(testService1.Id)
 	if err != nil {
-		t.Errorf("Failed to GET servers - %v", err)
+		t.Errorf("Failed to GET servers - %s", err)
 		t.FailNow()
 	}
 
@@ -232,7 +232,7 @@ func TestGetServerNginx(t *testing.T) {
 
 	server, err := balance.GetServer(testService1.Id, "not-real")
 	if err == nil {
-		t.Errorf("Failed to fail GETTING server - %v", err)
+		t.Errorf("Failed to fail GETTING server - %s", err)
 		t.FailNow()
 	}
 
@@ -240,7 +240,7 @@ func TestGetServerNginx(t *testing.T) {
 
 	server, err = balance.GetServer(testService1.Id, "not-real")
 	if err == nil {
-		t.Errorf("Failed to fail GETTING server - %v", err)
+		t.Errorf("Failed to fail GETTING server - %s", err)
 		t.FailNow()
 	}
 
@@ -250,7 +250,7 @@ func TestGetServerNginx(t *testing.T) {
 
 	server, err = balance.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to GET server - %v", err)
+		t.Errorf("Failed to GET server - %s", err)
 		t.FailNow()
 	}
 
@@ -266,21 +266,21 @@ func TestDeleteServerNginx(t *testing.T) {
 
 	err := balance.DeleteServer("not-real-thing", testServer2.Id)
 	if err == nil {
-		t.Errorf("Failed to DELETE nonexistant server - %v", err)
+		t.Errorf("Failed to DELETE nonexistant server - %s", err)
 	}
 
 	balance.SetService(&testService1)
 
 	err = balance.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to DELETE nonexistant server - %v", err)
+		t.Errorf("Failed to DELETE nonexistant server - %s", err)
 	}
 
 	balance.SetServer(testService1.Id, &testServer2)
 
 	err = balance.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
-		t.Errorf("Failed to DELETE server - %v", err)
+		t.Errorf("Failed to DELETE server - %s", err)
 	}
 
 	// todo: read from ipvsadm
@@ -302,7 +302,7 @@ func nginxPrep() bool {
 	nginx, err := exec.Command("which", "nginx").CombinedOutput()
 	// nginx, err := exec.Command("nginx", "-v").CombinedOutput()
 	if err != nil {
-		fmt.Printf("Failed to run nginx - %s%v\n", nginx, err.Error())
+		fmt.Printf("Failed to run nginx - %s%s\n", nginx, err)
 		return false
 	}
 
@@ -316,7 +316,7 @@ func nginxPrep() bool {
 	err = balance.Init()
 	// skip tests if failed to init
 	if err != nil {
-		fmt.Printf("Failed to initialize nginx - %s%v\n", nginx, err.Error())
+		fmt.Printf("Failed to initialize nginx - %s%s\n", nginx, err)
 		return false
 	}
 	return true

@@ -104,11 +104,11 @@ func serviceAdd(ccmd *cobra.Command, args []string) {
 	}
 	res, err := rest("services", "POST", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -119,11 +119,11 @@ func serviceRemove(ccmd *cobra.Command, args []string) {
 	path := fmt.Sprintf("services/%s", service.Id)
 	res, err := rest(path, "DELETE", nil)
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -134,11 +134,11 @@ func serviceShow(ccmd *cobra.Command, args []string) {
 	path := fmt.Sprintf("services/%s", service.Id)
 	res, err := rest(path, "GET", nil)
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -146,11 +146,11 @@ func serviceShow(ccmd *cobra.Command, args []string) {
 func servicesShow(ccmd *cobra.Command, args []string) {
 	res, err := rest("services", "GET", nil)
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -168,11 +168,11 @@ func servicesSet(ccmd *cobra.Command, args []string) {
 	}
 	res, err := rest("services", "PUT", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -180,7 +180,7 @@ func servicesSet(ccmd *cobra.Command, args []string) {
 func serviceSet(ccmd *cobra.Command, args []string) {
 	svcValidate(&service)
 	// set path here in case they set the id in their payload
-	path := fmt.Sprintf("services/%v", service.Id)
+	path := fmt.Sprintf("services/%s", service.Id)
 
 	if serviceJsonString != "" {
 		err := json.Unmarshal([]byte(serviceJsonString), &service)
@@ -195,11 +195,11 @@ func serviceSet(ccmd *cobra.Command, args []string) {
 
 	res, err := rest(path, "PUT", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }

@@ -108,11 +108,11 @@ func serverAdd(ccmd *cobra.Command, args []string) {
 	path := fmt.Sprintf("services/%s/servers", service.Id)
 	res, err := rest(path, "POST", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -124,11 +124,11 @@ func serverRemove(ccmd *cobra.Command, args []string) {
 	path := fmt.Sprintf("services/%s/servers/%s", service.Id, server.Id)
 	res, err := rest(path, "DELETE", nil)
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -140,11 +140,11 @@ func serverShow(ccmd *cobra.Command, args []string) {
 	path := fmt.Sprintf("services/%s/servers/%s", service.Id, server.Id)
 	res, err := rest(path, "GET", nil)
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -155,11 +155,11 @@ func serversShow(ccmd *cobra.Command, args []string) {
 	path := fmt.Sprintf("services/%s/servers", service.Id)
 	res, err := rest(path, "GET", nil)
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
@@ -179,11 +179,11 @@ func serversSet(ccmd *cobra.Command, args []string) {
 	path := fmt.Sprintf("services/%s/servers", service.Id)
 	res, err := rest(path, "PUT", bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		fail("Could not contact portal - %v", err)
+		fail("Could not contact portal - %s", err)
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fail("Could not read portal's response - %v", err)
+		fail("Could not read portal's response - %s", err)
 	}
 	fmt.Print(string(b))
 }
