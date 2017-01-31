@@ -184,7 +184,7 @@ Fields:
   - tcp
   - udp
 - **scheduler**: How to pick downstream server.
-  - rr    - Robin Robin
+  - rr    - Round Robin
   - wrr   - Weighted Round Robin
   - lc    - Least-Connection
   - wlc   - Weighted Least-Connection
@@ -301,6 +301,8 @@ Fields:
 - redis cluster init to get and set certs and vips
 
 ## Changelog
+- 0.1.0 - Fixed start issues related to VIPs - 17-01-24
+
 - Added ability to specify interface when registering a service
 - Users can now add vips to portal
 - Portal now uses the service host for server's hosts that are "127.0.0.1"

@@ -1429,7 +1429,7 @@ func (r Redis) waitForMembers(conn redis.Conn, actionHash string) error {
 			}
 		// if members don't respond in time, return error
 		case <-timeout:
-			return fmt.Errorf("Member(s) '%v' failed to set-service", list)
+			return fmt.Errorf("Member(s) '%s' failed to set-service", list)
 		}
 	}
 }
