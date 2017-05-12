@@ -106,11 +106,11 @@ func SetServices(services []core.Service) error {
 		tab.RenameChain("filter", "portal-old", "portal")
 	}
 	if err == nil && tab != nil {
-		cleanup := func(error) error {
+		cleanup := func(err2 error) error {
 			tab.ClearChain("filter", "portal")
 			tab.DeleteChain("filter", "portal")
 			tab.RenameChain("filter", "portal-old", "portal")
-			return fmt.Errorf("Failed to tab.Insert() - %s", err)
+			return fmt.Errorf("Failed to tab.Insert() - %s", err2)
 		}
 
 		tab.NewChain("filter", "portal")

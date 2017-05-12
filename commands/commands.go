@@ -31,7 +31,7 @@ var (
 
 	Portal = &cobra.Command{
 		Use:               "portal",
-		Short:             "portal - load balancer/proxy",
+		Short:             "load balancer/proxy",
 		Long:              ``,
 		PersistentPreRunE: readConfig,
 		PreRunE:           preFlight,
