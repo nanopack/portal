@@ -295,6 +295,9 @@ json:
 Fields:
  - **msg**: Success message
 
+### Contributing
+Portal uses [`govendor`](https://github.com/kardianos/govendor) to manage dependencies. After clone, run `govendor sync` to ensure you have the proper dependencies prior to building.
+
 ## Todo
 - vip testing
 - balance vips across cluster
