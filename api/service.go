@@ -75,6 +75,11 @@ func checkPort(svc core.Service) error {
 			return BadListenAddr
 		}
 	}
+
+	if svc.Type != "udp" && svc.Type != "tcp" {
+		return ErrBadProto
+	}
+
 	return nil
 }
 

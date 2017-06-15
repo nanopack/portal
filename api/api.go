@@ -60,6 +60,7 @@ var (
 	NoServerError  = errors.New("No Server Found")
 	NoServiceError = errors.New("No Service Found")
 	BadListenAddr  = errors.New("Port Already In Use")
+	ErrBadProto    = errors.New("Unsupported Protocol")
 )
 
 type (
