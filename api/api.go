@@ -45,7 +45,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/pat"
 	"github.com/nanobox-io/golang-nanoauth"
