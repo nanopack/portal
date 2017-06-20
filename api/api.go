@@ -148,9 +148,7 @@ func writeBody(rw http.ResponseWriter, req *http.Request, v interface{}, status 
 
 	remoteAddr := req.RemoteAddr
 	if fwdFor := req.Header.Get("X-Forwarded-For"); len(fwdFor) > 0 {
-		// get actual remote (last is oldest remote addr)
-		fwds := strings.Split(string(fwdFor), ",")
-		remoteAddr = strings.Trim(fwds[len(fwds)-1], " ")
+		remoteAddr = fwdFor
 	}
 
 	config.Log.Debug("%s %d %s %s %s", remoteAddr, status, req.Method, req.RequestURI, errMsg)
