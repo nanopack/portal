@@ -241,6 +241,7 @@ func (n *Nginx) DeleteServer(svcId, srvId string) error {
 
 // regenerloadConfig regenerates the nginx config and performs a live reload on
 // nginx to re-read in the config.
+// todo: use http proxying if http detected
 func (n *Nginx) regenerloadConfig() error {
 	nginxConfig := fmt.Sprintf(`%s
 

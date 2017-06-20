@@ -295,13 +295,23 @@ json:
 Fields:
  - **msg**: Success message
 
+### Contributing
+Portal uses [`govendor`](https://github.com/kardianos/govendor) to manage dependencies. After clone, run `govendor sync` to ensure you have the proper dependencies prior to building.
+
 ## Todo
 - vip testing
 - balance vips across cluster
 - redis cluster init to get and set certs and vips
 
 ## Changelog
-- 0.1.0 - Fixed start issues related to VIPs - 17-01-24
+- 0.1.1 - 17-06-20
+  - Log and fail if db init fails
+  - Use govendor for deps
+  - Pre-validate protocol for services
+  - Log all 'forwarded-for' ips
+
+- 0.1.0 - 17-01-24
+  - Fixed start issues related to VIPs
 
 - Added ability to specify interface when registering a service
 - Users can now add vips to portal

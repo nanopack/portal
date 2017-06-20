@@ -46,7 +46,7 @@ func Init() error {
 	}
 	err = Backend.Init()
 	if err != nil {
-		Backend = nil
+		return fmt.Errorf("Failed to init database - %s", err)
 	}
 	return nil
 }

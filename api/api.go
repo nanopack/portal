@@ -145,7 +145,12 @@ func writeBody(rw http.ResponseWriter, req *http.Request, v interface{}, status 
 		errMsg = msg["error"]
 	}
 
-	config.Log.Debug("%s %d %s %s %s", req.RemoteAddr, status, req.Method, req.RequestURI, errMsg)
+	remoteAddr := req.RemoteAddr
+	if fwdFor := req.Header.Get("X-Forwarded-For"); len(fwdFor) > 0 {
+		remoteAddr = fwdFor
+	}
+
+	config.Log.Debug("%s %d %s %s %s", remoteAddr, status, req.Method, req.RequestURI, errMsg)
 
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(status)

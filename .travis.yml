@@ -10,5 +10,9 @@ addons:
 # If you require these packages, please review the package approval process at: https://github.com/travis-ci/apt-package-whitelist#package-approval-process
 
 services: redis-server
-install: go get -t -v .
+before_install:
+  - go get github.com/kardianos/govendor
+
+install:
+  - govendor sync
 script: go test -v ./...

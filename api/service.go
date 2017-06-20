@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -75,6 +76,11 @@ func checkPort(svc core.Service) error {
 			return BadListenAddr
 		}
 	}
+
+	if svc.Type != "udp" && svc.Type != "tcp" {
+		return fmt.Errorf("Unsupported Protocol - '%s'", svc.Type)
+	}
+
 	return nil
 }
 

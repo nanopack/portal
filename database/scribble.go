@@ -164,6 +164,7 @@ func (s ScribbleDatabase) GetRoutes() ([]core.Route, error) {
 	routes := make([]core.Route, 0, 0)
 	values, err := s.scribbleDb.ReadAll("routes")
 	if err != nil {
+		// todo: need to ensure db doesn't get cleared with new scribble (shared mutex) (previously if err finding .tmp file, db could be dropped)
 		if strings.Contains(err.Error(), "no such file or directory") {
 			// if error is about a missing db, return empty array
 			return routes, nil
@@ -211,6 +212,7 @@ func (s ScribbleDatabase) SetRoute(route core.Route) error {
 
 func (s ScribbleDatabase) DeleteRoute(route core.Route) error {
 	routes, err := s.GetRoutes()
+	// todo: need to ensure db doesn't get cleared with new scribble (shared mutex) (previously if err finding .tmp file, db could be dropped)
 	if err != nil {
 		return err
 	}
