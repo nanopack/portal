@@ -353,7 +353,7 @@ func TestAddRoute(t *testing.T) {
 		t.Errorf("Failed to execute - %s", err)
 	}
 
-	if string(out) != "{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\"}\n" {
+	if string(out) != "{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\",\"endpoint\":\"\",\"expected_code\":0,\"expected_body\":\"\",\"expected_header\":\"\",\"host\":\"\",\"timeout\":0,\"attempts\":0}\n" {
 		t.Errorf("Unexpected output: %q", string(out))
 	}
 }
@@ -380,7 +380,7 @@ func TestSetRoutes(t *testing.T) {
 		t.Errorf("Failed to execute - %s", err)
 	}
 
-	if string(out) != "[{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\"}]\n" {
+	if string(out) != "[{\"subdomain\":\"\",\"domain\":\"portal.test\",\"path\":\"\",\"targets\":null,\"fwdpath\":\"\",\"page\":\"testing\",\"endpoint\":\"\",\"expected_code\":0,\"expected_body\":\"\",\"expected_header\":\"\",\"host\":\"\",\"timeout\":0,\"attempts\":0}]\n" {
 		t.Errorf("Unexpected output: %q", string(out))
 	}
 }
