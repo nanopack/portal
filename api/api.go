@@ -58,7 +58,6 @@ var (
 	BodyReadFail   = errors.New("Body Read Failed")
 	NoServerError  = errors.New("No Server Found")
 	NoServiceError = errors.New("No Service Found")
-	BadListenAddr  = errors.New("Port Already In Use")
 )
 
 type (
