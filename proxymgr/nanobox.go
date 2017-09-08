@@ -84,6 +84,7 @@ func (self Nanobox) SetCert(cert core.CertBundle) error {
 	// for idempotency
 	for i := range certs {
 		if certs[i].Cert == cert.Cert && certs[i].Key == cert.Key {
+			config.Log.Debug("Cert already added, skipping")
 			return nil
 		}
 	}
