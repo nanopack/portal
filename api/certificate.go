@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/nanopack/portal/cluster"
 	"github.com/nanopack/portal/core"
@@ -19,6 +20,14 @@ func postCert(rw http.ResponseWriter, req *http.Request) {
 	// save to cluster
 	err = cluster.SetCert(cert)
 	if err != nil {
+		if strings.Contains(err.Error(), "tls: failed to find any PEM data in certificate input") {
+			writeError(rw, req, err, http.StatusBadRequest)
+			return
+		}
+		if strings.Contains(err.Error(), "asn1: syntax error: PrintableString contains invalid character") {
+			writeError(rw, req, err, http.StatusBadRequest)
+			return
+		}
 		writeError(rw, req, err, http.StatusInternalServerError)
 		return
 	}

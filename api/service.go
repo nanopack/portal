@@ -70,10 +70,10 @@ func checkPort(svc core.Service) error {
 	// assume tls/http listening same ip. if listen on all interfaces, break on ports
 	if svc.Port == hPort || svc.Port == tPort || svc.Port == aPort {
 		if listenHttp[0] == "" || listenHttp[0] == "0.0.0.0" {
-			return BadListenAddr
+			return fmt.Errorf("Socket in use: '%s:%d'", listenHttp[0], svc.Port)
 		}
 		if svc.Host == listenHttp[0] || svc.Host == listenTls[0] || svc.Host == config.ApiHost {
-			return BadListenAddr
+			return fmt.Errorf("Socket in use: '%s:%d'", svc.Host, svc.Port)
 		}
 	}
 
