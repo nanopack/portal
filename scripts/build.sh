@@ -21,6 +21,10 @@ getCurrTag() {
 
 # build portal
 echo "Building portal..."
+# export GOROOT="/usr/local/go-1.7.5/"
+# export PATH=/usr/local/go-1.7.5/bin:$PATH
+
+# should be built with go1.7.x until tls regression is resolved. also https://github.com/golang/go/issues/21133
 gox -ldflags="-s -X github.com/nanopack/portal/commands.tag=$(getCurrTag)
   -X github.com/nanopack/portal/commands.commit=$(getCurrCommit)" \
   -osarch "linux/amd64" -output="./build/{{.OS}}/{{.Arch}}/portal"

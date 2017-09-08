@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/nanopack/portal/balance"
+	"github.com/nanopack/portal/config"
 	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/database"
 	"github.com/nanopack/portal/proxymgr"
@@ -320,6 +321,7 @@ func SetCert(cert core.CertBundle) error {
 		// save to backend
 		err = database.SetCert(cert)
 		if err != nil {
+			config.Log.Error("Failed to save cert to db, undoing")
 			// undo proxymgr action
 			if uerr := proxymgr.SetCerts(oldCerts); uerr != nil {
 				err = fmt.Errorf("%s - %s", err, uerr)

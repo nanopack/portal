@@ -33,6 +33,9 @@ func (self Nanobox) Init() error {
 	}
 	config.Log.Info("Proxy listening at https://%s...", config.RouteTls)
 
+	// start proxy health checker (todo: make check interval(pulse) configurable)
+	go router.StartHealth(20)
+
 	return nil
 }
 
@@ -81,6 +84,7 @@ func (self Nanobox) SetCert(cert core.CertBundle) error {
 	// for idempotency
 	for i := range certs {
 		if certs[i].Cert == cert.Cert && certs[i].Key == cert.Key {
+			config.Log.Debug("Cert already added, skipping")
 			return nil
 		}
 	}
@@ -128,7 +132,21 @@ func (self Nanobox) keysToC(certs []router.KeyPair) []core.CertBundle {
 func (self Nanobox) rToRoutes(routes []core.Route) []router.Route {
 	var rts []router.Route
 	for i := range routes {
-		rts = append(rts, router.Route{SubDomain: routes[i].SubDomain, Domain: routes[i].Domain, Path: routes[i].Path, Targets: routes[i].Targets, FwdPath: routes[i].FwdPath, Page: routes[i].Page})
+		rts = append(rts, router.Route{
+			SubDomain:      routes[i].SubDomain,
+			Domain:         routes[i].Domain,
+			Path:           routes[i].Path,
+			Targets:        routes[i].Targets,
+			FwdPath:        routes[i].FwdPath,
+			Page:           routes[i].Page,
+			Endpoint:       routes[i].Endpoint,
+			ExpectedCode:   routes[i].ExpectedCode,
+			ExpectedBody:   routes[i].ExpectedBody,
+			ExpectedHeader: routes[i].ExpectedHeader,
+			Host:           routes[i].Host,
+			Timeout:        routes[i].Timeout,
+			Attempts:       routes[i].Attempts,
+		})
 	}
 	return rts
 }
@@ -136,7 +154,21 @@ func (self Nanobox) rToRoutes(routes []core.Route) []router.Route {
 func (self Nanobox) routesToR(routes []router.Route) []core.Route {
 	var rts []core.Route
 	for i := range routes {
-		rts = append(rts, core.Route{SubDomain: routes[i].SubDomain, Domain: routes[i].Domain, Path: routes[i].Path, Targets: routes[i].Targets, FwdPath: routes[i].FwdPath, Page: routes[i].Page})
+		rts = append(rts, core.Route{
+			SubDomain:      routes[i].SubDomain,
+			Domain:         routes[i].Domain,
+			Path:           routes[i].Path,
+			Targets:        routes[i].Targets,
+			FwdPath:        routes[i].FwdPath,
+			Page:           routes[i].Page,
+			Endpoint:       routes[i].Endpoint,
+			ExpectedCode:   routes[i].ExpectedCode,
+			ExpectedBody:   routes[i].ExpectedBody,
+			ExpectedHeader: routes[i].ExpectedHeader,
+			Host:           routes[i].Host,
+			Timeout:        routes[i].Timeout,
+			Attempts:       routes[i].Attempts,
+		})
 	}
 	return rts
 }

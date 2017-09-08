@@ -109,6 +109,11 @@ func routes() *pat.Router {
 	router.Put("/services", putServices)
 	router.Get("/services", getServices)
 
+	// errors
+	router.Post("/errors", postErrors)
+	router.Put("/errors", postErrors)
+	router.Get("/errors", getErrors)
+
 	// routing
 	router.Delete("/routes", deleteRoute)
 	router.Put("/routes", putRoutes)

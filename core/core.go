@@ -74,6 +74,14 @@ type (
 		Targets []string `json:"targets"` // ips of servers - ["http://127.0.0.1:8080/app1","http://127.0.0.2"] (optional)
 		FwdPath string   `json:"fwdpath"` // path to forward to targets - "/goadmin" incoming req: test.com/admin -> 127.0.0.1/goadmin (optional)
 		Page    string   `json:"page"`    // page to serve instead of routing to targets - "<HTML>We are fixing it</HTML>" (optional)
+		// defines health check
+		Endpoint       string `json:"endpoint"`        // url path to check for health (todo: what to do when fwdpath is set) (non blank enables health checks)
+		ExpectedCode   int    `json:"expected_code"`   // expected http response code (default 200)
+		ExpectedBody   string `json:"expected_body"`   // expected body
+		ExpectedHeader string `json:"expected_header"` // expected http header (field:value)
+		Host           string `json:"host"`            // 'host' header to use when performing health check
+		Timeout        int    `json:"timeout"`         // milliseconds before connection times out (default 3000 (3s))
+		Attempts       int    `json:"attempts"`        // number of times to try before marking dead
 	}
 
 	CertBundle struct {
