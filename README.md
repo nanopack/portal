@@ -82,8 +82,8 @@ An optional config file can also be passed on startup:
 
 `portal -c /path/to/config.json`
 
->config.json
->```json
+> config.json
+```json
 {
   "api-token": "",
   "api-host": "127.0.0.1",
