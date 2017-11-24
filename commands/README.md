@@ -74,7 +74,7 @@ $ ./portal -c config.json
 ```
 
 >config.json
->```json
+```json
 {
   "api-token": "",
   "api-host": "127.0.0.1",
