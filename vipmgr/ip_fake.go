@@ -4,9 +4,8 @@
 package vipmgr
 
 import (
-	"fmt"
-
 	"github.com/nanopack/portal/core"
+	"github.com/nanopack/portal/config"
 )
 
 type ip struct{}
@@ -16,14 +15,18 @@ func (self ip) Init() error {
 	return nil
 }
 func (self ip) SetVip(vip core.Vip) error {
-	return fmt.Errorf("Functionality not supported on darwin|windows")
+	config.Log.Warn("VIP functionality not fully supported on darwin|windows. Continuing anyways")
+	return nil
 }
 func (self ip) DeleteVip(vip core.Vip) error {
-	return fmt.Errorf("Functionality not supported on darwin|windows")
+	config.Log.Warn("VIP functionality not fully supported on darwin|windows. Continuing anyways")
+	return nil
 }
 func (self ip) SetVips(vips []core.Vip) error {
-	return fmt.Errorf("Functionality not supported on darwin|windows")
+	config.Log.Warn("VIP functionality not fully supported on darwin|windows. Continuing anyways")
+	return nil
 }
 func (self ip) GetVips() ([]core.Vip, error) {
-	return nil, fmt.Errorf("Functionality not supported on darwin|windows")
+	config.Log.Warn("VIP functionality not fully supported on darwin|windows. Continuing anyways")
+	return nil, nil
 }
