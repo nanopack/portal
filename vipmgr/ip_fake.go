@@ -4,8 +4,8 @@
 package vipmgr
 
 import (
-	"github.com/nanopack/portal/core"
 	"github.com/nanopack/portal/config"
+	"github.com/nanopack/portal/core"
 )
 
 type ip struct{}
