@@ -1,7 +1,6 @@
 package database_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/jcelliott/lumber"
@@ -12,31 +11,22 @@ import (
 )
 
 var (
-	pgskip    = false // skip if postgresql not running
-	pgbackend database.Storable
+	boltbackend database.Storable
 )
 
-// Requires SetService to be run first (initializes database)
-func TestSetServicePg(t *testing.T) {
-	config.DatabaseConnection = "postgres://postgres@127.0.0.1?sslmode=disable"
+// Requires Init to be run first (initializes database)
+func TestSetServiceBolt(t *testing.T) {
+	config.DatabaseConnection = "bolt:///tmp/boltTest.bolt"
 	config.Log = lumber.NewConsoleLogger(lumber.LvlInt("FATAL"))
 
-	pgbackend = &database.PostgresDb{}
-	err := pgbackend.Init()
-	if err != nil {
-		fmt.Printf("Failed to connect, skipping - %s\n", err)
-		pgskip = true
-	}
+	boltbackend = &database.BoltDb{}
+	boltbackend.Init()
 
-	if pgskip {
-		t.SkipNow()
-	}
-
-	if err := pgbackend.SetService(&testService1); err != nil {
+	if err := boltbackend.SetService(&testService1); err != nil {
 		t.Errorf("Failed to SET service - %s", err)
 	}
 
-	svc, err := pgbackend.GetService("tcp-192_168_0_15-80")
+	svc, err := boltbackend.GetService("tcp-192_168_0_15-80")
 	if err != nil {
 		t.Error(err)
 	}
@@ -56,23 +46,19 @@ func TestSetServicePg(t *testing.T) {
 	}
 }
 
-func TestSetServicesPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
+func TestSetServicesBolt(t *testing.T) {
 	services := []core.Service{}
 	services = append(services, testService2)
 
-	if err := pgbackend.SetServices(services); err != nil {
+	if err := boltbackend.SetServices(services); err != nil {
 		t.Errorf("Failed to SET services - %s", err)
 	}
 
-	if _, err := pgbackend.GetService("tcp-192_168_0_15-80"); err == nil {
+	if _, err := boltbackend.GetService("tcp-192_168_0_15-80"); err == nil {
 		t.Errorf("Failed to clear old services on PUT")
 	}
 
-	svc, err := pgbackend.GetService("tcp-192_168_0_16-80")
+	svc, err := boltbackend.GetService("tcp-192_168_0_16-80")
 	if err != nil {
 		t.Error(err)
 	}
@@ -92,12 +78,8 @@ func TestSetServicesPg(t *testing.T) {
 	}
 }
 
-func TestGetServicesPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	services, err := pgbackend.GetServices()
+func TestGetServicesBolt(t *testing.T) {
+	services, err := boltbackend.GetServices()
 	if err != nil {
 		t.Errorf("Failed to GET services - %s", err)
 	}
@@ -107,12 +89,8 @@ func TestGetServicesPg(t *testing.T) {
 	}
 }
 
-func TestGetServicePg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	service, err := pgbackend.GetService(testService2.Id)
+func TestGetServiceBolt(t *testing.T) {
+	service, err := boltbackend.GetService(testService2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %s", err)
 	}
@@ -122,32 +100,24 @@ func TestGetServicePg(t *testing.T) {
 	}
 }
 
-func TestDeleteServicePg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	if err := pgbackend.DeleteService(testService2.Id); err != nil {
+func TestDeleteServiceBolt(t *testing.T) {
+	if err := boltbackend.DeleteService(testService2.Id); err != nil {
 		t.Errorf("Failed to DELETE service - %s", err)
 	}
 
-	_, err := pgbackend.GetService(testService2.Id)
+	_, err := boltbackend.GetService(testService2.Id)
 	if err == nil {
 		t.Error(err)
 	}
 }
 
-func TestSetServerPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	pgbackend.SetService(&testService1)
-	if err := pgbackend.SetServer(testService1.Id, &testServer1); err != nil {
+func TestSetServerBolt(t *testing.T) {
+	boltbackend.SetService(&testService1)
+	if err := boltbackend.SetServer(testService1.Id, &testServer1); err != nil {
 		t.Errorf("Failed to SET server - %s", err)
 	}
 
-	tSvc, err := pgbackend.GetService("tcp-192_168_0_15-80")
+	tSvc, err := boltbackend.GetService("tcp-192_168_0_15-80")
 	if err != nil {
 		t.Error(err)
 	}
@@ -169,18 +139,14 @@ func TestSetServerPg(t *testing.T) {
 	}
 }
 
-func TestSetServersPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
+func TestSetServersBolt(t *testing.T) {
 	servers := []core.Server{}
 	servers = append(servers, testServer2)
-	if err := pgbackend.SetServers(testService1.Id, servers); err != nil {
+	if err := boltbackend.SetServers(testService1.Id, servers); err != nil {
 		t.Errorf("Failed to SET servers - %s", err)
 	}
 
-	tSvc, err := pgbackend.GetService("tcp-192_168_0_15-80")
+	tSvc, err := boltbackend.GetService("tcp-192_168_0_15-80")
 	if err != nil {
 		t.Error(err)
 	}
@@ -202,12 +168,8 @@ func TestSetServersPg(t *testing.T) {
 	}
 }
 
-func TestGetServersPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	service, err := pgbackend.GetService(testService1.Id)
+func TestGetServersBolt(t *testing.T) {
+	service, err := boltbackend.GetService(testService1.Id)
 	if err != nil {
 		t.Errorf("Failed to GET service - %s", err)
 	}
@@ -217,12 +179,8 @@ func TestGetServersPg(t *testing.T) {
 	}
 }
 
-func TestGetServerPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	server, err := pgbackend.GetServer(testService1.Id, testServer2.Id)
+func TestGetServerBolt(t *testing.T) {
+	server, err := boltbackend.GetServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to GET server - %s", err)
 	}
@@ -232,17 +190,13 @@ func TestGetServerPg(t *testing.T) {
 	}
 }
 
-func TestDeleteServerPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	err := pgbackend.DeleteServer(testService1.Id, testServer2.Id)
+func TestDeleteServerBolt(t *testing.T) {
+	err := boltbackend.DeleteServer(testService1.Id, testServer2.Id)
 	if err != nil {
 		t.Errorf("Failed to DELETE server - %s", err)
 	}
 
-	svc, err := pgbackend.GetService("tcp-192_168_0_15-80")
+	svc, err := boltbackend.GetService("tcp-192_168_0_15-80")
 	if err != nil {
 		t.Error(err)
 	}
@@ -262,20 +216,16 @@ func TestDeleteServerPg(t *testing.T) {
 	}
 }
 
-func TestSetRoutePg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	if err := pgbackend.SetRoute(testRoute); err != nil {
+func TestSetRouteBolt(t *testing.T) {
+	if err := boltbackend.SetRoute(testRoute); err != nil {
 		t.Errorf("Failed to SET route - %s", err)
 	}
 
-	if err := pgbackend.SetRoute(testRoute); err != nil {
+	if err := boltbackend.SetRoute(testRoute); err != nil {
 		t.Errorf("Failed to SET route - %s", err)
 	}
 
-	routes, err := pgbackend.GetRoutes()
+	routes, err := boltbackend.GetRoutes()
 	if err != nil {
 		t.Error(err)
 	}
@@ -285,18 +235,14 @@ func TestSetRoutePg(t *testing.T) {
 	}
 }
 
-func TestSetRoutesPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
+func TestSetRoutesBolt(t *testing.T) {
 	routes := []core.Route{testRoute}
 
-	if err := pgbackend.SetRoutes(routes); err != nil {
+	if err := boltbackend.SetRoutes(routes); err != nil {
 		t.Errorf("Failed to SET routes - %s", err)
 	}
 
-	routes, err := pgbackend.GetRoutes()
+	routes, err := boltbackend.GetRoutes()
 	if err != nil {
 		t.Error(err)
 	}
@@ -306,16 +252,12 @@ func TestSetRoutesPg(t *testing.T) {
 	}
 }
 
-func TestDeleteRoutePg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	if err := pgbackend.DeleteRoute(testRoute); err != nil {
+func TestDeleteRouteBolt(t *testing.T) {
+	if err := boltbackend.DeleteRoute(testRoute); err != nil {
 		t.Errorf("Failed to DELETE route - %s", err)
 	}
 
-	routes, err := pgbackend.GetRoutes()
+	routes, err := boltbackend.GetRoutes()
 	if err != nil {
 		t.Error(err)
 	}
@@ -325,20 +267,16 @@ func TestDeleteRoutePg(t *testing.T) {
 	}
 }
 
-func TestSetCertPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	if err := pgbackend.SetCert(testCert); err != nil {
+func TestSetCertBolt(t *testing.T) {
+	if err := boltbackend.SetCert(testCert); err != nil {
 		t.Errorf("Failed to SET cert - %s", err)
 	}
 
-	if err := pgbackend.SetCert(testCert); err != nil {
+	if err := boltbackend.SetCert(testCert); err != nil {
 		t.Errorf("Failed to SET cert - %s", err)
 	}
 
-	certs, err := pgbackend.GetCerts()
+	certs, err := boltbackend.GetCerts()
 	if err != nil {
 		t.Error(err)
 	}
@@ -348,18 +286,14 @@ func TestSetCertPg(t *testing.T) {
 	}
 }
 
-func TestSetCertsPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
+func TestSetCertsBolt(t *testing.T) {
 	certs := []core.CertBundle{testCert}
 
-	if err := pgbackend.SetCerts(certs); err != nil {
+	if err := boltbackend.SetCerts(certs); err != nil {
 		t.Errorf("Failed to SET certs - %s", err)
 	}
 
-	certs, err := pgbackend.GetCerts()
+	certs, err := boltbackend.GetCerts()
 	if err != nil {
 		t.Error(err)
 	}
@@ -369,16 +303,12 @@ func TestSetCertsPg(t *testing.T) {
 	}
 }
 
-func TestDeleteCertPg(t *testing.T) {
-	if pgskip {
-		t.SkipNow()
-	}
-
-	if err := pgbackend.DeleteCert(testCert); err != nil {
+func TestDeleteCertBolt(t *testing.T) {
+	if err := boltbackend.DeleteCert(testCert); err != nil {
 		t.Errorf("Failed to DELETE cert - %s", err)
 	}
 
-	certs, err := pgbackend.GetCerts()
+	certs, err := boltbackend.GetCerts()
 	if err != nil {
 		t.Error(err)
 	}

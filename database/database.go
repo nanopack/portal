@@ -31,6 +31,9 @@ func Init() error {
 		return fmt.Errorf("Failed to parse db connection - %s", err)
 	}
 	switch u.Scheme {
+	case "bolt", "boltdb":
+		CentralStore = false
+		Backend = &BoltDb{}
 	case "postgres", "postgresql":
 		CentralStore = true
 		Backend = &PostgresDb{}

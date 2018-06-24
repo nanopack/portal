@@ -9,6 +9,12 @@
 			"revisionTime": "2016-01-02T14:47:48Z"
 		},
 		{
+ 			"checksumSHA1": "qFaKrhSla38BRAyaGz2UaZvH/Dk=",
+ 			"path": "github.com/coreos/bbolt",
+ 			"revision": "af9db2027c98c61ecd8e17caa5bd265792b9b9a2",
+ 			"revisionTime": "2018-03-18T00:15:26Z"
+		},
+		{
 			"checksumSHA1": "7qlsW0pXrPI6T2z2jbR4lEKPO/s=",
 			"path": "github.com/coreos/go-iptables/iptables",
 			"revision": "90456be57fcb8185b264b77ce42a9539df42df25",
