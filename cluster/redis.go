@@ -140,12 +140,12 @@ func (r *Redis) SetServices(services []core.Service) error {
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", services))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %v", services))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", oldServices))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %v", oldServices))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
@@ -176,7 +176,7 @@ func (r *Redis) SetService(service *core.Service) error {
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", *service))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %v", *service))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
@@ -223,7 +223,7 @@ func (r *Redis) DeleteService(id string) error {
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", oldService))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %v", oldService))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
@@ -263,12 +263,12 @@ func (r *Redis) SetServers(svcId string, servers []core.Server) error {
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", servers, svcId))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %v %s", servers, svcId))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", oldServers, svcId))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %v %s", oldServers, svcId))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
@@ -298,7 +298,7 @@ func (r *Redis) SetServer(svcId string, server *core.Server) error {
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *server, svcId))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %v %s", *server, svcId))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
@@ -345,7 +345,7 @@ func (r *Redis) DeleteServer(svcId, srvId string) error {
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *oldServer, svcId))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %v %s", *oldServer, svcId))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
@@ -385,12 +385,12 @@ func (r Redis) SetRoutes(routes []core.Route) error {
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes %s", routes))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes %v", routes))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes %s", oldRoutes))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes %v", oldRoutes))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
@@ -421,12 +421,12 @@ func (r Redis) SetRoute(route core.Route) error {
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-route %s", route))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-route %v", route))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-route %s", route))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-route %v", route))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
@@ -463,12 +463,12 @@ func (r Redis) DeleteRoute(route core.Route) error {
 		return err
 	}
 
-	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-route %s", route))))
+	actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-route %v", route))))
 
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes", oldRoutes))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes %v", oldRoutes))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
@@ -591,7 +591,7 @@ func (r Redis) DeleteCert(cert core.CertBundle) error {
 	// ensure all members applied action
 	err = r.waitForMembers(conn, actionHash)
 	if err != nil {
-		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-certs", oldCerts))))
+		uActionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-certs %v", oldCerts))))
 		// cleanup rollback cruft. clear actionHash ensures no mistakes on re-submit
 		defer conn.Do("DEL", uActionHash, actionHash)
 		// attempt rollback - no need to waitForMembers here
@@ -1061,7 +1061,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to set services - %s", err)
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %s", *services))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-services %v", *services))))
 				config.Log.Trace("[cluster] - set-services hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
@@ -1083,7 +1083,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to set service - %s", err)
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %s", *svc))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-service %v", *svc))))
 				config.Log.Trace("[cluster] - set-service hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
@@ -1123,7 +1123,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to set servers - %s", err)
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %s %s", *servers, svcId))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-servers %v %s", *servers, svcId))))
 				config.Log.Trace("[cluster] - set-servers hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
@@ -1146,7 +1146,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to set server - %s", err)
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %s %s", *server, svcId))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-server %v %s", *server, svcId))))
 				config.Log.Trace("[cluster] - set-server hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
@@ -1212,7 +1212,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to set routes - %s", err)
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes %s", routes))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-routes %v", routes))))
 				config.Log.Trace("[cluster] - set-routes hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
@@ -1235,7 +1235,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to set route - %s", err)
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-route %s", rte))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("set-route %v", rte))))
 				config.Log.Trace("[cluster] - set-route hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)
@@ -1257,7 +1257,7 @@ func (r Redis) subscribe() {
 					config.Log.Error("[cluster] - Failed to delete route - %s", err)
 					break
 				}
-				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-route %s", rte))))
+				actionHash := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("delete-route %v", rte))))
 				config.Log.Trace("[cluster] - delete-route hash - %s", actionHash)
 				conn := pool.Get()
 				conn.Do("SADD", actionHash, self)

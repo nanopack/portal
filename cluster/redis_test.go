@@ -334,7 +334,7 @@ func TestDeleteRoute(t *testing.T) {
 	// don't use cluster.GetRoutes()
 	routes, err := database.GetRoutes()
 	if len(routes) != 0 {
-		t.Error("Failed to DELETE route - %s", err)
+		t.Errorf("Failed to DELETE route - %s", err)
 	}
 }
 
@@ -411,7 +411,7 @@ func TestDeleteCert(t *testing.T) {
 	// don't use cluster.GetCerts()
 	certs, err := database.GetCerts()
 	if len(certs) != 0 {
-		t.Error("Failed to DELETE cert - %s", err)
+		t.Errorf("Failed to DELETE cert - %s", err)
 	}
 }
 
@@ -649,7 +649,7 @@ func TestNoneDeleteRoute(t *testing.T) {
 	// don't use cluster.GetRoutes()
 	routes, err := database.GetRoutes()
 	if len(routes) != 0 {
-		t.Error("Failed to DELETE route - %s", err)
+		t.Errorf("Failed to DELETE route - %s", err)
 	}
 }
 
@@ -714,7 +714,7 @@ func TestNoneDeleteCert(t *testing.T) {
 	// don't use cluster.GetCerts()
 	certs, err := database.GetCerts()
 	if len(certs) != 0 {
-		t.Error("Failed to DELETE cert - %s", err)
+		t.Errorf("Failed to DELETE cert - %s", err)
 	}
 }
 
