@@ -1,4 +1,4 @@
-[![portal logo](http://nano-assets.gopagoda.io/readme-headers/portal.png)](http://nanobox.io/open-source#portal)  
+# Portal 
 [![Build Status](https://travis-ci.org/nanopack/portal.svg)](https://travis-ci.org/nanopack/portal)
 [![GoDoc](https://godoc.org/github.com/nanopack/portal?status.svg)](https://godoc.org/github.com/nanopack/portal)
 
