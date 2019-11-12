@@ -31,15 +31,11 @@ func Init() error {
 		return fmt.Errorf("Failed to parse db connection - %s", err)
 	}
 	switch u.Scheme {
+	case "postgres", "postgresql":
+		CentralStore = true
+		Backend = &PostgresDb{}
 	case "scribble":
-		CentralStore = false
-		Backend = &ScribbleDatabase{}
-	case "postgres":
-		CentralStore = true
-		Backend = &PostgresDb{}
-	case "postgresql":
-		CentralStore = true
-		Backend = &PostgresDb{}
+		fallthrough
 	default:
 		CentralStore = false
 		Backend = &ScribbleDatabase{}
